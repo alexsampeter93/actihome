@@ -1,0 +1,38 @@
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: debug
+
+spring:
+  main:
+    headless: false
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/actihome?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: alex
+    password: password
+    driverClassName: com.mysql.cj.jdbc.Driver
+    initialization-mode: always
+
+  devtools:
+    restart:
+      trigger-file: reload
+    livereload:
+      enabled: false
+  jackson:
+    default-property-inclusion: NON_NULL
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+      show-sql: true
+      format-sql: true
+      use-sql-comments: true
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
