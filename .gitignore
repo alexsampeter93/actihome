@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Temporales de generación de documentación (LibreOffice) ###
+docs/tmp/

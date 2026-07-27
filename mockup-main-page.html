@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ActiHome — Alojamientos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:      #2563EB;
+      --primary-dark: #1D4ED8;
+      --primary-light:#EFF6FF;
+      --accent:       #10B981;
+      --accent-light: #D1FAE5;
+      --warn:         #F59E0B;
+      --warn-light:   #FEF3C7;
+      --danger:       #EF4444;
+      --danger-light: #FEE2E2;
+      --bg:           #F1F5F9;
+      --surface:      #FFFFFF;
+      --border:       #E2E8F0;
+      --text:         #1E293B;
+      --text-muted:   #64748B;
+      --shadow-sm:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+      --shadow-md:    0 4px 12px rgba(0,0,0,.10), 0 2px 4px rgba(0,0,0,.06);
+      --shadow-lg:    0 10px 30px rgba(0,0,0,.12), 0 4px 8px rgba(0,0,0,.06);
+      --radius:       14px;
+      --radius-sm:    8px;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── NAVBAR ── */
+    .navbar {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+    .navbar-inner {
+      max-width: 1280px; margin: 0 auto;
+      padding: 0 24px;
+      height: 68px;
+      display: flex; align-items: center; gap: 16px;
+    }
+
+    /* Logo */
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; flex-shrink: 0;
+    }
+    .logo-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--primary), #6366F1);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .logo-text {
+      font-size: 20px; font-weight: 700;
+      background: linear-gradient(135deg, var(--primary), #6366F1);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    /* Search */
+    .search-wrap {
+      flex: 1; max-width: 480px; margin: 0 auto;
+      position: relative;
+    }
+    .search-icon {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); font-size: 16px; pointer-events: none;
+    }
+    .search-input {
+      width: 100%; padding: 10px 16px 10px 42px;
+      border: 1.5px solid var(--border);
+      border-radius: 50px;
+      font-size: 14px; font-family: inherit;
+      background: var(--bg);
+      color: var(--text);
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+      background: var(--surface);
+    }
+
+    /* Nav actions */
+    .nav-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+
+    .btn-reservas {
+      display: flex; align-items: center; gap: 7px;
+      padding: 9px 18px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: none; border-radius: 50px;
+      font-size: 14px; font-weight: 600; font-family: inherit;
+      cursor: pointer;
+      transition: background .2s, transform .15s;
+    }
+    .btn-reservas:hover { background: #DBEAFE; transform: translateY(-1px); }
+
+    .avatar-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 14px 6px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 50px; background: var(--surface);
+      cursor: pointer; font-family: inherit;
+      transition: box-shadow .2s;
+    }
+    .avatar-btn:hover { box-shadow: var(--shadow-md); }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, #6366F1, var(--primary));
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-weight: 700; font-size: 13px;
+    }
+    .avatar-name { font-size: 14px; font-weight: 500; }
+
+    /* ── HERO STATS ── */
+    .hero {
+      max-width: 1280px; margin: 0 auto;
+      padding: 28px 24px 0;
+    }
+    .hero-title {
+      font-size: 26px; font-weight: 700; margin-bottom: 4px;
+    }
+    .hero-sub { font-size: 15px; color: var(--text-muted); margin-bottom: 20px; }
+
+    .stats-row {
+      display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 20px;
+      display: flex; align-items: center; gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .stat-icon.blue  { background: var(--primary-light); }
+    .stat-icon.green { background: var(--accent-light); }
+    .stat-icon.amber { background: var(--warn-light); }
+    .stat-num { font-size: 22px; font-weight: 700; line-height: 1; }
+    .stat-lbl { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── FILTERS ── */
+    .filters-bar {
+      max-width: 1280px; margin: 0 auto;
+      padding: 0 24px 20px;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .filter-lbl {
+      font-size: 13px; font-weight: 600; color: var(--text-muted);
+      margin-right: 2px;
+    }
+    .chip {
+      padding: 7px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 50px;
+      background: var(--surface);
+      font-size: 13px; font-weight: 500; font-family: inherit;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all .18s;
+    }
+    .chip:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+    .chip.active { border-color: var(--primary); color: var(--primary); background: var(--primary-light); font-weight: 600; }
+
+    .filter-divider { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+
+    .rooms-filter {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .rooms-input {
+      width: 58px; padding: 7px 10px;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 13px; font-family: inherit; text-align: center;
+      outline: none; transition: border-color .2s;
+    }
+    .rooms-input:focus { border-color: var(--primary); }
+
+    .btn-apply {
+      padding: 8px 20px;
+      background: var(--primary); color: #fff;
+      border: none; border-radius: 50px;
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: background .2s, transform .15s;
+    }
+    .btn-apply:hover { background: var(--primary-dark); transform: translateY(-1px); }
+
+    /* ── GRID ── */
+    .grid-section {
+      max-width: 1280px; margin: 0 auto;
+      padding: 0 24px 40px;
+    }
+    .grid-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .grid-count { font-size: 14px; color: var(--text-muted); }
+    .grid-sort {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--text-muted);
+    }
+    .sort-select {
+      padding: 5px 10px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 13px; font-family: inherit;
+      background: var(--surface); cursor: pointer; outline: none;
+    }
+
+    .housing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: box-shadow .25s, transform .25s;
+      display: flex; flex-direction: column;
+    }
+    .card:hover { box-shadow: var(--shadow-lg); transform: translateY(-4px); }
+
+    /* Card image placeholder */
+    .card-img {
+      height: 180px;
+      position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card-img-bg {
+      position: absolute; inset: 0;
+    }
+    .card-img-icon {
+      position: relative; z-index: 1;
+      font-size: 56px; opacity: .25;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,.2));
+    }
+    .card-badge {
+      position: absolute; top: 12px; left: 12px; z-index: 2;
+      padding: 4px 10px;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(4px);
+      border-radius: 50px;
+      font-size: 12px; font-weight: 600;
+      color: var(--text);
+    }
+    .card-avail {
+      position: absolute; top: 12px; right: 12px; z-index: 2;
+      padding: 4px 10px; border-radius: 50px;
+      font-size: 11px; font-weight: 600;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .card-avail.yes { background: var(--accent-light); color: #065F46; }
+    .card-avail.no  { background: var(--danger-light); color: #991B1B; }
+    .card-avail .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    /* Card body */
+    .card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+    .card-title {
+      font-size: 15px; font-weight: 700; line-height: 1.3;
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .card-code { font-size: 12px; color: var(--text-muted); font-weight: 400; }
+
+    .card-location {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 13px; color: var(--text-muted);
+    }
+
+    .card-rating {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .stars { display: flex; gap: 2px; }
+    .star { font-size: 13px; }
+    .star.filled { color: var(--warn); }
+    .star.empty  { color: var(--border); }
+    .rating-num { font-size: 13px; font-weight: 600; }
+    .rating-count { font-size: 12px; color: var(--text-muted); }
+
+    .card-meta {
+      display: flex; align-items: center; gap: 14px;
+      font-size: 13px; color: var(--text-muted);
+    }
+    .meta-item { display: flex; align-items: center; gap: 4px; }
+
+    .card-meals {
+      display: flex; gap: 6px; flex-wrap: wrap;
+    }
+    .meal-tag {
+      padding: 3px 10px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 50px; font-size: 11px; font-weight: 500;
+      color: var(--text-muted);
+    }
+    .meal-tag.included { background: var(--accent-light); border-color: #6EE7B7; color: #065F46; }
+
+    .card-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-price { font-size: 18px; font-weight: 700; color: var(--primary); }
+    .card-price span { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+    .btn-details {
+      padding: 8px 18px;
+      background: var(--primary); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: background .2s;
+    }
+    .btn-details:hover { background: var(--primary-dark); }
+
+    /* ── FAB (ADMIN) ── */
+    .fab {
+      position: fixed; bottom: 32px; right: 32px; z-index: 200;
+      width: 58px; height: 58px;
+      background: linear-gradient(135deg, var(--primary), #6366F1);
+      color: #fff;
+      border: none; border-radius: 50%;
+      font-size: 26px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(37,99,235,.45);
+      display: flex; align-items: center; justify-content: center;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .fab:hover { transform: scale(1.1) rotate(90deg); box-shadow: 0 8px 28px rgba(37,99,235,.55); }
+    .fab-tooltip {
+      position: fixed; bottom: 101px; right: 32px; z-index: 200;
+      background: var(--text); color: #fff;
+      font-size: 12px; font-weight: 500;
+      padding: 5px 10px; border-radius: var(--radius-sm);
+      pointer-events: none; opacity: 0;
+      transition: opacity .2s;
+      white-space: nowrap;
+    }
+    .fab:hover + .fab-tooltip { opacity: 1; }
+
+    /* ── GRADIENT PALETTES for card images ── */
+    .g1 { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .g2 { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .g3 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+    .g4 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+    .g5 { background: linear-gradient(135deg, #fa709a, #fee140); }
+    .g6 { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 680px) {
+      .navbar-inner { padding: 0 16px; gap: 10px; }
+      .search-wrap { max-width: none; }
+      .logo-text { display: none; }
+      .avatar-name { display: none; }
+      .hero { padding: 20px 16px 0; }
+      .hero-title { font-size: 20px; }
+      .filters-bar, .grid-section { padding-left: 16px; padding-right: 16px; }
+      .housing-grid { grid-template-columns: 1fr; }
+      .stats-row { gap: 10px; }
+      .stat-card { padding: 10px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     NAVBAR
+════════════════════════════════════════ -->
+<header class="navbar">
+  <div class="navbar-inner">
+
+    <a href="#" class="logo">
+      <div class="logo-icon">🏠</div>
+      <span class="logo-text">ActiHome</span>
+    </a>
+
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" type="text" placeholder="Buscar por destino, tipo..." />
+    </div>
+
+    <div class="nav-actions">
+      <!-- Visible para CUSTOMER -->
+      <button class="btn-reservas">
+        📋 Mis reservas
+      </button>
+
+      <!-- Avatar + menú usuario -->
+      <button class="avatar-btn">
+        <div class="avatar">AL</div>
+        <span class="avatar-name">alex_admin</span>
+        <span style="font-size:11px;color:var(--text-muted)">▾</span>
+      </button>
+    </div>
+
+  </div>
+</header>
+
+
+<!-- ══════════════════════════════════════
+     HERO + STATS
+════════════════════════════════════════ -->
+<section class="hero">
+  <h1 class="hero-title">Explora alojamientos</h1>
+  <p class="hero-sub">Encuentra el lugar perfecto para tu próxima escapada</p>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon blue">🏡</div>
+      <div>
+        <div class="stat-num">24</div>
+        <div class="stat-lbl">Alojamientos totales</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">✅</div>
+      <div>
+        <div class="stat-num">18</div>
+        <div class="stat-lbl">Disponibles ahora</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon amber">⭐</div>
+      <div>
+        <div class="stat-num">4.3</div>
+        <div class="stat-lbl">Puntuación media</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     FILTROS
+════════════════════════════════════════ -->
+<div class="filters-bar">
+  <span class="filter-lbl">Tipo:</span>
+  <button class="chip active">Todos</button>
+  <button class="chip">Casa</button>
+  <button class="chip">Apartamento</button>
+  <button class="chip">Villa</button>
+  <button class="chip">Cabaña</button>
+
+  <div class="filter-divider"></div>
+
+  <div class="rooms-filter">
+    <span class="filter-lbl">Min. habitaciones:</span>
+    <input class="rooms-input" type="number" min="1" value="1" />
+  </div>
+
+  <button class="btn-apply">Aplicar filtros</button>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     GRID DE ALOJAMIENTOS
+════════════════════════════════════════ -->
+<section class="grid-section">
+  <div class="grid-header">
+    <span class="grid-count">Mostrando <strong>6</strong> alojamientos</span>
+    <div class="grid-sort">
+      Ordenar por:
+      <select class="sort-select">
+        <option>Precio: menor a mayor</option>
+        <option>Precio: mayor a menor</option>
+        <option>Mejor valorados</option>
+        <option>Más recientes</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="housing-grid">
+
+    <!-- ── CARD 1 ── -->
+    <div class="card">
+      <div class="card-img">
+        <div class="card-img-bg g1"></div>
+        <div class="card-img-icon">🏡</div>
+        <span class="card-badge">Casa</span>
+        <span class="card-avail yes"><span class="dot"></span>Disponible</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">
+          Casa Rural El Pinar
+          <span class="card-code">#10001</span>
+        </div>
+        <div class="card-location">📍 Sierra Nevada, Granada</div>
+        <div class="card-rating">
+          <div class="stars">
+            <span class="star filled">★</span><span class="star filled">★</span>
+            <span class="star filled">★</span><span class="star filled">★</span>
+            <span class="star empty">★</span>
+          </div>
+          <span class="rating-num">4.2</span>
+          <span class="rating-count">(14 reseñas)</span>
+        </div>
+        <div class="card-meta">
+          <span class="meta-item">🛏 3 habitaciones</span>
+          <span class="meta-item">👤 propietario</span>
+        </div>
+        <div class="card-meals">
+          <span class="meal-tag included">🍳 Desayuno</span>
+          <span class="meal-tag">🍽 Almuerzo</span>
+          <span class="meal-tag included">🌙 Cena</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="card-price">75,00€ <span>/ noche</span></div>
+        <button class="btn-details">Ver detalles</button>
+      </div>
+    </div>
+
+    <!-- ── CARD 2 ── -->
+    <div class="card">
+      <div class="card-img">
+        <div class="card-img-bg g3"></div>
+        <div class="card-img-icon">🏢</div>
+        <span class="card-badge">Apartamento</span>
+        <span class="card-avail yes"><span class="dot"></span>Disponible</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">
+          Apartamento Playa Centro
+          <span class="card-code">#10002</span>
+        </div>
+        <div class="card-location">📍 Málaga, Costa del Sol</div>
+        <div class="card-rating">
+          <div class="stars">
+            <span class="star filled">★</span><span class="star filled">★</span>
+            <span class="star filled">★</span><span class="star filled">★</span>
+            <span class="star filled">★</span>
+          </div>
+          <span class="rating-num">4.8</span>
+          <span class="rating-count">(31 reseñas)</span>
+        </div>
+        <div class="card-meta">
+          <span class="meta-item">🛏 2 habitaciones</span>
+          <span class="meta-item">👤 propietario2</span>
+        </div>
+        <div class="card-meals">
+          <span class="meal-tag included">🍳 Desayuno</span>
+          <span class="meal-tag">🍽 Almuerzo</span>
+          <span class="meal-tag">🌙 Cena</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="card-price">95,00€ <span>/ noche</span></div>
+        <button class="btn-details">Ver detalles</button>
+      </div>
+    </div>
+
+    <!-- ── CARD 3 ── -->
+    <div class="card">
+      <div class="card-img">
+        <div class="card-img-bg g4"></div>
+        <div class="card-img-icon">🏰</div>
+        <span class="card-badge">Villa</span>
+        <span class="card-avail no"><span class="dot"></span>Reservada</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">
+          Villa Mediterráneo
+          <span class="card-code">#10003</span>
+        </div>
+        <div class="card-location">📍 Ibiza, Baleares</div>
+        <div class="card-rating">
+          <div class="stars">
+            <span class="star filled">★</span><span class="star filled">★</span>
+            <span class="star filled">★</span><span class="star filled">★</span>
+            <span class="star empty">★</span>
+          </div>
+          <span class="rating-num">4.5</span>
+          <span class="rating-count">(8 reseñas)</span>
+        </div>
+        <div class="card-meta">
+          <span class="meta-item">🛏 5 habitaciones</span>
+          <span class="meta-item">👤 propietario</span>
+        </div>
+        <div class="card-meals">
+          <span class="meal-tag included">🍳 Desayuno</span>
+          <span class="meal-tag included">🍽 Almuerzo</span>
+          <span class="meal-tag included">🌙 Cena</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="card-price">320,00€ <span>/ noche</span></div>
+        <button class="btn-details" style="background:var(--text-muted);cursor:not-allowed">No disponible</button>
+      </div>
+    </div>
+
+    <!-- ── CARD 4 ── -->
+    <div class="card">
+      <div class="card-img">
+        <div class="card-img-bg g5"></div>
+        <div class="card-img-icon">🌲</div>
+        <span class="card-badge">Cabaña</span>
+        <span class="card-avail yes"><span class="dot"></span>Disponible</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">
+          Cabaña del Bosque
+          <span class="card-code">#10004</span>
+        </div>
+        <div class="card-location">📍 Picos de Europa, Asturias</div>
+        <div class="card-rating">
+          <div class="stars">
+            <span class="star filled">★</span><span class="star filled">★</span>
+            <span class="star filled">★</span><span class="star empty">★</span>
+            <span class="star empty">★</span>
+          </div>
+          <span class="rating-num">3.4</span>
+          <span class="rating-count">(5 reseñas)</span>
+        </div>
+        <div class="card-meta">
+          <span class="meta-item">🛏 1 habitación</span>
+          <span class="meta-item">👤 propietario3</span>
+        </div>
+        <div class="card-meals">
+          <span class="meal-tag">🍳 Desayuno</span>
+          <span class="meal-tag">🍽 Almuerzo</span>
+          <span class="meal-tag">🌙 Cena</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="card-price">48,00€ <span>/ noche</span></div>
+        <button class="btn-details">Ver detalles</button>
+      </div>
+    </div>
+
+    <!-- ── CARD 5 ── -->
+    <div class="card">
+      <div class="card-img">
+        <div class="card-img-bg g2"></div>
+        <div class="card-img-icon">🏙</div>
+        <span class="card-badge">Apartamento</span>
+        <span class="card-avail yes"><span class="dot"></span>Disponible</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">
+          Loft Moderno Barrio Gótico
+          <span class="card-code">#10005</span>
+        </div>
+        <div class="card-location">📍 Barcelona, Cataluña</div>
+        <div class="card-rating">
+          <div class="stars">
+            <span class="star filled">★</span><span class="star filled">★</span>
+            <span class="star filled">★</span><span class="star filled">★</span>
+            <span class="star filled">★</span>
+          </div>
+          <span class="rating-num">4.9</span>
+          <span class="rating-count">(47 reseñas)</span>
+        </div>
+        <div class="card-meta">
+          <span class="meta-item">🛏 2 habitaciones</span>
+          <span class="meta-item">👤 propietario2</span>
+        </div>
+        <div class="card-meals">
+          <span class="meal-tag included">🍳 Desayuno</span>
+          <span class="meal-tag">🍽 Almuerzo</span>
+          <span class="meal-tag">🌙 Cena</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="card-price">130,00€ <span>/ noche</span></div>
+        <button class="btn-details">Ver detalles</button>
+      </div>
+    </div>
+
+    <!-- ── CARD 6 ── -->
+    <div class="card">
+      <div class="card-img">
+        <div class="card-img-bg g6"></div>
+        <div class="card-img-icon">🏠</div>
+        <span class="card-badge">Casa</span>
+        <span class="card-avail yes"><span class="dot"></span>Disponible</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title">
+          Casa Adosada Las Palmas
+          <span class="card-code">#10006</span>
+        </div>
+        <div class="card-location">📍 Las Palmas, Gran Canaria</div>
+        <div class="card-rating">
+          <div class="stars">
+            <span class="star filled">★</span><span class="star filled">★</span>
+            <span class="star filled">★</span><span class="star filled">★</span>
+            <span class="star empty">★</span>
+          </div>
+          <span class="rating-num">4.1</span>
+          <span class="rating-count">(19 reseñas)</span>
+        </div>
+        <div class="card-meta">
+          <span class="meta-item">🛏 4 habitaciones</span>
+          <span class="meta-item">👤 propietario4</span>
+        </div>
+        <div class="card-meals">
+          <span class="meal-tag included">🍳 Desayuno</span>
+          <span class="meal-tag included">🍽 Almuerzo</span>
+          <span class="meal-tag">🌙 Cena</span>
+        </div>
+      </div>
+      <div class="card-footer">
+        <div class="card-price">110,00€ <span>/ noche</span></div>
+        <button class="btn-details">Ver detalles</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ══════════════════════════════════════
+     FAB — solo visible para ADMIN
+════════════════════════════════════════ -->
+<button class="fab" title="Registrar alojamiento">+</button>
+<div class="fab-tooltip">Registrar alojamiento</div>
+
+
+<!-- Interactividad básica de chips y FAB -->
+<script>
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+</script>
+
+</body>
+</html>
