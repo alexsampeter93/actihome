@@ -32,8 +32,14 @@ public enum Season {
 	VERANO("Verano", "Estancias de verano — Sol alto, luz dorada y sombra fresca",
 			0xC0870F, 0xFBF3E1, 0x33291A, 0x2B2513, 0x8C7F60, 0xF2E6C2, new Color(245, 195, 70, 46)),
 
+	// Otoño se aparta del handoff a propósito (ADR-005). Los valores originales
+	// (acc #A9701F, hdr #38291A, mut #8A7D66) eran casi los mismos que los de
+	// verano: siete grados de matiz de diferencia en el acento y cabeceras
+	// prácticamente idénticas. Dos estaciones que se ven igual vacían de sentido el
+	// selector. Aquí el matiz se desplaza hacia el terracota y se baja la
+	// saturación: verano es oro de sol, otoño es tierra y hoja seca.
 	OTONO("Otoño", "Estancias de otoño — Hojas, viñedos y tardes doradas",
-			0xA9701F, 0xF4EDE0, 0x38291A, 0x29200F, 0x8A7D66, 0xEADFC9, new Color(170, 110, 30, 46)),
+			0x9C5A2E, 0xF1EAE0, 0x3D2820, 0x2E211A, 0x8A7566, 0xE6DACB, new Color(150, 85, 45, 51)),
 
 	INVIERNO("Invierno", "Estancias de invierno — Nieve, chimenea y luz de dusk",
 			0x5A5B86, 0xECECF1, 0x242539, 0x22233A, 0x7C7C93, 0xDDDCE6, new Color(96, 98, 150, 38));
