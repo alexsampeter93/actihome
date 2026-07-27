@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Random;
@@ -72,6 +73,38 @@ public class ReservationServiceTests {
 				"Descripción breve", true, false, false, "Playa del Orzán", ownerId);
 	}
 
+	// ------------------------------------------------------------------
+	// Fechas de prueba
+	//
+	// Estas fechas eran constantes escritas a mano (LocalDateTime.of(2026, 2, 9...)).
+	// Funcionaron mientras esa fecha estuvo en el futuro y empezaron a fallar en
+	// cuanto pasó: reserveHousing rechaza cualquier entrada anterior a hoy, así que
+	// lanzaba MustBeTodayOrAfterException antes de llegar a la regla que el test
+	// quería comprobar.
+	//
+	// La regla general: un test nunca debe depender del calendario. Si necesita una
+	// fecha futura, la calcula desde hoy.
+	//
+	// Se usa LocalDate.now() y no LocalDateTime.now() a propósito: así la diferencia
+	// entre entrada y salida es exactamente de cuatro días naturales, sin que influya
+	// la hora a la que se ejecute el test.
+	// ------------------------------------------------------------------
+
+	/** Entrada válida: dentro de una semana. */
+	private LocalDateTime entrada() {
+		return LocalDate.now().plusDays(7).atTime(10, 30);
+	}
+
+	/** Salida válida: cuatro noches después de la entrada. */
+	private LocalDateTime salida() {
+		return LocalDate.now().plusDays(11).atTime(10, 30);
+	}
+
+	/** Entrada que ya pasó, para comprobar la regla de "hoy o después". */
+	private LocalDateTime entradaEnElPasado() {
+		return LocalDate.now().minusDays(1).atTime(10, 30);
+	}
+
 	@Test
 	public void testReserveHousing()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
@@ -83,7 +116,7 @@ public class ReservationServiceTests {
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 10, 30));
+				"1234567890123456", entrada(), salida());
 
 		Reservation myReservation = reservationDao.findById(reservation.getId()).get();
 
@@ -106,7 +139,7 @@ public class ReservationServiceTests {
 
 		assertThrows(InstanceNotFoundException.class,
 				() -> reservationService.reserveHousing(customer.getId(), Long.valueOf(125), "1234567890123456",
-						LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 10, 30)));
+						entrada(), salida()));
 	}
 
 	@Test
@@ -119,7 +152,7 @@ public class ReservationServiceTests {
 
 		assertThrows(MustBeTodayOrAfterException.class,
 				() -> reservationService.reserveHousing(customer.getId(), housing.getId(), "1234567890123456",
-						LocalDateTime.of(2025, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 10, 30)));
+						entradaEnElPasado(), salida()));
 	}
 
 	@Test
@@ -132,7 +165,7 @@ public class ReservationServiceTests {
 
 		assertThrows(CheckOutMustBeOneDayAfterException.class,
 				() -> reservationService.reserveHousing(customer.getId(), housing.getId(), "1234567890123456",
-						LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 9, 12, 30)));
+						entrada(), entrada().plusHours(2)));
 	}
 
 	@Test
@@ -145,7 +178,7 @@ public class ReservationServiceTests {
 
 		assertThrows(WrongCreditCardNumberException.class,
 				() -> reservationService.reserveHousing(customer.getId(), housing.getId(), "123456789012346",
-						LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 12, 30)));
+						entrada(), salida()));
 	}
 
 	@Test
@@ -159,7 +192,7 @@ public class ReservationServiceTests {
 
 		assertThrows(AlreadyReservedException.class,
 				() -> reservationService.reserveHousing(customer.getId(), housing.getId(), "1234567890123456",
-						LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 12, 30)));
+						entrada(), salida()));
 	}
 
 	@Test
@@ -172,7 +205,7 @@ public class ReservationServiceTests {
 
 		assertThrows(NotAuthorizedUserException.class,
 				() -> reservationService.reserveHousing(owner.getId(), housing.getId(), "1234567890123456",
-						LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 12, 30)));
+						entrada(), salida()));
 	}
 
 	@Test
@@ -190,15 +223,15 @@ public class ReservationServiceTests {
 		Housing housing5 = createHousing(Long.valueOf(54), owner.getId());
 
 		Reservation reservation1 = reservationService.reserveHousing(customer.getId(), housing1.getId(),
-				"1234567890123456", LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 10, 30));
+				"1234567890123456", entrada(), salida());
 		Reservation reservation2 = reservationService.reserveHousing(customer.getId(), housing2.getId(),
-				"1234567890123456", LocalDateTime.of(2026, 3, 9, 10, 30), LocalDateTime.of(2026, 3, 13, 10, 30));
+				"1234567890123456", entrada().plusMonths(1), salida().plusMonths(1));
 		Reservation reservation3 = reservationService.reserveHousing(customer.getId(), housing3.getId(),
-				"1234567890123456", LocalDateTime.of(2026, 4, 9, 10, 30), LocalDateTime.of(2026, 4, 13, 10, 30));
+				"1234567890123456", entrada().plusMonths(2), salida().plusMonths(2));
 		Reservation reservation4 = reservationService.reserveHousing(customer.getId(), housing4.getId(),
-				"1234567890123456", LocalDateTime.of(2026, 5, 9, 10, 30), LocalDateTime.of(2026, 5, 13, 10, 30));
+				"1234567890123456", entrada().plusMonths(3), salida().plusMonths(3));
 		Reservation reservation5 = reservationService.reserveHousing(customer.getId(), housing5.getId(),
-				"1234567890123456", LocalDateTime.of(2026, 6, 9, 10, 30), LocalDateTime.of(2026, 6, 13, 10, 30));
+				"1234567890123456", entrada().plusMonths(4), salida().plusMonths(4));
 
 		reservation1.setReservationDate(LocalDateTime.now().plusDays(1));
 		reservation2.setReservationDate(LocalDateTime.now().plusDays(2));
@@ -224,7 +257,7 @@ public class ReservationServiceTests {
 
 		assertThrows(InstanceNotFoundException.class,
 				() -> reservationService.reserveHousing(Long.valueOf(321), housing.getId(), "1234567890123456",
-						LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 10, 30)));
+						entrada(), salida()));
 	}
 
 	@Test
@@ -238,7 +271,7 @@ public class ReservationServiceTests {
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 10, 30));
+				"1234567890123456", entrada(), salida());
 
 		reservation.setCheckIn(LocalDateTime.now().minusHours(1));
 		Reservation checkedInReservation = reservationService.doCkeckIn(customer.getId(), reservation.getId(),
@@ -258,7 +291,7 @@ public class ReservationServiceTests {
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 10, 30));
+				"1234567890123456", entrada(), salida());
 
 		assertThrows(CannotCheckInException.class, () -> reservationService.doCkeckIn(customer.getId(),
 				reservation.getId(), reservation.getReservationCode()));
@@ -275,7 +308,7 @@ public class ReservationServiceTests {
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 10, 30));
+				"1234567890123456", entrada(), salida());
 		reservation.setCheckedIn(true);
 		reservation.setCheckIn(LocalDateTime.now().minusHours(1));
 
@@ -294,7 +327,7 @@ public class ReservationServiceTests {
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 10, 30));
+				"1234567890123456", entrada(), salida());
 		reservation.setCheckedIn(true);
 
 		assertThrows(CodeDoesNotMatchException.class,
@@ -313,7 +346,7 @@ public class ReservationServiceTests {
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer1.getId(), housing.getId(),
-				"1234567890123456", LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 10, 30));
+				"1234567890123456", entrada(), salida());
 		reservation.setCheckedIn(true);
 
 		assertThrows(NotMyReservationException.class, () -> reservationService.doCkeckIn(customer2.getId(),
@@ -330,7 +363,7 @@ public class ReservationServiceTests {
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", LocalDateTime.of(2026, 2, 9, 10, 30), LocalDateTime.of(2026, 2, 13, 10, 30));
+				"1234567890123456", entrada(), salida());
 		reservation.setCheckedIn(true);
 
 		assertThrows(InstanceNotFoundException.class, () -> reservationService.doCkeckIn(customer.getId(),

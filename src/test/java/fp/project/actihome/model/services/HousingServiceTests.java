@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +51,27 @@ public class HousingServiceTests {
 		}
 
 		return user;
+	}
+
+	/**
+	 * Se queda solo con los alojamientos de un propietario.
+	 *
+	 * <p>
+	 * Varios tests comprobaban posiciones absolutas de la lista devuelta
+	 * ({@code assertEquals(lista.get(0), miPrimerAlojamiento)}), lo que da por hecho
+	 * que la base de datos está vacía. No lo está: {@code data.sql} siembra cinco
+	 * alojamientos en cada arranque, así que esas posiciones eran de los sembrados.
+	 *
+	 * <p>
+	 * Filtrar por propietario conserva lo que el test quería comprobar —el orden en
+	 * que el servicio devuelve los alojamientos— sin depender de qué más haya en la
+	 * tabla. Un test debe verificar su propio efecto, no el estado del mundo.
+	 */
+	private List<Housing> soloDe(List<Housing> housings, User owner) {
+
+		return housings.stream()
+				.filter(housing -> housing.getOwner().getId().equals(owner.getId()))
+				.collect(Collectors.toList());
 	}
 
 	@Test
@@ -243,11 +267,7 @@ public class HousingServiceTests {
 
 		housingsList = housingService.showHousings();
 
-		assertEquals(housingsList.get(0), housing1);
-		assertEquals(housingsList.get(1), housing2);
-		assertEquals(housingsList.get(2), housing3);
-		assertEquals(housingsList.get(3), housing4);
-		assertEquals(housingsList.get(4), housing5);
+		assertEquals(Arrays.asList(housing1, housing2, housing3, housing4, housing5), soloDe(housingsList, owner));
 	}
 
 	@Test
@@ -270,10 +290,8 @@ public class HousingServiceTests {
 
 		housingsList = housingService.filterHousingsByType("Casa");
 
-		assertEquals(housingsList.get(0), housing1);
-		assertEquals(housingsList.get(1), housing2);
-		assertEquals(housingsList.get(2), housing4);
-		assertEquals(housingsList.get(3), housing5);
+		// El "Chalet" queda fuera del filtro; los otros cuatro entran.
+		assertEquals(Arrays.asList(housing1, housing2, housing4, housing5), soloDe(housingsList, owner));
 	}
 
 	@Test
@@ -296,8 +314,8 @@ public class HousingServiceTests {
 
 		housingsList = housingService.filterHousingsByMinimumRooms(6);
 
-		assertEquals(housingsList.get(0), housing3);
-		assertEquals(housingsList.get(1), housing5);
+		// Solo los de 6 y 10 habitaciones superan el mínimo.
+		assertEquals(Arrays.asList(housing3, housing5), soloDe(housingsList, owner));
 	}
 
 	@Test
