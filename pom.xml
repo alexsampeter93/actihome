@@ -17,6 +17,7 @@
 		<java.version>11</java.version>
 		<flatlaf.version>3.7.2</flatlaf.version>
 		<miglayout.version>11.4.2</miglayout.version>
+		<exec.mainClass>fp.project.actihome.ui.theme.ThemePreview</exec.mainClass>
 	</properties>
 	<dependencies>
 		<!-- ==== Capa de presentación (rediseño de UI) ==== -->
@@ -87,15 +88,24 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
 
-			<!-- Lanza la guía de estilo con:  mvnw compile exec:java
-				(sin Spring y sin base de datos). Es un plugin de construcción: no añade
-				ninguna dependencia a la aplicación. -->
+			<!-- Herramientas de desarrollo del sistema de diseño, sin Spring ni base de
+				datos. Es un plugin de construcción: no añade dependencias a la aplicación.
+
+				Guía de estilo interactiva:
+					mvnw compile exec:java
+				Generar las capturas de las cuatro estaciones:
+					mvnw compile exec:java -Dexec.mainClass=fp.project.actihome.ui.theme.ThemeSnapshots
+
+				El main por defecto se declara como propiedad y no directamente en la
+				configuración del plugin: la configuración del pom tiene prioridad sobre
+				-D en la línea de comandos, así que escribirlo aquí impediría cambiarlo
+				al invocar. Con la indirección, -D sí lo sobrescribe. -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>exec-maven-plugin</artifactId>
 				<version>3.5.0</version>
 				<configuration>
-					<mainClass>fp.project.actihome.ui.theme.ThemePreview</mainClass>
+					<mainClass>${exec.mainClass}</mainClass>
 				</configuration>
 			</plugin>
 		</plugins>
