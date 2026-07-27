@@ -1,0 +1,105 @@
+package fp.project.actihome.ui.theme;
+
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.imageio.ImageIO;
+
+/**
+ * Carga las imágenes de marca empaquetadas en el jar.
+ *
+ * <p>
+ * Un único sitio desde el que pedirlas, con caché y con ausencia elegante: si
+ * un archivo falta, se devuelve {@code null} y quien lo pidió decide qué hacer,
+ * en lugar de reventar la aplicación por un recurso decorativo.
+ *
+ * <p>
+ * <b>Por qué las imágenes viven en {@code src/main/resources} y no en
+ * {@code assets/}.</b> La carpeta {@code assets/} es el archivo de originales:
+ * ilustraciones a 1024 y 1152 píxeles que pesan más de un mega cada una. Lo que
+ * viaja dentro del jar son versiones reducidas al tamaño en que se van a
+ * mostrar. La diferencia es de 29 MB a menos de 3, y la calidad en pantalla es
+ * la misma: escalar una imagen enorme en cada pintado no la mejora, solo gasta
+ * memoria y tiempo.
+ */
+public final class BrandAssets {
+
+	/** Tamaños del icono de aplicación. Windows elige el que mejor le encaja en cada sitio. */
+	private static final int[] TAMANOS_ICONO = { 16, 32, 48, 64, 128, 256 };
+
+	private static final Map<String, BufferedImage> CACHE = new HashMap<>();
+
+	private BrandAssets() {
+	}
+
+	/**
+	 * El icono de la aplicación, en todos sus tamaños.
+	 *
+	 * <p>
+	 * Se devuelve una lista y no una sola imagen porque Windows usa tamaños
+	 * distintos según el sitio: 16px en la esquina de la ventana, 32px al alternar
+	 * con Alt+Tab, 48px o más en la barra de tareas. Dándole todas las versiones,
+	 * cada una se ve nítida; dándole solo una, el sistema la escala y se
+	 * emborrona.
+	 */
+	public static List<Image> iconosDeAplicacion() {
+
+		List<Image> iconos = new ArrayList<>();
+
+		for (int tamano : TAMANOS_ICONO) {
+			BufferedImage imagen = cargar("/images/brand/actihome-icon-" + tamano + ".png");
+			if (imagen != null) {
+				iconos.add(imagen);
+			}
+		}
+
+		return iconos;
+	}
+
+	/** Lockup circular "CocoBrain presenta" del splash. */
+	public static BufferedImage lockupCocoBrain() {
+		return cargar("/images/brand/cocobrain-presenta.png");
+	}
+
+	/** Fondo decorativo. Uso acotado: splash y, si llega a existir, onboarding. */
+	public static BufferedImage fondo() {
+		return cargar("/images/brand/fondo.png");
+	}
+
+	/** Olaz en la variante de una estación. */
+	public static BufferedImage olaz(Season estacion) {
+		return cargar("/images/olaz/olaz-" + estacion.name().toLowerCase() + ".png");
+	}
+
+	private static BufferedImage cargar(String ruta) {
+
+		if (CACHE.containsKey(ruta)) {
+			return CACHE.get(ruta);
+		}
+
+		try (InputStream in = BrandAssets.class.getResourceAsStream(ruta)) {
+
+			// Se guarda también el null: así un recurso que falta se busca una sola vez
+			// en lugar de en cada repintado.
+			BufferedImage imagen = in == null ? null : ImageIO.read(in);
+			CACHE.put(ruta, imagen);
+
+			if (imagen == null) {
+				System.err.println("[BrandAssets] No se encontró " + ruta);
+			}
+
+			return imagen;
+
+		} catch (IOException e) {
+			System.err.println("[BrandAssets] No se pudo leer " + ruta + ": " + e.getMessage());
+			CACHE.put(ruta, null);
+			return null;
+		}
+	}
+}

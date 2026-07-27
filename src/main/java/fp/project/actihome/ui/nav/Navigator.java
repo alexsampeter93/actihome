@@ -1,5 +1,7 @@
 package fp.project.actihome.ui.nav;
 
+import java.awt.Image;
+import java.util.List;
 import java.util.function.Consumer;
 
 import javax.swing.JFrame;
@@ -8,6 +10,8 @@ import javax.swing.WindowConstants;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+
+import fp.project.actihome.ui.theme.BrandAssets;
 
 /**
  * Único responsable de abrir y cerrar ventanas.
@@ -102,6 +106,15 @@ public class Navigator {
 		// y dejar el proceso vivo, que es el comportamiento por defecto de Swing, solo
 		// sirve para dejar javaw.exe consumiendo memoria sin que nadie lo sepa.
 		ventana.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+		// El icono se pone aquí y no en cada pantalla: es el navegador quien las
+		// muestra, así que es el único sitio por el que pasan todas. Si mañana se añade
+		// una ventana, hereda el icono sin que nadie tenga que acordarse.
+		List<Image> iconos = BrandAssets.iconosDeAplicacion();
+
+		if (!iconos.isEmpty()) {
+			ventana.setIconImages(iconos);
+		}
 
 		visible = ventana;
 		ventana.setVisible(true);

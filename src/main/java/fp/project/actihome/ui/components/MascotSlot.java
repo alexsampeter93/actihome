@@ -6,14 +6,10 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.EnumMap;
-import java.util.Map;
 
-import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 
+import fp.project.actihome.ui.theme.BrandAssets;
 import fp.project.actihome.ui.theme.Season;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
@@ -51,18 +47,6 @@ import fp.project.actihome.ui.theme.Typography;
 public class MascotSlot extends JComponent {
 
 	private static final long serialVersionUID = 1L;
-
-	/** Ruta esperada dentro del jar: /images/olaz/olaz-verano.png, etc. */
-	private static final String RUTA = "/images/olaz/olaz-%s.png";
-
-	/**
-	 * Caché de imágenes ya cargadas. Sin ella se leería el archivo del disco en
-	 * cada repintado, es decir, decenas de veces por segundo al redimensionar.
-	 */
-	private static final Map<Season, BufferedImage> CACHE = new EnumMap<>(Season.class);
-
-	/** Estaciones cuya imagen ya se ha buscado y no existe: no se reintenta. */
-	private static final Map<Season, Boolean> NO_ENCONTRADA = new EnumMap<>(Season.class);
 
 	public enum Tamano {
 
@@ -140,31 +124,8 @@ public class MascotSlot extends JComponent {
 
 	private static BufferedImage cargar(Season estacion) {
 
-		if (CACHE.containsKey(estacion)) {
-			return CACHE.get(estacion);
-		}
-
-		if (Boolean.TRUE.equals(NO_ENCONTRADA.get(estacion))) {
-			return null;
-		}
-
-		String ruta = String.format(RUTA, estacion.name().toLowerCase());
-
-		try (InputStream in = MascotSlot.class.getResourceAsStream(ruta)) {
-
-			if (in == null) {
-				NO_ENCONTRADA.put(estacion, Boolean.TRUE);
-				return null;
-			}
-
-			BufferedImage imagen = ImageIO.read(in);
-			CACHE.put(estacion, imagen);
-			return imagen;
-
-		} catch (IOException e) {
-			System.err.println("[MascotSlot] No se pudo leer " + ruta + ": " + e.getMessage());
-			NO_ENCONTRADA.put(estacion, Boolean.TRUE);
-			return null;
-		}
+		// La carga y la caché viven en BrandAssets, que es el único sitio del proyecto
+		// que sabe leer imágenes empaquetadas. Este componente solo sabe dibujarlas.
+		return BrandAssets.olaz(estacion);
 	}
 }

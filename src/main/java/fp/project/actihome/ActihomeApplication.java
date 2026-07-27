@@ -13,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import fp.project.actihome.ui.LoginFrame;
+import fp.project.actihome.ui.brand.SplashScreen;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
 
@@ -29,6 +30,11 @@ public class ActihomeApplication {
 		// defecto de Java.
 		ActiHomeTheme.install();
 
+		// El splash se muestra antes de arrancar Spring, que es lo que tarda unos tres
+		// segundos: así aparece de inmediato y esos segundos dejan de ser un vacío en
+		// el que no ocurre nada.
+		SplashScreen.mostrar();
+
 		SpringApplication app = new SpringApplication(ActihomeApplication.class);
 		app.setWebApplicationType(WebApplicationType.NONE);
 		// Se arranca con la instancia configurada (app.run) en lugar de con el método
@@ -38,8 +44,13 @@ public class ActihomeApplication {
 
 		// La primera ventana también se abre por el navegador: así queda registrada
 		// como ventana visible y recibe el mismo tratamiento que las demás (entre otras
-		// cosas, que pulsar la X cierre la aplicación de verdad).
+		// cosas, el icono y que pulsar la X cierre la aplicación de verdad).
 		EventQueue.invokeLater(() -> context.getBean(Navigator.class).ir(LoginFrame.class));
+
+		// El splash se retira cuando el login ya está pedido. Espera por su cuenta a
+		// haber estado un mínimo en pantalla, para que en un arranque rápido no
+		// parpadee.
+		SplashScreen.cerrar();
 	}
 
 	@Bean
