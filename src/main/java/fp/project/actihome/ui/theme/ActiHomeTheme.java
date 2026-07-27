@@ -50,6 +50,14 @@ public final class ActiHomeTheme {
 		// oscuro no está en el alcance actual.
 		FlatLightLaf.setup();
 
+		// Carga y registra Spectral y Manrope, empaquetadas en el jar.
+		Typography.register();
+
+		// Fuente por defecto de toda la interfaz. FlatLaf usa la clave "defaultFont"
+		// como base para todos los componentes que no definan la suya, así que esta
+		// única línea cambia la tipografía de la aplicación entera.
+		UIManager.put("defaultFont", Typography.sans(14f));
+
 		// --- Ajustes globales alineados con la dirección editorial ---
 		//
 		// El handoff pide "estética afilada": radios de 2-4px en superficies, nada
