@@ -72,9 +72,25 @@ public enum Season {
 		return nombre;
 	}
 
-	/** Frase editorial que encabeza el catálogo en esta estación. */
+	/** Frase editorial completa: "Estancias de verano — Sol alto, luz dorada y sombra fresca". */
 	public String etiqueta() {
 		return etiqueta;
+	}
+
+	/**
+	 * Solo la parte poética de la frase: "Sol alto, luz dorada y sombra fresca".
+	 *
+	 * <p>
+	 * En sitios estrechos —el panel de marca del login, por ejemplo— la frase
+	 * entera no cabe y se corta con puntos suspensivos, que es la peor forma de
+	 * mostrar una frase escrita con cuidado. La primera mitad ("Estancias de
+	 * verano") además suele ser redundante, porque la estación ya se sabe por el
+	 * contexto.
+	 */
+	public String frase() {
+
+		int guion = etiqueta.indexOf('—');
+		return guion < 0 ? etiqueta : etiqueta.substring(guion + 1).trim();
 	}
 
 	/** Acento: botones, elementos activos, precios destacados. */

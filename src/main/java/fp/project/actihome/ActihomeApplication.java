@@ -13,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import fp.project.actihome.ui.LoginFrame;
+import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
 
 @SpringBootApplication
@@ -35,10 +36,10 @@ public class ActihomeApplication {
 		// descartaba silenciosamente el setWebApplicationType de la línea anterior.
 		ConfigurableApplicationContext context = app.run(args);
 
-		EventQueue.invokeLater(() -> {
-			LoginFrame loginFrame = context.getBean(LoginFrame.class);
-			loginFrame.setVisible(true);
-		});
+		// La primera ventana también se abre por el navegador: así queda registrada
+		// como ventana visible y recibe el mismo tratamiento que las demás (entre otras
+		// cosas, que pulsar la X cierre la aplicación de verdad).
+		EventQueue.invokeLater(() -> context.getBean(Navigator.class).ir(LoginFrame.class));
 	}
 
 	@Bean

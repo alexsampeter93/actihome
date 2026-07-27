@@ -56,6 +56,21 @@ public final class Theme {
 	public static final Color ON_ACCENT = Color.WHITE;
 
 	/**
+	 * Rojo de error, común a las cuatro estaciones.
+	 *
+	 * <p>
+	 * No es un token estacional a propósito. El color de un error <b>no debe
+	 * cambiar</b> con el tema: es la única señal de la interfaz que el usuario debe
+	 * reconocer al instante y siempre igual. Un error que en primavera es verdoso y
+	 * en invierno azulado deja de leerse como error.
+	 *
+	 * <p>
+	 * Es un rojo apagado y terroso, no un rojo puro de alerta: encaja con la
+	 * dirección editorial y evita el aire de formulario web roto.
+	 */
+	public static final Color DANGER = new Color(0xA33A2E);
+
+	/**
 	 * Texto secundario <b>sobre fondo oscuro</b> (la barra de cabecera).
 	 *
 	 * <p>

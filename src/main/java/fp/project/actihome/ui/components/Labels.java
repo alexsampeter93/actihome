@@ -100,6 +100,16 @@ public final class Labels {
 		return crear(texto, Typography.serifItalic(16f), Theme::acc);
 	}
 
+	/** Frase editorial en cursiva sobre fondo oscuro. */
+	public static JLabel editorialOnHeader(String texto) {
+		return crear(texto, Typography.serifItalic(17f), Theme::mutSobreOscuro);
+	}
+
+	/** Mensaje de error junto a un formulario. */
+	public static JLabel error(String texto) {
+		return crear(texto, Typography.sansSemiBold(Typography.BODY_SM), () -> Theme.DANGER);
+	}
+
 	private static JLabel crear(String texto, java.awt.Font fuente, Supplier<Color> color) {
 
 		JLabel etiqueta = new ThemedLabel(texto, color);

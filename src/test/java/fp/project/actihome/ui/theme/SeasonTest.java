@@ -66,6 +66,36 @@ class SeasonTest {
 	}
 
 	@Test
+	void laFraseSeQuedaSoloConLaParteDespuesDelGuion() {
+
+		assertEquals("Sol alto, luz dorada y sombra fresca", Season.VERANO.frase());
+		assertEquals("Hojas, viñedos y tardes doradas", Season.OTONO.frase());
+
+		// Todas deben tener parte poética: si alguna etiqueta se escribiera sin guion,
+		// frase() devolvería la etiqueta entera y el panel del login se cortaría.
+		for (Season estacion : Season.values()) {
+			org.junit.jupiter.api.Assertions.assertNotEquals(estacion.etiqueta(), estacion.frase(),
+					estacion + ": la etiqueta debe llevar guion largo separando la frase");
+		}
+	}
+
+	@Test
+	void otonoYVeranoSonColoresDistinguibles() {
+
+		// Los valores del handoff hacían las dos estaciones casi idénticas (ADR-005).
+		// Este test fija la corrección: si alguien vuelve a acercarlas, salta.
+		java.awt.Color verano = Season.VERANO.acc();
+		java.awt.Color otono = Season.OTONO.acc();
+
+		int distancia = Math.abs(verano.getRed() - otono.getRed())
+				+ Math.abs(verano.getGreen() - otono.getGreen())
+				+ Math.abs(verano.getBlue() - otono.getBlue());
+
+		org.junit.jupiter.api.Assertions.assertTrue(distancia > 90,
+				"Verano y otoño deben distinguirse a simple vista; distancia actual: " + distancia);
+	}
+
+	@Test
 	void elHexadecimalSeFormateaComoLoEsperaFlatLaf() {
 
 		assertEquals("#4E7A3E", Season.hex(Season.PRIMAVERA.acc()));

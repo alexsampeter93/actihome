@@ -94,6 +94,22 @@ public class Field extends JPanel {
 		return input;
 	}
 
+	/**
+	 * Ejecuta una acción al pulsar Enter dentro del campo.
+	 *
+	 * <p>
+	 * Obligar a soltar el teclado y coger el ratón para enviar un formulario de dos
+	 * campos es de las molestias más innecesarias que puede tener una interfaz.
+	 * {@code JPasswordField} hereda de {@code JTextField}, así que la comprobación
+	 * cubre los dos tipos de campo.
+	 */
+	public void onEnter(Runnable accion) {
+
+		if (input instanceof JTextField) {
+			((JTextField) input).addActionListener(e -> accion.run());
+		}
+	}
+
 	@Override
 	public void requestFocus() {
 		input.requestFocus();

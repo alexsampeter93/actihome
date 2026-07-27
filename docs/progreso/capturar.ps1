@@ -15,7 +15,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Nombre,
 
-    [string]$Titulo = "Actihome",
+    [string]$Titulo = "ActiHome",
 
     [string]$Destino = (Join-Path $PSScriptRoot "")
 )
