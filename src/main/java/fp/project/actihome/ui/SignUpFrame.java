@@ -110,13 +110,17 @@ public class SignUpFrame extends JFrame {
 		// pegado un número. Concatenar Space.LG detrás produjo "push20", que MigLayout
 		// rechaza en tiempo de ejecución (las restricciones son cadenas: el compilador
 		// no las revisa, el fallo aparece al construir la ventana).
+		// El contenido se limita a 940px y se centra. Al maximizar la ventana, sin ese
+		// tope, los ocho campos se estiraban hasta más de mil píxeles cada uno: un
+		// campo de texto tan largo para escribir un nombre se percibe como un error de
+		// maquetación, y el ojo pierde la línea al recorrerlo.
 		JPanel raiz = new JPanel(new MigLayout("wrap 1, fill, " + Space.insets(Space.XXXL, Space.GIANT, Space.XXL,
 				Space.GIANT), "[grow,fill]", "[]" + Space.XL + "[]push[]"));
 		raiz.setBackground(Theme.bg());
 
-		raiz.add(cabecera(), "growx");
-		raiz.add(campos(), "growx");
-		raiz.add(pie(), "growx");
+		raiz.add(cabecera(), "growx, wmin 0, wmax 940, align center");
+		raiz.add(campos(), "growx, wmin 0, wmax 940, align center");
+		raiz.add(pie(), "growx, wmin 0, wmax 940, align center");
 
 		setContentPane(raiz);
 	}

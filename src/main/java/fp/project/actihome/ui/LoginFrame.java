@@ -111,11 +111,20 @@ public class LoginFrame extends JFrame {
 		setContentPane(raiz);
 	}
 
-	/** Mitad izquierda: fondo oscuro, claim y mascota. */
+	/**
+	 * Mitad izquierda: fondo oscuro, claim y mascota.
+	 *
+	 * <p>
+	 * El contenido se limita a 560px y se centra. Sin ese tope, al maximizar la
+	 * ventana el bloque se repartía por una columna de más de mil píxeles y quedaba
+	 * un hueco enorme entre el claim y la mascota. <b>Que un layout crezca no
+	 * significa que su contenido deba crecer con él</b>: lo que crece es el aire
+	 * alrededor.
+	 */
 	private JPanel panelDeMarca() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, fill, " + Space.insets(Space.GIANT, Space.XXXL, Space.XXXL,
-				Space.XXXL), "[grow,fill]", "[]" + Space.XL + "[]0[]push[]" + Space.MD + "[]")) {
+				Space.XXXL), "[grow,fill]", "[]push[]0[]" + Space.XL + "[]push[]" + Space.XXS + "[]")) {
 
 			private static final long serialVersionUID = 1L;
 
@@ -143,7 +152,7 @@ public class LoginFrame extends JFrame {
 		JLabel marca = new JLabel("ActiHome");
 		marca.setFont(Typography.serifMedium(30f));
 		marca.setForeground(Theme.bg());
-		panel.add(marca);
+		panel.add(marca, "wmin 0, wmax 560");
 
 		// Dos etiquetas en lugar de una con <html><br></html>: el renderizado HTML de
 		// Swing calcula sus tamaños por su cuenta y se lleva mal con las fuentes
@@ -152,12 +161,12 @@ public class LoginFrame extends JFrame {
 		// espacio de los rasgos ascendentes y descendentes, así que dos etiquetas
 		// apiladas dejan más aire del que pide una serif de display: se lee como dos
 		// frases sueltas en vez de como una sola en dos líneas.
-		panel.add(claim("Elige dónde"), "wmin 0");
-		panel.add(claim("quieres despertar"), "wmin 0, gaptop -10");
+		panel.add(claim("Elige dónde"), "wmin 0, wmax 560");
+		panel.add(claim("quieres despertar"), "wmin 0, wmax 560, gaptop -10");
 
-		panel.add(new MascotSlot(MascotSlot.Tamano.GRANDE), "align center");
-		panel.add(Labels.editorialOnHeader(Theme.estacion().frase()), "wmin 0");
-		panel.add(Labels.capsOnHeader("por CocoBrain"), "wmin 0");
+		panel.add(new MascotSlot(MascotSlot.Tamano.GRANDE), "align left");
+		panel.add(Labels.editorialOnHeader(Theme.estacion().frase()), "wmin 0, wmax 560");
+		panel.add(Labels.capsOnHeader("por CocoBrain"), "wmin 0, wmax 560");
 
 		return panel;
 	}
@@ -171,7 +180,17 @@ public class LoginFrame extends JFrame {
 		return etiqueta;
 	}
 
-	/** Mitad derecha: el formulario. */
+	/**
+	 * Mitad derecha: el formulario.
+	 *
+	 * <p>
+	 * <b>El formulario tiene un ancho máximo y se centra.</b> Al maximizar la
+	 * ventana, sin ese tope, el campo de usuario llegaba a medir mil píxeles: un
+	 * campo así es incómodo de leer y de rellenar —el ojo pierde la línea— y una
+	 * caja tan larga para escribir ocho letras se percibe como un error de
+	 * maquetación. La medida cómoda de un formulario ronda los 400-450px
+	 * independientemente del tamaño de la pantalla.
+	 */
 	private JPanel formulario() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.GIANT, Space.GIANT, Space.XXXL,
@@ -179,24 +198,28 @@ public class LoginFrame extends JFrame {
 						+ Space.XS + "[]" + Space.LG + "[]" + Space.XXL + "[]push"));
 		panel.setOpaque(false);
 
-		panel.add(Labels.capsAccent("Acceso"));
-		panel.add(Labels.title("Bienvenido de nuevo"));
+		// Tope de ancho aplicado a cada fila del formulario, y alineado a la izquierda
+		// dentro de la mitad para que no baile respecto al panel de marca.
+		String ancho = "wmin 0, wmax 440";
+
+		panel.add(Labels.capsAccent("Acceso"), ancho);
+		panel.add(Labels.title("Bienvenido de nuevo"), ancho);
 
 		usuario = Field.text("Nombre de usuario");
-		panel.add(usuario);
+		panel.add(usuario, ancho);
 
 		contrasena = Field.password("Contraseña");
-		panel.add(contrasena);
+		panel.add(contrasena, ancho);
 
 		// Se reserva el hueco del error desde el principio, con un espacio en blanco.
 		// Si el mensaje apareciera de la nada, el formulario entero daría un salto al
 		// fallar el login, y ese salto es justo cuando el usuario está mirando.
 		error = Labels.error(" ");
-		panel.add(error);
+		panel.add(error, ancho);
 
-		panel.add(Buttons.primary("Entrar", e -> entrar()), "growx, height 44!");
+		panel.add(Buttons.primary("Entrar", e -> entrar()), ancho + ", growx, height 44!");
 
-		panel.add(enlaceARegistro());
+		panel.add(enlaceARegistro(), ancho);
 
 		// Enter envía el formulario desde cualquiera de los dos campos.
 		usuario.onEnter(this::entrar);
