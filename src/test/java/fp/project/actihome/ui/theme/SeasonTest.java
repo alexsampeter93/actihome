@@ -1,0 +1,74 @@
+package fp.project.actihome.ui.theme;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.time.LocalDate;
+
+import org.junit.jupiter.api.Test;
+
+/**
+ * Comprueba el cálculo de la estación a partir de la fecha.
+ *
+ * <p>
+ * Es un test de JUnit puro: no lleva {@code @SpringBootTest}, así que no
+ * levanta el contexto de Spring ni necesita base de datos. Se ejecuta en
+ * milisegundos y en cualquier máquina.
+ *
+ * <p>
+ * Se prueba {@code actualPara(fecha)} en vez de {@code actual()} precisamente
+ * para poder fijar la fecha: un test que dependiera del reloj del sistema daría
+ * resultados distintos según el día en que se ejecute, que es la definición de
+ * test inútil.
+ */
+class SeasonTest {
+
+	@Test
+	void cadaEstacionEmpiezaYAcabaCuandoDebe() {
+
+		assertEquals(Season.PRIMAVERA, Season.actualPara(LocalDate.of(2026, 3, 20)));
+		assertEquals(Season.PRIMAVERA, Season.actualPara(LocalDate.of(2026, 6, 20)));
+
+		assertEquals(Season.VERANO, Season.actualPara(LocalDate.of(2026, 6, 21)));
+		assertEquals(Season.VERANO, Season.actualPara(LocalDate.of(2026, 9, 22)));
+
+		assertEquals(Season.OTONO, Season.actualPara(LocalDate.of(2026, 9, 23)));
+		assertEquals(Season.OTONO, Season.actualPara(LocalDate.of(2026, 12, 20)));
+
+		assertEquals(Season.INVIERNO, Season.actualPara(LocalDate.of(2026, 12, 21)));
+		assertEquals(Season.INVIERNO, Season.actualPara(LocalDate.of(2026, 1, 15)));
+		assertEquals(Season.INVIERNO, Season.actualPara(LocalDate.of(2026, 3, 19)));
+	}
+
+	@Test
+	void unDiaCualquieraDeJulioEsVerano() {
+
+		assertEquals(Season.VERANO, Season.actualPara(LocalDate.of(2026, 7, 27)));
+	}
+
+	@Test
+	void todasLasEstacionesTienenSusSieteTokensYSuEtiqueta() {
+
+		for (Season estacion : Season.values()) {
+
+			assertEquals(255, estacion.acc().getAlpha(), estacion + ": el acento debe ser opaco");
+			assertEquals(255, estacion.bg().getAlpha(), estacion + ": el fondo debe ser opaco");
+			assertEquals(255, estacion.hdr().getAlpha(), estacion + ": la cabecera debe ser opaca");
+			assertEquals(255, estacion.txt().getAlpha(), estacion + ": el texto debe ser opaco");
+			assertEquals(255, estacion.mut().getAlpha(), estacion + ": el secundario debe ser opaco");
+			assertEquals(255, estacion.img().getAlpha(), estacion + ": el hueco de foto debe ser opaco");
+
+			// El velo sí es translúcido: es su razón de ser.
+			org.junit.jupiter.api.Assertions.assertTrue(estacion.imgTint().getAlpha() < 255,
+					estacion + ": el velo de foto debe ser translúcido");
+
+			org.junit.jupiter.api.Assertions.assertFalse(estacion.etiqueta().isEmpty());
+		}
+	}
+
+	@Test
+	void elHexadecimalSeFormateaComoLoEsperaFlatLaf() {
+
+		assertEquals("#4E7A3E", Season.hex(Season.PRIMAVERA.acc()));
+		assertEquals("#FBF3E1", Season.hex(Season.VERANO.bg()));
+	}
+}

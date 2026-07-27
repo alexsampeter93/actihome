@@ -49,6 +49,13 @@ public class Win {
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
     public const int SW_RESTORE = 9;
 
+    // PrintWindow le pide a la ventana que se dibuje sobre un lienzo propio, en vez
+    // de copiar pixeles de la pantalla. Es la diferencia entre capturar la ventana
+    // y capturar "lo que hubiera en ese trozo de monitor": sin esto, cualquier cosa
+    // que tape la app (otra aplicacion, un menu, un juego) sale en la captura.
+    [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr hdc, uint flags);
+    public const uint PW_RENDERFULLCONTENT = 2;
+
     public static IntPtr Buscar(uint targetPid, string titulo) {
         IntPtr encontrada = IntPtr.Zero;
         EnumWindows(delegate(IntPtr h, IntPtr p) {
@@ -94,7 +101,17 @@ $hh = $r.Bottom - $r.Top
 
 $bmp = New-Object System.Drawing.Bitmap $w, $hh
 $g = [System.Drawing.Graphics]::FromImage($bmp)
-$g.CopyFromScreen($r.Left, $r.Top, 0, 0, $bmp.Size)
+
+# Se pide a la propia ventana que se pinte. Si falla (algunos controles no lo
+# soportan), se recurre a copiar de pantalla, que exige que nada la tape.
+$hdc = $g.GetHdc()
+$ok = [Win]::PrintWindow($h, $hdc, [Win]::PW_RENDERFULLCONTENT)
+$g.ReleaseHdc($hdc)
+
+if (-not $ok) {
+    Write-Warning "PrintWindow no funciono en esta ventana; se copia de pantalla. Asegurate de que nada la tapa."
+    $g.CopyFromScreen($r.Left, $r.Top, 0, 0, $bmp.Size)
+}
 
 $ruta = Join-Path $Destino "$Nombre.png"
 $bmp.Save($ruta, [System.Drawing.Imaging.ImageFormat]::Png)

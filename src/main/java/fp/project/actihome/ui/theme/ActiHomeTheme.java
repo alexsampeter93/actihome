@@ -1,9 +1,12 @@
 package fp.project.actihome.ui.theme;
 
 import java.awt.Insets;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.UIManager;
 
+import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 
 /**
@@ -25,9 +28,8 @@ import com.formdev.flatlaf.FlatLightLaf;
  * L&amp;F que hubiera en ese momento.
  *
  * <p>
- * Esta clase es el embrión del sistema de diseño: en la Fase 1 se le añadirán
- * las paletas estacionales y la escala tipográfica. De momento solo fija la base
- * común.
+ * Esta clase es el pegamento entre el sistema de diseño ({@link Season},
+ * {@link Theme}, {@link Typography}) y FlatLaf.
  */
 public final class ActiHomeTheme {
 
@@ -36,7 +38,7 @@ public final class ActiHomeTheme {
 	}
 
 	/**
-	 * Instala el Look and Feel y los ajustes globales de estilo.
+	 * Instala el Look and Feel, la tipografía y la paleta de la estación activa.
 	 */
 	public static void install() {
 
@@ -45,44 +47,87 @@ public final class ActiHomeTheme {
 		System.setProperty("awt.useSystemAAFontSettings", "on");
 		System.setProperty("swing.aatext", "true");
 
-		// Instala FlatLaf en su variante clara. La dirección visual del rediseño es
-		// editorial sobre fondos crema, así que se parte del tema claro; el tema
-		// oscuro no está en el alcance actual.
-		FlatLightLaf.setup();
-
-		// Carga y registra Spectral y Manrope, empaquetadas en el jar.
+		// Las fuentes deben estar cargadas antes de fijarlas como fuente por defecto.
 		Typography.register();
 
-		// Fuente por defecto de toda la interfaz. FlatLaf usa la clave "defaultFont"
-		// como base para todos los componentes que no definan la suya, así que esta
-		// única línea cambia la tipografía de la aplicación entera.
+		// Pinta la aplicación con la estación que toque según la fecha de hoy.
+		aplicarPaleta(Theme.estacion());
+
+		// A partir de aquí, cualquier cambio de estación repinta la aplicación entera.
+		// Ver Theme: quien quiere enterarse se apunta; el emisor no conoce a nadie.
+		Theme.alCambiar(ActiHomeTheme::aplicarPaleta);
+	}
+
+	/**
+	 * Recalcula el Look and Feel con los colores de una estación y repinta todas las
+	 * ventanas abiertas.
+	 *
+	 * <p>
+	 * El orden de las tres operaciones no es negociable y costó entenderlo:
+	 * <ol>
+	 * <li><b>Variables globales primero.</b> FlatLaf no se limita a usar el acento
+	 * donde se lo pides: a partir de él <em>deriva</em> decenas de colores (botón
+	 * pulsado, selección de tabla, anillo de foco, borde deshabilitado...). Ese
+	 * cálculo ocurre al inicializar el tema, así que las variables tienen que estar
+	 * puestas antes.</li>
+	 * <li><b>Reinstalar el tema.</b> Es lo que dispara ese recálculo.</li>
+	 * <li><b>Volver a aplicar nuestros ajustes.</b> Reinstalar el tema
+	 * <em>reinicia</em> la tabla de propiedades de Swing, así que los radios, la
+	 * fuente por defecto y las barras de scroll se perderían si se pusieran
+	 * antes.</li>
+	 * </ol>
+	 */
+	static void aplicarPaleta(Season estacion) {
+
+		Map<String, String> variables = new HashMap<>();
+		variables.put("@accentColor", Season.hex(estacion.acc()));
+		variables.put("@background", Season.hex(estacion.bg()));
+		variables.put("@foreground", Season.hex(estacion.txt()));
+
+		FlatLaf.setGlobalExtraDefaults(variables);
+		FlatLightLaf.setup();
+		aplicarAjustesGlobales();
+
+		// Recorre las ventanas vivas y las obliga a repintarse con la tabla nueva.
+		// En el primer arranque no hay ninguna y la llamada no hace nada.
+		FlatLaf.updateUI();
+	}
+
+	/**
+	 * Ajustes de forma comunes a las cuatro estaciones.
+	 *
+	 * <p>
+	 * Se llaman en cada cambio de paleta porque reinstalar el tema los borra.
+	 */
+	private static void aplicarAjustesGlobales() {
+
+		// Fuente base de toda la interfaz. FlatLaf usa "defaultFont" para cualquier
+		// componente que no defina la suya, así que esta línea cambia la tipografía
+		// de la aplicación entera.
 		UIManager.put("defaultFont", Typography.sans(14f));
 
-		// --- Ajustes globales alineados con la dirección editorial ---
-		//
-		// El handoff pide "estética afilada": radios de 2-4px en superficies, nada
-		// de esquinas muy redondeadas (que es justo lo que da el aire de plantilla
-		// SaaS genérica). Estas claves son las que FlatLaf usa para el radio de
-		// cada familia de componentes; su valor por defecto es 5-6.
+		// El handoff pide "estética afilada": radios de 2-4px. Los valores por defecto
+		// de FlatLaf son 5-6, y los redondeos generosos de 8-12px son justo lo que da
+		// el aire de plantilla SaaS genérica que queremos evitar.
 		UIManager.put("Button.arc", 4);
 		UIManager.put("Component.arc", 4);
 		UIManager.put("CheckBox.arc", 3);
 		UIManager.put("ProgressBar.arc", 4);
+		UIManager.put("TextComponent.arc", 4);
 
 		// Anillo de foco fino: el foco debe verse, pero sin engordar el control.
 		UIManager.put("Component.focusWidth", 1);
 		UIManager.put("Component.innerFocusWidth", 1);
 
-		// Barras de scroll discretas, sin fondo ni botones de flecha: en una
-		// interfaz editorial la barra no debe competir con el contenido.
+		// Barras de scroll discretas, sin fondo ni botones de flecha: en una interfaz
+		// editorial la barra no debe competir con el contenido.
 		UIManager.put("ScrollBar.showButtons", false);
 		UIManager.put("ScrollBar.thumbArc", 999);
 		UIManager.put("ScrollBar.thumbInsets", new Insets(2, 4, 2, 4));
 		UIManager.put("ScrollBar.width", 12);
 
-		// Separación interna por defecto algo más generosa que la de FlatLaf: el
-		// diseño se apoya en el aire como recurso principal.
+		// Separación interna algo más generosa que la de FlatLaf: el diseño se apoya
+		// en el aire como recurso principal.
 		UIManager.put("Button.margin", new Insets(8, 18, 8, 18));
-		UIManager.put("TextComponent.arc", 4);
 	}
 }
