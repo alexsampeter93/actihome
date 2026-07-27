@@ -15,8 +15,39 @@
 	<description>Demo project for Spring Boot</description>
 	<properties>
 		<java.version>11</java.version>
+		<flatlaf.version>3.7.2</flatlaf.version>
+		<miglayout.version>11.4.2</miglayout.version>
 	</properties>
 	<dependencies>
+		<!-- ==== Capa de presentación (rediseño de UI) ==== -->
+
+		<!-- FlatLaf: Look and Feel moderno para Swing. Sustituye el aspecto "Metal"
+			por defecto, soporta HiDPI y permite definir el tema en archivos .properties. -->
+		<dependency>
+			<groupId>com.formdev</groupId>
+			<artifactId>flatlaf</artifactId>
+			<version>${flatlaf.version}</version>
+		</dependency>
+
+		<!-- flatlaf-extras: aporta FlatSVGIcon (iconos vectoriales que escalan sin
+			pixelarse y admiten recoloreado, necesario para teñirlos por estación). -->
+		<dependency>
+			<groupId>com.formdev</groupId>
+			<artifactId>flatlaf-extras</artifactId>
+			<version>${flatlaf.version}</version>
+		</dependency>
+
+		<!-- MigLayout: gestor de layout con el que se construyen las rejillas y el
+			espaciado consistente del nuevo diseño (GridLayout/GridBagLayout no dan
+			el control necesario). -->
+		<dependency>
+			<groupId>com.miglayout</groupId>
+			<artifactId>miglayout-swing</artifactId>
+			<version>${miglayout.version}</version>
+		</dependency>
+
+		<!-- ==== Núcleo de la aplicación ==== -->
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
