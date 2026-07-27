@@ -16,11 +16,19 @@ spring:
     driverClassName: com.mysql.cj.jdbc.Driver
     initialization-mode: always
 
-  devtools:
-    restart:
-      trigger-file: reload
-    livereload:
-      enabled: false
+  # DevTools se ha eliminado del pom.xml, no solo desactivado aquí.
+  #
+  # Reinicia la aplicación con un cargador de clases nuevo para recargar cambios en
+  # caliente: útil en una aplicación web, inútil en una de escritorio. El efecto
+  # aquí era que main() se ejecutaba dos veces, en dos cargadores distintos, con lo
+  # que cada clase existía por duplicado y su estado estático no se compartía. El
+  # síntoma fue el splash: la primera ejecución mostraba uno, la segunda mostraba
+  # otro y al terminar cerraba solo el suyo, dejando el primero colgado detrás de
+  # la ventana.
+  #
+  # Desactivarlo desde este archivo no basta: el reiniciador se instala antes de
+  # que se lea la configuración. O se pone como propiedad del sistema antes de
+  # arrancar, o se quita la dependencia. Se ha quitado.
   jackson:
     default-property-inclusion: NON_NULL
 
