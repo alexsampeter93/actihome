@@ -14,9 +14,16 @@
 -- usuario o por el código de alojamiento, nunca con el número de fila: un id
 -- fijo deja de ser correcto en cuanto la base no está vacía.
 --
--- NOTA: la contraseña de estos usuarios está en texto plano, así que NO pueden
--- iniciar sesión (el login usa BCrypt). Son datos para poblar el catálogo; para
--- entrar hay que registrarse.
+-- NOTA sobre la contraseña: es el hash BCrypt de "1234", precalculado (no se
+-- puede escribir un hash BCrypt a mano: cada vez que se genera sale distinto,
+-- porque la sal es aleatoria, así que se calcula una vez con el mismo
+-- BCryptPasswordEncoder que usa la aplicación y se pega el resultado aquí).
+-- Antes de la Fase 3d la contraseña estaba en texto plano y estos usuarios no
+-- podían iniciar sesión contra el login() real, que compara con BCrypt: cero
+-- de los usuarios de ejemplo eran utilizables sin registrarse primero, y
+-- registrarse no daba acceso a los alojamientos ya sembrados (pertenecen a
+-- Lucia/Marcos/Elena). Con el hash real, "Admin" / "1234" entra directamente,
+-- y "Lucia" / "1234" entra como propietaria de sus alojamientos.
 --
 -- CAMBIO DE LA FASE 3A: los cinco alojamientos de relleno anteriores —los cinco
 -- llamados "Casa en la playa", en Andalucía, con descripción "Descripcion"— se
@@ -30,19 +37,19 @@
 -- ---------------------------------------------------------------------------
 
 INSERT INTO USERS(username, password, name, surname, locality, phoneNumber, email, birthDate, role)
-SELECT 'Admin', '1234', 'Alejandro', 'Sampedro', 'Coruña', 666777892, 'alejsamcalo@gmail.com', '1993-01-03', 'ADMIN'
+SELECT 'Admin', '$2a$10$3vQGMyd/3SLOjyMvMuw.deJsgMlyLYXY1dZd8NvmXF7yzawxc310m', 'Alejandro', 'Sampedro', 'Coruña', 666777892, 'alejsamcalo@gmail.com', '1993-01-03', 'ADMIN'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM USERS WHERE username = 'Admin');
 
 INSERT INTO USERS(username, password, name, surname, locality, phoneNumber, email, birthDate, role)
-SELECT 'Customer', '1234', 'Jorge', 'Sampedro', 'Coruña', 664567076, 'jorgesamcalo@gmail.com', '1999-12-09', 'CUSTOMER'
+SELECT 'Customer', '$2a$10$3vQGMyd/3SLOjyMvMuw.deJsgMlyLYXY1dZd8NvmXF7yzawxc310m', 'Jorge', 'Sampedro', 'Coruña', 664567076, 'jorgesamcalo@gmail.com', '1999-12-09', 'CUSTOMER'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM USERS WHERE username = 'Customer');
 
 INSERT INTO USERS(username, password, name, surname, locality, phoneNumber, email, birthDate, role)
-SELECT 'Customer10', '1234', 'Jorge', 'Sampedro', 'Coruña', 664567076, 'jorgesamcalo@gmail.com', '1999-12-09', 'CUSTOMER'
+SELECT 'Customer10', '$2a$10$3vQGMyd/3SLOjyMvMuw.deJsgMlyLYXY1dZd8NvmXF7yzawxc310m', 'Jorge', 'Sampedro', 'Coruña', 664567076, 'jorgesamcalo@gmail.com', '1999-12-09', 'CUSTOMER'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM USERS WHERE username = 'Customer10');
 
 INSERT INTO USERS(username, password, name, surname, locality, phoneNumber, email, birthDate, role)
-SELECT 'Customer16', '1234', 'Jorge', 'Sampedro', 'Coruña', 664567076, 'jorgesamcalo@gmail.com', '1999-12-09', 'CUSTOMER'
+SELECT 'Customer16', '$2a$10$3vQGMyd/3SLOjyMvMuw.deJsgMlyLYXY1dZd8NvmXF7yzawxc310m', 'Jorge', 'Sampedro', 'Coruña', 664567076, 'jorgesamcalo@gmail.com', '1999-12-09', 'CUSTOMER'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM USERS WHERE username = 'Customer16');
 
 -- Propietarios de los alojamientos de ejemplo. Son ADMIN porque en ActiHome
@@ -51,16 +58,35 @@ FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM USERS WHERE username = 'Customer16');
 -- respetan la titularidad.
 
 INSERT INTO USERS(username, password, name, surname, locality, phoneNumber, email, birthDate, role)
-SELECT 'Lucia', '1234', 'Lucía', 'Ferreiro', 'Granada', 655101202, 'lucia@actihome.example', '1986-04-17', 'ADMIN'
+SELECT 'Lucia', '$2a$10$3vQGMyd/3SLOjyMvMuw.deJsgMlyLYXY1dZd8NvmXF7yzawxc310m', 'Lucía', 'Ferreiro', 'Granada', 655101202, 'lucia@actihome.example', '1986-04-17', 'ADMIN'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM USERS WHERE username = 'Lucia');
 
 INSERT INTO USERS(username, password, name, surname, locality, phoneNumber, email, birthDate, role)
-SELECT 'Marcos', '1234', 'Marcos', 'Iglesias', 'Málaga', 655101203, 'marcos@actihome.example', '1981-09-02', 'ADMIN'
+SELECT 'Marcos', '$2a$10$3vQGMyd/3SLOjyMvMuw.deJsgMlyLYXY1dZd8NvmXF7yzawxc310m', 'Marcos', 'Iglesias', 'Málaga', 655101203, 'marcos@actihome.example', '1981-09-02', 'ADMIN'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM USERS WHERE username = 'Marcos');
 
 INSERT INTO USERS(username, password, name, surname, locality, phoneNumber, email, birthDate, role)
-SELECT 'Elena', '1234', 'Elena', 'Prado', 'Oviedo', 655101204, 'elena@actihome.example', '1990-11-25', 'ADMIN'
+SELECT 'Elena', '$2a$10$3vQGMyd/3SLOjyMvMuw.deJsgMlyLYXY1dZd8NvmXF7yzawxc310m', 'Elena', 'Prado', 'Oviedo', 655101204, 'elena@actihome.example', '1990-11-25', 'ADMIN'
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM USERS WHERE username = 'Elena');
+
+-- ---------------------------------------------------------------------------
+-- Migración de contraseñas para quien ya tenía la base creada (Fase 3d)
+--
+-- Los INSERT de arriba van protegidos por "WHERE NOT EXISTS": si el usuario ya
+-- existe, no se reinserta, así que quien ya tuviera ~/.actihome con estos
+-- usuarios se habría quedado con la contraseña vieja en texto plano para
+-- siempre. Este UPDATE los pone al día una sola vez.
+--
+-- La condición "password = '1234'" es la que lo hace seguro de repetir: un
+-- hash BCrypt real empieza siempre por "$2a$" y mide 60 caracteres, así que
+-- nunca puede valer literalmente "1234". Una vez aplicado el cambio, esta
+-- condición deja de cumplirse y el UPDATE no vuelve a tocar la fila.
+-- ---------------------------------------------------------------------------
+
+UPDATE USERS
+SET password = '$2a$10$3vQGMyd/3SLOjyMvMuw.deJsgMlyLYXY1dZd8NvmXF7yzawxc310m'
+WHERE username IN ('Admin', 'Customer', 'Customer10', 'Customer16', 'Lucia', 'Marcos', 'Elena')
+	AND password = '1234';
 
 -- ---------------------------------------------------------------------------
 -- Retirada de los alojamientos de relleno anteriores
