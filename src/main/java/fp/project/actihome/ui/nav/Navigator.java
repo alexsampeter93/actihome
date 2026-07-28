@@ -1,6 +1,7 @@
 package fp.project.actihome.ui.nav;
 
 import java.awt.Image;
+import java.awt.Window;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -119,6 +120,34 @@ public class Navigator {
 		visible = ventana;
 		ventana.setVisible(true);
 
+		// Se cierra CUALQUIER otra ventana viva, no solo la que el navegador recuerda
+		// haber mostrado.
+		//
+		// El motivo es que el rediseño va por fases y conviven dos estilos de
+		// navegación: las pantallas nuevas usan este navegador y las que quedan por
+		// rediseñar siguen haciendo "dispose(); getBean(...); setVisible(true)" por su
+		// cuenta. Cuando una de esas navega, el navegador se queda apuntando a una
+		// ventana ya cerrada; en el siguiente salto cerraría esa —que ya no está— en
+		// lugar de la que el usuario tiene delante, y acabarían dos ventanas abiertas a
+		// la vez. En una aplicación de una sola ventana eso se lee directamente como
+		// que algo se ha roto.
+		//
+		// Preguntar por las ventanas vivas en vez de fiarse de lo apuntado hace que el
+		// navegador sea correcto pase lo que pase fuera de él. Cuando no queden
+		// pantallas del estilo antiguo, esto se podrá simplificar.
+		//
+		// El orden importa y no es negociable: **primero se muestra la nueva y después
+		// se cierran las demás**. Al revés, cerrar la última ventana viva puede terminar
+		// la aplicación antes de que aparezca la siguiente.
+		for (Window abierta : Window.getWindows()) {
+
+			if (abierta != ventana && abierta instanceof JFrame && abierta.isDisplayable()) {
+				abierta.dispose();
+			}
+		}
+
+		// Redundante con el bucle de arriba, pero explícito: la ventana que el navegador
+		// sí conocía queda cerrada seguro.
 		if (anterior != null && anterior != ventana) {
 			anterior.dispose();
 		}
