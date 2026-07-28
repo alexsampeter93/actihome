@@ -38,13 +38,28 @@ CREATE TABLE IF NOT EXISTS USERS (
 CREATE TABLE IF NOT EXISTS HOUSINGS (
 	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	housingCode BIGINT NOT NULL,
+	-- Nombre comercial del alojamiento ("Casa Rural El Pinar"). Es distinto del
+	-- tipo: el nombre titula la ficha, el tipo es la categoría por la que se
+	-- filtra en el catálogo. Añadido en la Fase 3a.
+	name VARCHAR(80) NOT NULL,
 	type VARCHAR(30) NOT NULL,
 	numberOfRooms INTEGER NOT NULL,
 	pricePerNight DECIMAL(10, 2) NOT NULL,
 	description VARCHAR(500) NOT NULL,
+	-- Nombre del archivo de foto dentro de /images/housings/. Nulo mientras no
+	-- haya foto: la ficha pinta entonces el marcador tintado por estación.
+	image VARCHAR(120),
 	breakfast BOOLEAN NOT NULL,
 	lunch BOOLEAN NOT NULL,
 	dinner BOOLEAN NOT NULL,
+	-- Comodidades del catálogo (Fase 3a, ADR-003). "Desayuno" no está aquí: es el
+	-- campo breakfast de arriba, que ya existía y se reutiliza.
+	pool BOOLEAN DEFAULT FALSE NOT NULL,
+	wifi BOOLEAN DEFAULT FALSE NOT NULL,
+	tv BOOLEAN DEFAULT FALSE NOT NULL,
+	parking BOOLEAN DEFAULT FALSE NOT NULL,
+	airConditioning BOOLEAN DEFAULT FALSE NOT NULL,
+	pets BOOLEAN DEFAULT FALSE NOT NULL,
 	score DOUBLE,
 	available BOOLEAN NOT NULL,
 	location VARCHAR(40) NOT NULL,

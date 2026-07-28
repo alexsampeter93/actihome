@@ -61,8 +61,10 @@ public class ReviewServiceTests {
 	private Housing createHousing(Long housingCode, Long ownerId) throws DuplicateInstanceException,
 			InstanceNotFoundException, LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException {
 
-		return housingService.uploadHousing(housingCode, "Casa en la playa", 6, BigDecimal.valueOf(20.65),
-				"Descripción breve", true, false, false, "Playa del Orzán", ownerId);
+		return housingService.uploadHousing(
+				HousingData.basico(housingCode, "Casa en la playa", "Casa", 6, BigDecimal.valueOf(20.65),
+						"Playa del Orzán").description("Descripción breve").breakfast(true),
+				ownerId);
 	}
 
 	@Test

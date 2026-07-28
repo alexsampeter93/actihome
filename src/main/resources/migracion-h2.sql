@@ -1,0 +1,44 @@
+-- Migración del esquema para bases de datos H2 que ya existen.
+--
+-- POR QUÉ HACE FALTA ESTE ARCHIVO
+--
+-- schema.sql crea las tablas con "CREATE TABLE IF NOT EXISTS". Eso protege los
+-- datos —no borra nada al arrancar— pero tiene una consecuencia que no es obvia:
+-- si la tabla ya existe, el CREATE se salta ENTERO. Las columnas nuevas que se
+-- añadan a ese CREATE solo aparecen en bases de datos creadas desde cero.
+--
+-- Para quien ya tenía la aplicación instalada, su ~/.actihome/actihome.mv.db se
+-- quedaría con el esquema viejo, y como Hibernate arranca con "ddl-auto:
+-- validate" la aplicación ni siquiera abriría: fallaría diciendo que la entidad
+-- Housing tiene propiedades sin columna. Este archivo pone al día esas bases.
+--
+-- POR QUÉ ESTÁ SEPARADO Y SOLO SE EJECUTA EN H2
+--
+-- "ALTER TABLE ... ADD COLUMN IF NOT EXISTS" lo entienden H2 y MariaDB, pero
+-- NO MySQL 8: allí es un error de sintaxis, y un error de sintaxis rompe el
+-- arranque aunque la columna ya estuviera. Manteniéndolo fuera de schema.sql y
+-- declarándolo solo en los perfiles que usan H2, el perfil "mysql" sigue
+-- funcionando igual que antes. Quien tenga una base MySQL anterior a la Fase 3a
+-- tiene que aplicar estos mismos ALTER a mano una vez, sin el IF NOT EXISTS.
+--
+-- Es idempotente: ejecutarlo en cada arranque no hace nada si ya está aplicado.
+--
+-- NOTA PARA MÁS ADELANTE: este archivo es un parche puntual, no un sistema de
+-- migraciones. Cuando el esquema vuelva a cambiar tocará valorar Flyway o
+-- Liquibase, que llevan la cuenta de qué migraciones se han aplicado en lugar de
+-- depender de que cada sentencia sepa comprobarse a sí misma.
+
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS name VARCHAR(80) DEFAULT '' NOT NULL;
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS image VARCHAR(120);
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS pool BOOLEAN DEFAULT FALSE NOT NULL;
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS wifi BOOLEAN DEFAULT FALSE NOT NULL;
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS tv BOOLEAN DEFAULT FALSE NOT NULL;
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS parking BOOLEAN DEFAULT FALSE NOT NULL;
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS airConditioning BOOLEAN DEFAULT FALSE NOT NULL;
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS pets BOOLEAN DEFAULT FALSE NOT NULL;
+
+-- Los alojamientos que ya existían se quedan con el nombre vacío, porque hasta
+-- ahora no había dónde guardarlo. Se rellena con el tipo, que es lo más parecido
+-- a un nombre que tenían ("Casa en la playa"), para que la ficha no salga sin
+-- título. Es reversible: el propietario puede editarlo.
+UPDATE HOUSINGS SET name = type WHERE name = '';

@@ -1,6 +1,5 @@
 package fp.project.actihome.model.services;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 
 import fp.project.actihome.model.entities.Housing;
@@ -14,17 +13,33 @@ import fp.project.actihome.model.exceptions.NotTheOwnerException;
 
 public interface HousingService {
 
-	Housing uploadHousing(Long housingCode, String type, int numberOfRooms, BigDecimal pricePerNight,
-			String description, boolean breakfast, boolean lunch, boolean dinner, String location, Long ownerId)
-			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
-			NegativePrizeException, NotAuthorizedUserException;
+	/**
+	 * Da de alta un alojamiento a nombre de un ADMIN.
+	 *
+	 * <p>
+	 * Los datos del alojamiento viajan en un {@link HousingData} en lugar de como
+	 * diez argumentos sueltos. El motivo está explicado en esa clase; en resumen,
+	 * con las comodidades del catálogo la firma anterior habría acabado con nueve
+	 * booleanos consecutivos.
+	 */
+	Housing uploadHousing(HousingData data, Long ownerId) throws DuplicateInstanceException, InstanceNotFoundException,
+			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException;
 
 	Housing findHousing(Long housingId) throws InstanceNotFoundException;
 
 	ArrayList<Housing> showHousings();
 
-	Housing updateHousing(Long housingId, Long ownerId, int numberOfRooms, BigDecimal pricePerNight, String description,
-			boolean breakfast, boolean lunch, boolean dinner) throws InstanceNotFoundException,
+	/**
+	 * Modifica un alojamiento existente.
+	 *
+	 * <p>
+	 * El código del alojamiento y el propietario <b>no</b> se tocan: el código es su
+	 * identificador público y el propietario solo cambia mediante un intercambio.
+	 * Todo lo demás se toma del {@link HousingData} recibido, así que quien llama
+	 * debe enviarlo completo —partiendo de los valores actuales— y no solo los
+	 * campos que cambia.
+	 */
+	Housing updateHousing(Long housingId, Long ownerId, HousingData data) throws InstanceNotFoundException,
 			LessThanOneRoomException, NegativePrizeException, NotTheOwnerException, NotAuthorizedUserException;
 
 	ArrayList<Housing> filterHousingsByType(String type);

@@ -31,10 +31,8 @@ public class HousingServiceImpl implements HousingService {
 	private PermissionChecker permissionChecker;
 
 	@Override
-	public Housing uploadHousing(Long housingCode, String type, int numberOfRooms, BigDecimal pricePerNight,
-			String description, boolean breakfast, boolean lunch, boolean dinner, String location, Long ownerId)
-			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
-			NegativePrizeException, NotAuthorizedUserException {
+	public Housing uploadHousing(HousingData data, Long ownerId) throws DuplicateInstanceException,
+			InstanceNotFoundException, LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException {
 
 		User owner = permissionChecker.checkUser(ownerId);
 
@@ -42,20 +40,18 @@ public class HousingServiceImpl implements HousingService {
 			throw new NotAuthorizedUserException();
 		}
 
-		if (housingDao.existsByHousingCode(housingCode)) {
-			throw new DuplicateInstanceException("project.entities.housing", housingCode);
+		if (housingDao.existsByHousingCode(data.getHousingCode())) {
+			throw new DuplicateInstanceException("project.entities.housing", data.getHousingCode());
 		}
 
-		if (numberOfRooms < 1) {
-			throw new LessThanOneRoomException();
-		}
+		comprobarDatos(data);
 
-		if (pricePerNight.compareTo(BigDecimal.ZERO) < 0) {
-			throw new NegativePrizeException();
-		}
+		Housing housing = new Housing();
+		housing.setHousingCode(data.getHousingCode());
+		housing.setOwner(owner);
+		housing.setAvailable(true);
+		copiarDatos(data, housing);
 
-		Housing housing = new Housing(housingCode, type, numberOfRooms, pricePerNight, description, breakfast, lunch,
-				dinner, true, location, owner);
 		housingDao.save(housing);
 
 		return housing;
@@ -80,8 +76,7 @@ public class HousingServiceImpl implements HousingService {
 	}
 
 	@Override
-	public Housing updateHousing(Long housingId, Long ownerId, int numberOfRooms, BigDecimal pricePerNight,
-			String description, boolean breakfast, boolean lunch, boolean dinner) throws InstanceNotFoundException,
+	public Housing updateHousing(Long housingId, Long ownerId, HousingData data) throws InstanceNotFoundException,
 			LessThanOneRoomException, NegativePrizeException, NotTheOwnerException, NotAuthorizedUserException {
 
 		Optional<Housing> housing = housingDao.findById(housingId);
@@ -95,26 +90,65 @@ public class HousingServiceImpl implements HousingService {
 			throw new InstanceNotFoundException("project.entities.housing", housingId);
 		}
 
-		if (housing.get().getOwner().getId() != ownerId) {
+		// B3: antes comparaba con "!=", que en dos objetos Long compara identidad de
+		// referencia y no valor. Funcionaba de milagro: por debajo de 128 Java reutiliza
+		// las instancias de Long en una caché, así que con ids pequeños daba el
+		// resultado correcto y con ids grandes habría rechazado al propietario legítimo.
+		if (!housing.get().getOwner().getId().equals(ownerId)) {
 			throw new NotTheOwnerException();
 		}
 
-		if (numberOfRooms < 1) {
+		comprobarDatos(data);
+
+		copiarDatos(data, housing.get());
+
+		// No se llama a save: dentro de la transacción, Hibernate detecta por su cuenta
+		// que la entidad cargada ha cambiado y escribe los cambios al confirmar. Es el
+		// "dirty checking" en el que ya se apoyaba el método original.
+		return housing.get();
+	}
+
+	/** Reglas de negocio comunes al alta y a la edición. */
+	private void comprobarDatos(HousingData data) throws LessThanOneRoomException, NegativePrizeException {
+
+		if (data.getNumberOfRooms() < 1) {
 			throw new LessThanOneRoomException();
 		}
 
-		if (pricePerNight.compareTo(BigDecimal.ZERO) < 0) {
+		if (data.getPricePerNight().compareTo(BigDecimal.ZERO) < 0) {
 			throw new NegativePrizeException();
 		}
+	}
 
-		housing.get().setDescription(description);
-		housing.get().setNumberOfRooms(numberOfRooms);
-		housing.get().setPricePerNight(pricePerNight);
-		housing.get().setBreakfast(breakfast);
-		housing.get().setLunch(lunch);
-		housing.get().setDinner(dinner);
+	/**
+	 * Vuelca los campos editables sobre la entidad.
+	 *
+	 * <p>
+	 * Deliberadamente <b>no</b> copia el código del alojamiento, el propietario, la
+	 * disponibilidad ni la puntuación: los cuatro los gobierna el propio servicio y
+	 * no un formulario. Tenerlo en un solo sitio evita la otra mitad del bug B9,
+	 * que era que el alta y la edición escribían conjuntos de campos distintos.
+	 */
+	private void copiarDatos(HousingData data, Housing housing) {
 
-		return housing.get();
+		housing.setName(data.getName());
+		housing.setType(data.getType());
+		housing.setNumberOfRooms(data.getNumberOfRooms());
+		housing.setPricePerNight(data.getPricePerNight());
+		housing.setDescription(data.getDescription());
+		housing.setLocation(data.getLocation());
+		housing.setImage(data.getImage());
+
+		housing.setBreakfast(data.isBreakfast());
+		housing.setLunch(data.isLunch());
+		housing.setDinner(data.isDinner());
+
+		housing.setPool(data.isPool());
+		housing.setWifi(data.isWifi());
+		housing.setTv(data.isTv());
+		housing.setParking(data.isParking());
+		housing.setAirConditioning(data.isAirConditioning());
+		housing.setPets(data.isPets());
 	}
 
 	@Override

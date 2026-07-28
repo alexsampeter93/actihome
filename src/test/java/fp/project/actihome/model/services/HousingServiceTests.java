@@ -1,6 +1,7 @@
 package fp.project.actihome.model.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -17,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import fp.project.actihome.model.entities.Amenity;
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
@@ -54,12 +56,34 @@ public class HousingServiceTests {
 	}
 
 	/**
+	 * Un alojamiento de prueba con valores razonables.
+	 *
+	 * <p>
+	 * Cada test parte de aquí y cambia solo lo que le interesa
+	 * ({@code datos().numberOfRooms(0)}), en lugar de repetir diez argumentos. Antes
+	 * la llamada al servicio ocupaba tres líneas en cada test y lo que cambiaba
+	 * respecto al test de al lado quedaba escondido en medio.
+	 */
+	private HousingData datos() {
+
+		return HousingData.basico(null, "Casa en la playa", "Casa", 6, BigDecimal.valueOf(20.65), "Playa del Orzán")
+				.description("Descripción breve")
+				.breakfast(true)
+				.dinner(true);
+	}
+
+	private HousingData datos(long housingCode) {
+
+		return datos().housingCode(housingCode);
+	}
+
+	/**
 	 * Se queda solo con los alojamientos de un propietario.
 	 *
 	 * <p>
 	 * Varios tests comprobaban posiciones absolutas de la lista devuelta
 	 * ({@code assertEquals(lista.get(0), miPrimerAlojamiento)}), lo que da por hecho
-	 * que la base de datos está vacía. No lo está: {@code data.sql} siembra cinco
+	 * que la base de datos está vacía. No lo está: {@code data.sql} siembra varios
 	 * alojamientos en cada arranque, así que esas posiciones eran de los sembrados.
 	 *
 	 * <p>
@@ -80,21 +104,50 @@ public class HousingServiceTests {
 
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 
-		Housing housing = housingService.uploadHousing(Long.valueOf(24019), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
+		Housing housing = housingService.uploadHousing(datos(24019), owner.getId());
 
 		assertEquals(housing.getHousingCode(), Long.valueOf(24019));
-		assertEquals(housing.getType(), "Casa en la playa");
+		assertEquals(housing.getName(), "Casa en la playa");
+		assertEquals(housing.getType(), "Casa");
 		assertEquals(housing.getNumberOfRooms(), 6);
 		assertEquals(housing.getPricePerNight(), BigDecimal.valueOf(20.65));
 		assertEquals(housing.getDescription(), "Descripción breve");
 		assertTrue(housing.isBreakfast());
-		assertTrue(!housing.isLunch());
+		assertFalse(housing.isLunch());
 		assertTrue(housing.isDinner());
 		assertTrue(housing.isAvailable());
 		assertEquals(housing.getLocation(), "Playa del Orzán");
 		assertEquals(housing.getOwner(), owner);
+	}
 
+	/**
+	 * Las comodidades del catálogo (Fase 3a) se guardan y se leen.
+	 *
+	 * <p>
+	 * {@code amenities(...)} recibe las que están presentes y apaga todas las demás,
+	 * así que este test comprueba las dos mitades: que las nombradas quedan a true y
+	 * que las no nombradas quedan a false. Un setter que solo enciende deja basura de
+	 * la edición anterior.
+	 */
+	@Test
+	public void testUploadHousingWithAmenities() throws DuplicateInstanceException, InstanceNotFoundException,
+			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException {
+
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+
+		Housing housing = housingService
+				.uploadHousing(datos(24019).amenities(Amenity.WIFI, Amenity.PARKING, Amenity.PETS), owner.getId());
+
+		assertTrue(housing.isWifi());
+		assertTrue(housing.isParking());
+		assertTrue(housing.isPets());
+
+		assertFalse(housing.isPool());
+		assertFalse(housing.isTv());
+		assertFalse(housing.isAirConditioning());
+
+		assertEquals(Amenity.de(housing).size(), 4); // las tres anteriores más el desayuno
+		assertTrue(Amenity.BREAKFAST.presenteEn(housing));
 	}
 
 	@Test
@@ -103,13 +156,10 @@ public class HousingServiceTests {
 
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 
-		housingService.uploadHousing(Long.valueOf(24019), "Casa en la playa", 6, BigDecimal.valueOf(20.65),
-				"Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
+		housingService.uploadHousing(datos(24019), owner.getId());
 
 		assertThrows(DuplicateInstanceException.class,
-				() -> housingService.uploadHousing(Long.valueOf(24019), "Casa en la playa", 6,
-						BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán",
-						owner.getId()));
+				() -> housingService.uploadHousing(datos(24019), owner.getId()));
 	}
 
 	@Test
@@ -118,9 +168,7 @@ public class HousingServiceTests {
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 
 		assertThrows(LessThanOneRoomException.class,
-				() -> housingService.uploadHousing(Long.valueOf(24019), "Casa en la playa", 0,
-						BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán",
-						owner.getId()));
+				() -> housingService.uploadHousing(datos(24019).numberOfRooms(0), owner.getId()));
 	}
 
 	@Test
@@ -129,8 +177,7 @@ public class HousingServiceTests {
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 
 		assertThrows(NegativePrizeException.class,
-				() -> housingService.uploadHousing(Long.valueOf(24019), "Casa en la playa", 2, BigDecimal.valueOf(-1),
-						"Descripción breve", true, false, true, "Playa del Orzán", owner.getId()));
+				() -> housingService.uploadHousing(datos(24019).pricePerNight(BigDecimal.valueOf(-1)), owner.getId()));
 	}
 
 	@Test
@@ -139,10 +186,7 @@ public class HousingServiceTests {
 		User owner = signUpUser("Owner", RoleType.CUSTOMER);
 
 		assertThrows(NotAuthorizedUserException.class,
-				() -> housingService.uploadHousing(Long.valueOf(24019), "Casa en la playa", 7,
-						BigDecimal.valueOf(20.60), "Descripción breve", true, false, true, "Playa del Orzán",
-						owner.getId()));
-
+				() -> housingService.uploadHousing(datos(24019), owner.getId()));
 	}
 
 	@Test
@@ -151,8 +195,7 @@ public class HousingServiceTests {
 
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 
-		Housing housing = housingService.uploadHousing(Long.valueOf(24019), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
+		Housing housing = housingService.uploadHousing(datos(24019), owner.getId());
 
 		Housing registeredHousing = housingService.findHousing(housing.getId());
 
@@ -171,16 +214,52 @@ public class HousingServiceTests {
 
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 
-		Housing housing = housingService.uploadHousing(Long.valueOf(24019), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
+		Housing housing = housingService.uploadHousing(datos(24019), owner.getId());
 
-		Housing updatedHousing = housingService.updateHousing(housing.getId(), owner.getId(), 3,
-				BigDecimal.valueOf(10.64), "Nueva descripción", true, false, true);
+		Housing updatedHousing = housingService.updateHousing(housing.getId(), owner.getId(),
+				datos().numberOfRooms(3).pricePerNight(BigDecimal.valueOf(10.64)).description("Nueva descripción"));
 
 		assertEquals(updatedHousing.getNumberOfRooms(), 3);
 		assertEquals(updatedHousing.getPricePerNight(), BigDecimal.valueOf(10.64));
 		assertEquals(updatedHousing.getDescription(), "Nueva descripción");
+	}
 
+	/**
+	 * La edición escribe exactamente lo que recibe. Regresión del bug B9.
+	 *
+	 * <p>
+	 * El formulario de edición llamaba al servicio con {@code (..., true, true,
+	 * true)} para la pensión, porque no mostraba esos campos y había que poner
+	 * <i>algo</i> en esas tres posiciones. Corregir una errata en la descripción
+	 * activaba de paso desayuno, comida y cena.
+	 *
+	 * <p>
+	 * Este test fija la regla del servicio: si los datos dicen que no hay comidas, no
+	 * hay comidas. El resto de la defensa está en la interfaz, que ahora precarga los
+	 * valores reales antes de enviarlos.
+	 */
+	@Test
+	public void testUpdateHousingWritesExactlyWhatItReceives()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, NotTheOwnerException {
+
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+
+		Housing housing = housingService.uploadHousing(datos(24019).amenities(Amenity.WIFI, Amenity.TV), owner.getId());
+
+		assertTrue(housing.isBreakfast());
+		assertTrue(housing.isWifi());
+
+		Housing updated = housingService.updateHousing(housing.getId(), owner.getId(),
+				datos().breakfast(false).dinner(false).amenities(Amenity.POOL));
+
+		assertFalse(updated.isBreakfast());
+		assertFalse(updated.isLunch());
+		assertFalse(updated.isDinner());
+
+		assertTrue(updated.isPool());
+		assertFalse(updated.isWifi());
+		assertFalse(updated.isTv());
 	}
 
 	@Test
@@ -190,11 +269,10 @@ public class HousingServiceTests {
 		User owner1 = signUpUser("Owner1", RoleType.ADMIN);
 		User owner2 = signUpUser("Owner2", RoleType.ADMIN);
 
-		Housing housing = housingService.uploadHousing(Long.valueOf(24019), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner1.getId());
+		Housing housing = housingService.uploadHousing(datos(24019), owner1.getId());
 
-		assertThrows(NotTheOwnerException.class, () -> housingService.updateHousing(housing.getId(), owner2.getId(), 3,
-				BigDecimal.valueOf(10.64), "Nueva descripción", true, false, true));
+		assertThrows(NotTheOwnerException.class,
+				() -> housingService.updateHousing(housing.getId(), owner2.getId(), datos()));
 	}
 
 	@Test
@@ -203,11 +281,10 @@ public class HousingServiceTests {
 
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 
-		Housing housing = housingService.uploadHousing(Long.valueOf(24019), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
+		Housing housing = housingService.uploadHousing(datos(24019), owner.getId());
 
-		assertThrows(LessThanOneRoomException.class, () -> housingService.updateHousing(housing.getId(), owner.getId(),
-				0, BigDecimal.valueOf(10.64), "Nueva descripción", true, false, true));
+		assertThrows(LessThanOneRoomException.class,
+				() -> housingService.updateHousing(housing.getId(), owner.getId(), datos().numberOfRooms(0)));
 	}
 
 	@Test
@@ -216,11 +293,10 @@ public class HousingServiceTests {
 
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 
-		Housing housing = housingService.uploadHousing(Long.valueOf(24019), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
+		Housing housing = housingService.uploadHousing(datos(24019), owner.getId());
 
-		assertThrows(NegativePrizeException.class, () -> housingService.updateHousing(housing.getId(), owner.getId(), 4,
-				BigDecimal.valueOf(-1), "Nueva descripción", true, false, true));
+		assertThrows(NegativePrizeException.class, () -> housingService.updateHousing(housing.getId(), owner.getId(),
+				datos().pricePerNight(BigDecimal.valueOf(-1))));
 	}
 
 	@Test
@@ -228,8 +304,8 @@ public class HousingServiceTests {
 
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 
-		assertThrows(InstanceNotFoundException.class, () -> housingService.updateHousing(Long.valueOf(603),
-				owner.getId(), 4, BigDecimal.valueOf(1), "Nueva descripción", true, false, true));
+		assertThrows(InstanceNotFoundException.class,
+				() -> housingService.updateHousing(Long.valueOf(603), owner.getId(), datos()));
 	}
 
 	@Test
@@ -238,13 +314,12 @@ public class HousingServiceTests {
 
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 
-		Housing housing = housingService.uploadHousing(Long.valueOf(24019), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
+		Housing housing = housingService.uploadHousing(datos(24019), owner.getId());
 
 		owner.setRole(RoleType.CUSTOMER);
 
-		assertThrows(NotAuthorizedUserException.class, () -> housingService.updateHousing(housing.getId(),
-				owner.getId(), 4, BigDecimal.valueOf(1), "Nueva descripción", true, false, true));
+		assertThrows(NotAuthorizedUserException.class,
+				() -> housingService.updateHousing(housing.getId(), owner.getId(), datos()));
 	}
 
 	@Test
@@ -254,16 +329,11 @@ public class HousingServiceTests {
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		ArrayList<Housing> housingsList = new ArrayList<Housing>();
 
-		Housing housing1 = housingService.uploadHousing(Long.valueOf(4), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
-		Housing housing2 = housingService.uploadHousing(Long.valueOf(7), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
-		Housing housing3 = housingService.uploadHousing(Long.valueOf(29), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
-		Housing housing4 = housingService.uploadHousing(Long.valueOf(243), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
-		Housing housing5 = housingService.uploadHousing(Long.valueOf(21), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
+		Housing housing1 = housingService.uploadHousing(datos(4), owner.getId());
+		Housing housing2 = housingService.uploadHousing(datos(7), owner.getId());
+		Housing housing3 = housingService.uploadHousing(datos(29), owner.getId());
+		Housing housing4 = housingService.uploadHousing(datos(243), owner.getId());
+		Housing housing5 = housingService.uploadHousing(datos(21), owner.getId());
 
 		housingsList = housingService.showHousings();
 
@@ -277,16 +347,11 @@ public class HousingServiceTests {
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		ArrayList<Housing> housingsList = new ArrayList<Housing>();
 
-		Housing housing1 = housingService.uploadHousing(Long.valueOf(4), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
-		Housing housing2 = housingService.uploadHousing(Long.valueOf(7), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
-		housingService.uploadHousing(Long.valueOf(29), "Chalet", 6, BigDecimal.valueOf(20.65), "Descripción breve",
-				true, false, true, "Playa del Orzán", owner.getId());
-		Housing housing4 = housingService.uploadHousing(Long.valueOf(243), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
-		Housing housing5 = housingService.uploadHousing(Long.valueOf(21), "Casa con piscina", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
+		Housing housing1 = housingService.uploadHousing(datos(4), owner.getId());
+		Housing housing2 = housingService.uploadHousing(datos(7), owner.getId());
+		housingService.uploadHousing(datos(29).type("Chalet"), owner.getId());
+		Housing housing4 = housingService.uploadHousing(datos(243), owner.getId());
+		Housing housing5 = housingService.uploadHousing(datos(21), owner.getId());
 
 		housingsList = housingService.filterHousingsByType("Casa");
 
@@ -301,16 +366,11 @@ public class HousingServiceTests {
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		ArrayList<Housing> housingsList = new ArrayList<Housing>();
 
-		housingService.uploadHousing(Long.valueOf(4), "Casa en la playa", 2, BigDecimal.valueOf(20.65),
-				"Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
-		housingService.uploadHousing(Long.valueOf(7), "Casa en la playa", 1, BigDecimal.valueOf(20.65),
-				"Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
-		Housing housing3 = housingService.uploadHousing(Long.valueOf(29), "Chalet", 6, BigDecimal.valueOf(20.65),
-				"Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
-		housingService.uploadHousing(Long.valueOf(243), "Casa en la playa", 5, BigDecimal.valueOf(20.65),
-				"Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
-		Housing housing5 = housingService.uploadHousing(Long.valueOf(21), "Casa con piscina", 10,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner.getId());
+		housingService.uploadHousing(datos(4).numberOfRooms(2), owner.getId());
+		housingService.uploadHousing(datos(7).numberOfRooms(1), owner.getId());
+		Housing housing3 = housingService.uploadHousing(datos(29).numberOfRooms(6), owner.getId());
+		housingService.uploadHousing(datos(243).numberOfRooms(5), owner.getId());
+		Housing housing5 = housingService.uploadHousing(datos(21).numberOfRooms(10), owner.getId());
 
 		housingsList = housingService.filterHousingsByMinimumRooms(6);
 
@@ -325,11 +385,10 @@ public class HousingServiceTests {
 		User owner1 = signUpUser("Owner1", RoleType.ADMIN);
 		User owner2 = signUpUser("Owner2", RoleType.ADMIN);
 
-		Housing housing1 = housingService.uploadHousing(Long.valueOf(24019), "Casa en la playa", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve", true, false, true, "Playa del Orzán", owner1.getId());
+		Housing housing1 = housingService.uploadHousing(datos(24019), owner1.getId());
 
-		Housing housing2 = housingService.uploadHousing(Long.valueOf(24030), "Casa en la playa 2", 6,
-				BigDecimal.valueOf(20.65), "Descripción breve 2", true, false, true, "Playa del Orzán 2",
+		Housing housing2 = housingService.uploadHousing(
+				datos(24030).name("Casa en la playa 2").description("Descripción breve 2").location("Playa del Orzán 2"),
 				owner2.getId());
 
 		housingService.tradeHousings(owner1.getId(), housing1.getId(), housing2.getHousingCode());

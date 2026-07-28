@@ -32,7 +32,13 @@ spring:
 
     # Los scripts se declaran explícitamente en vez de dejar que Spring los
     # descubra por convención: así queda a la vista cuál se ejecuta y cuándo.
-    schema: classpath:schema.sql
+    #
+    # El segundo, migracion-h2.sql, pone al día las bases de datos que ya existían
+    # antes de que se añadieran columnas nuevas. Va aparte porque usa sintaxis que
+    # MySQL no entiende; el detalle está explicado dentro del propio archivo.
+    schema:
+      - classpath:schema.sql
+      - classpath:migracion-h2.sql
     data: classpath:data.sql
     initialization-mode: always
 
