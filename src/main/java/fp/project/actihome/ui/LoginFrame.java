@@ -4,6 +4,8 @@ import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -25,6 +27,7 @@ import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
+import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
@@ -57,6 +60,11 @@ public class LoginFrame extends JFrame {
 	private Field usuario;
 	private Field contrasena;
 	private JLabel error;
+
+	/** Piezas de display que crecen con la ventana. Ver {@link Layout}. */
+	private JLabel claimPrimera;
+	private JLabel claimSegunda;
+	private JLabel titulo;
 
 	public LoginFrame(UserService userService, SessionManager sessionManager, Navigator navigator) {
 
@@ -109,6 +117,31 @@ public class LoginFrame extends JFrame {
 		raiz.add(formulario(), "grow, wmin 0");
 
 		setContentPane(raiz);
+
+		// La tipografía de display se recalcula al redimensionar. Un titular de 38px
+		// se ve rotundo en una ventana de 980 y tímido en una de 2500: la proporción
+		// entre el texto y su contenedor es parte del diseño, no una consecuencia del
+		// tamaño de la letra.
+		addComponentListener(new ComponentAdapter() {
+
+			@Override
+			public void componentResized(ComponentEvent e) {
+				ajustarEscalaDeDisplay();
+			}
+		});
+	}
+
+	/** Ajusta los titulares al ancho actual de la ventana. */
+	private void ajustarEscalaDeDisplay() {
+
+		int ancho = getWidth();
+
+		claimPrimera.setFont(Typography.serifMedium(Layout.display(38f, ancho)));
+		claimSegunda.setFont(Typography.serifMedium(Layout.display(38f, ancho)));
+		titulo.setFont(Typography.serifMedium(Layout.display(Typography.SCREEN_TITLE, ancho)));
+
+		revalidate();
+		repaint();
 	}
 
 	/**
@@ -152,7 +185,7 @@ public class LoginFrame extends JFrame {
 		JLabel marca = new JLabel("ActiHome");
 		marca.setFont(Typography.serifMedium(30f));
 		marca.setForeground(Theme.bg());
-		panel.add(marca, "wmin 0, wmax 560");
+		panel.add(marca, Layout.ancho(Layout.TEXTO));
 
 		// Dos etiquetas en lugar de una con <html><br></html>: el renderizado HTML de
 		// Swing calcula sus tamaños por su cuenta y se lleva mal con las fuentes
@@ -161,12 +194,15 @@ public class LoginFrame extends JFrame {
 		// espacio de los rasgos ascendentes y descendentes, así que dos etiquetas
 		// apiladas dejan más aire del que pide una serif de display: se lee como dos
 		// frases sueltas en vez de como una sola en dos líneas.
-		panel.add(claim("Elige dónde"), "wmin 0, wmax 560");
-		panel.add(claim("quieres despertar"), "wmin 0, wmax 560, gaptop -10");
+		claimPrimera = claim("Elige dónde");
+		claimSegunda = claim("quieres despertar");
+
+		panel.add(claimPrimera, Layout.ancho(Layout.TEXTO));
+		panel.add(claimSegunda, Layout.ancho(Layout.TEXTO) + ", gaptop -10");
 
 		panel.add(new MascotSlot(MascotSlot.Tamano.GRANDE), "align left");
-		panel.add(Labels.editorialOnHeader(Theme.estacion().frase()), "wmin 0, wmax 560");
-		panel.add(Labels.capsOnHeader("por CocoBrain"), "wmin 0, wmax 560");
+		panel.add(Labels.editorialOnHeader(Theme.estacion().frase()), Layout.ancho(Layout.TEXTO));
+		panel.add(Labels.capsOnHeader("por CocoBrain"), Layout.ancho(Layout.TEXTO));
 
 		return panel;
 	}
@@ -193,39 +229,60 @@ public class LoginFrame extends JFrame {
 	 */
 	private JPanel formulario() {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.GIANT, Space.GIANT, Space.XXXL,
-				Space.GIANT), "[grow,fill]", "push[]" + Space.XS + "[]" + Space.XXL + "[]" + Space.LG + "[]"
-						+ Space.XS + "[]" + Space.LG + "[]" + Space.XXL + "[]push"));
+		// Dos capas: una exterior que ocupa toda la mitad y una interior con el ancho
+		// limitado. Poner el tope directamente en cada fila no funciona: la columna
+		// declarada como "fill" obliga a los componentes a ocupar toda la celda y el
+		// máximo se ignora. Limitando el contenedor, todo lo que lleva dentro queda
+		// limitado con él.
+		// Dos detalles de MigLayout que hay que acertar a la vez, y que costaron tres
+		// intentos:
+		//
+		//   1. La columna es "[grow]" y NO "[grow,fill]". El "fill" de una columna
+		//      obliga a sus componentes a ocupar todo el ancho de la celda.
+		//   2. El layout NO lleva la palabra "fill". Esa restricción global hace lo
+		//      mismo que la anterior pero para todo el panel, y pesa por encima de
+		//      cualquier tamaño declarado en un componente.
+		//
+		// Con las dos fuera, la celda crece con la ventana pero el componente decide
+		// su ancho: el tope manda y el espacio sobrante se queda como aire, que es
+		// justo la regla que persigue esta pantalla.
+		JPanel exterior = new JPanel(new MigLayout(Space.insets(Space.GIANT, Space.GIANT, Space.XXXL, Space.GIANT),
+				"[grow]", "[grow]"));
+		exterior.setOpaque(false);
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
+				"push[]" + Space.XS + "[]" + Space.XXL + "[]" + Space.LG + "[]" + Space.XS + "[]" + Space.LG + "[]"
+						+ Space.XXL + "[]push"));
 		panel.setOpaque(false);
 
-		// Tope de ancho aplicado a cada fila del formulario, y alineado a la izquierda
-		// dentro de la mitad para que no baile respecto al panel de marca.
-		String ancho = "wmin 0, wmax 440";
+		panel.add(Labels.capsAccent("Acceso"));
 
-		panel.add(Labels.capsAccent("Acceso"), ancho);
-		panel.add(Labels.title("Bienvenido de nuevo"), ancho);
+		titulo = Labels.title("Bienvenido de nuevo");
+		panel.add(titulo);
 
 		usuario = Field.text("Nombre de usuario");
-		panel.add(usuario, ancho);
+		panel.add(usuario);
 
 		contrasena = Field.password("Contraseña");
-		panel.add(contrasena, ancho);
+		panel.add(contrasena);
 
 		// Se reserva el hueco del error desde el principio, con un espacio en blanco.
 		// Si el mensaje apareciera de la nada, el formulario entero daría un salto al
 		// fallar el login, y ese salto es justo cuando el usuario está mirando.
 		error = Labels.error(" ");
-		panel.add(error, ancho);
+		panel.add(error);
 
-		panel.add(Buttons.primary("Entrar", e -> entrar()), ancho + ", growx, height 44!");
+		panel.add(Buttons.primary("Entrar", e -> entrar()), "growx, height 44!");
 
-		panel.add(enlaceARegistro(), ancho);
+		panel.add(enlaceARegistro());
 
 		// Enter envía el formulario desde cualquiera de los dos campos.
 		usuario.onEnter(this::entrar);
 		contrasena.onEnter(this::entrar);
 
-		return panel;
+		exterior.add(panel, Layout.ancho(Layout.FORMULARIO) + ", aligny center, alignx left");
+
+		return exterior;
 	}
 
 	private JPanel enlaceARegistro() {

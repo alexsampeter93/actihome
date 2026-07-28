@@ -22,6 +22,15 @@ param(
 
 Add-Type -AssemblyName System.Drawing, System.Windows.Forms
 
+# Conciencia de DPI. Sin esto, Windows le miente a PowerShell sobre el tamaño de
+# la pantalla y de las ventanas: le da coordenadas "lógicas" ya divididas por el
+# factor de escala del monitor. El resultado es que las capturas salen
+# recortadas por la derecha y por abajo, y lo peor es que parecen correctas —
+# durante un rato dimos por rota una maquetación que en realidad funcionaba,
+# porque la parte que faltaba era justo la que había que mirar.
+Add-Type -TypeDefinition 'using System;using System.Runtime.InteropServices;public class DpiAware { [DllImport("user32.dll")] public static extern bool SetProcessDPIAware(); }'
+[DpiAware]::SetProcessDPIAware() | Out-Null
+
 # Localizar la ventana real de la aplicación.
 #
 # Dos trampas de Java en Windows, aprendidas a base de fallar:

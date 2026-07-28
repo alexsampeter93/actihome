@@ -32,6 +32,7 @@ import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.nav.Navigator;
+import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
@@ -118,9 +119,9 @@ public class SignUpFrame extends JFrame {
 				Space.GIANT), "[grow,fill]", "[]" + Space.XL + "[]push[]"));
 		raiz.setBackground(Theme.bg());
 
-		raiz.add(cabecera(), "growx, wmin 0, wmax 940, align center");
-		raiz.add(campos(), "growx, wmin 0, wmax 940, align center");
-		raiz.add(pie(), "growx, wmin 0, wmax 940, align center");
+		raiz.add(cabecera(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
+		raiz.add(campos(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
+		raiz.add(pie(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
 
 		setContentPane(raiz);
 	}
