@@ -25,6 +25,7 @@ import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
+import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Layout;
@@ -61,6 +62,13 @@ public class LoginFrame extends JFrame {
 	private Field contrasena;
 	private JLabel error;
 
+	/**
+	 * La frase editorial de la estación. Es texto, no color, así que no se resuelve
+	 * sola al repintar: hay que reescribirla al volver a mostrar la pantalla, porque
+	 * el usuario ha podido cambiar de estación antes de cerrar sesión.
+	 */
+	private JLabel fraseEstacional;
+
 	/** Piezas de display que crecen con la ventana. Ver {@link Layout}. */
 	private JLabel claimPrimera;
 	private JLabel claimSegunda;
@@ -93,6 +101,7 @@ public class LoginFrame extends JFrame {
 			usuario.setText("");
 			contrasena.setText("");
 			error.setText(" ");
+			fraseEstacional.setText(Theme.estacion().frase());
 			SwingUtilities.invokeLater(usuario::requestFocus);
 		}
 
@@ -110,8 +119,7 @@ public class LoginFrame extends JFrame {
 		// el componente. Sin ese "wmin 0", MigLayout respeta el ancho mínimo del panel
 		// —que viene dado por el claim a 40px— y lo deja invadir la columna de al lado:
 		// el formulario acababa dibujado por debajo del panel oscuro y cortado.
-		JPanel raiz = new JPanel(new MigLayout("fill, " + Space.insets(0), "[45%:45%:45%][grow,fill]", "[grow,fill]"));
-		raiz.setBackground(Theme.bg());
+		JPanel raiz = new Page(new MigLayout("fill, " + Space.insets(0), "[45%:45%:45%][grow,fill]", "[grow,fill]"));
 
 		raiz.add(panelDeMarca(), "grow, wmin 0");
 		raiz.add(formulario(), "grow, wmin 0");
@@ -182,10 +190,7 @@ public class LoginFrame extends JFrame {
 		};
 		panel.setOpaque(false);
 
-		JLabel marca = new JLabel("ActiHome");
-		marca.setFont(Typography.serifMedium(30f));
-		marca.setForeground(Theme.bg());
-		panel.add(marca, Layout.ancho(Layout.TEXTO));
+		panel.add(Labels.brand("ActiHome", 22f), Layout.ancho(Layout.TEXTO));
 
 		// Dos etiquetas en lugar de una con <html><br></html>: el renderizado HTML de
 		// Swing calcula sus tamaños por su cuenta y se lleva mal con las fuentes
@@ -201,19 +206,25 @@ public class LoginFrame extends JFrame {
 		panel.add(claimSegunda, Layout.ancho(Layout.TEXTO) + ", gaptop -10");
 
 		panel.add(new MascotSlot(MascotSlot.Tamano.GRANDE), "align left");
-		panel.add(Labels.editorialOnHeader(Theme.estacion().frase()), Layout.ancho(Layout.TEXTO));
+
+		fraseEstacional = Labels.editorialOnHeader(Theme.estacion().frase());
+		panel.add(fraseEstacional, Layout.ancho(Layout.TEXTO));
 		panel.add(Labels.capsOnHeader("por CocoBrain"), Layout.ancho(Layout.TEXTO));
 
 		return panel;
 	}
 
-	/** Una línea del claim editorial. */
+	/**
+	 * Una línea del claim editorial.
+	 *
+	 * <p>
+	 * Pasa por {@code Labels} y no por un {@code setForeground} directo: un color
+	 * asignado se congela, y desde que existe el selector de estación esta pantalla
+	 * puede reabrirse —al cerrar sesión— con una estación distinta de la que había
+	 * cuando se construyó.
+	 */
 	private JLabel claim(String texto) {
-
-		JLabel etiqueta = new JLabel(texto);
-		etiqueta.setFont(Typography.serifMedium(38f));
-		etiqueta.setForeground(Theme.bg());
-		return etiqueta;
+		return Labels.displayOnHeader(texto, 38f);
 	}
 
 	/**

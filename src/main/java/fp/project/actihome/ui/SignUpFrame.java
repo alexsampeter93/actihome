@@ -31,6 +31,7 @@ import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
+import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
@@ -115,9 +116,8 @@ public class SignUpFrame extends JFrame {
 		// tope, los ocho campos se estiraban hasta más de mil píxeles cada uno: un
 		// campo de texto tan largo para escribir un nombre se percibe como un error de
 		// maquetación, y el ojo pierde la línea al recorrerlo.
-		JPanel raiz = new JPanel(new MigLayout("wrap 1, fill, " + Space.insets(Space.XXXL, Space.GIANT, Space.XXL,
+		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(Space.XXXL, Space.GIANT, Space.XXL,
 				Space.GIANT), "[grow,fill]", "[]" + Space.XL + "[]push[]"));
-		raiz.setBackground(Theme.bg());
 
 		raiz.add(cabecera(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
 		raiz.add(campos(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));

@@ -95,6 +95,26 @@ public final class Labels {
 		return crear(texto.toUpperCase(), Typography.label(), Theme::mutSobreOscuro);
 	}
 
+	/**
+	 * El wordmark "ACTIHOME": serif con las letras separadas, sobre fondo oscuro.
+	 *
+	 * <p>
+	 * Existe como fábrica —en lugar de un {@code JLabel} con {@code setForeground}
+	 * en la pantalla— por la razón de siempre en este sistema: un color asignado se
+	 * queda congelado. Al cambiar de estación, la barra se repinta con el
+	 * {@code hdr} nuevo pero el wordmark seguiría escrito con el {@code bg} de la
+	 * estación anterior. Es un fallo que solo aparece al usar el selector, es decir,
+	 * justo cuando alguien está mirando.
+	 */
+	public static JLabel brand(String texto, float tamano) {
+		return crear(texto.toUpperCase(), Typography.serifTracked(tamano), Theme::bg);
+	}
+
+	/** Titular de display sobre fondo oscuro (claim del login, hero del panel). */
+	public static JLabel displayOnHeader(String texto, float tamano) {
+		return crear(texto, Typography.serifMedium(tamano), Theme::bg);
+	}
+
 	/** Frase editorial en cursiva, con el color de acento. */
 	public static JLabel editorial(String texto) {
 		return crear(texto, Typography.serifItalic(16f), Theme::acc);

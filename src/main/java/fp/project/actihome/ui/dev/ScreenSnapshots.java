@@ -1,0 +1,219 @@
+package fp.project.actihome.ui.dev;
+
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.time.LocalDateTime;
+
+
+import javax.imageio.ImageIO;
+import javax.swing.JFrame;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
+import org.springframework.context.ConfigurableApplicationContext;
+
+import fp.project.actihome.ActihomeApplication;
+import fp.project.actihome.model.entities.User;
+import fp.project.actihome.model.entities.User.RoleType;
+import fp.project.actihome.model.services.UserService;
+import fp.project.actihome.ui.ShowHousingsFrame;
+import fp.project.actihome.ui.sessionManagement.SessionManager;
+import fp.project.actihome.ui.theme.ActiHomeTheme;
+import fp.project.actihome.ui.theme.Season;
+import fp.project.actihome.ui.theme.Theme;
+
+/**
+ * Captura pantallas completas de la aplicación, con datos reales y sin abrir
+ * ninguna ventana.
+ *
+ * <pre>
+ * .\mvnw.cmd compile exec:java "-Dexec.mainClass=fp.project.actihome.ui.dev.ScreenSnapshots"
+ * .\mvnw.cmd compile exec:java "-Dexec.mainClass=fp.project.actihome.ui.dev.ScreenSnapshots" "-Dexec.args=fase3-catalogo ADMIN"
+ * </pre>
+ *
+ * <p>
+ * <b>Por qué hace falta otra herramienta además de {@code ThemeSnapshots}.</b>
+ * Aquella dibuja la guía de estilo, que es un panel suelto sin dependencias.
+ * Esta dibuja <em>pantallas de la aplicación</em>, y una pantalla de ActiHome es
+ * un bean de Spring que necesita servicios, base de datos y una sesión abierta.
+ * Sin eso no hay nada que pintar.
+ *
+ * <p>
+ * <b>El problema que resuelve de verdad.</b> Para ver el catálogo hay que
+ * iniciar sesión, y para iniciar sesión hay que escribir en un formulario. Eso
+ * convierte cada comprobación visual en "abre la aplicación, escribe, mira" —un
+ * bucle lento y, sobre todo, imposible de automatizar. Aquí la sesión se abre
+ * por código y la pantalla se pinta sobre una imagen en memoria.
+ *
+ * <p>
+ * <b>Base de datos aparte.</b> Arranca contra una H2 <b>en memoria</b>, no
+ * contra {@code ~/.actihome}. Dos motivos: no ensucia los datos de trabajo con
+ * el usuario de prueba que crea para iniciar sesión, y el resultado es siempre
+ * el mismo porque la base se siembra desde cero con {@code data.sql}. Una
+ * captura que depende del estado acumulado de tu base de datos no sirve para
+ * comparar dos versiones.
+ */
+public final class ScreenSnapshots {
+
+	private static final String DESTINO = "docs/progreso";
+
+	/** Base desechable: se crea al arrancar y muere con el proceso. */
+	private static final String BASE_EN_MEMORIA = "jdbc:h2:mem:snapshots;DB_CLOSE_DELAY=-1;MODE=MySQL";
+
+	/** Tamaño de ventana con el que se capturan las pantallas. */
+	private static final int ANCHO = 1240;
+	private static final int ALTO = 840;
+
+	private ScreenSnapshots() {
+	}
+
+	public static void main(String[] args) throws IOException {
+
+		System.setProperty("java.awt.headless", "false");
+		ActiHomeTheme.install();
+
+		String prefijo = args.length > 0 ? args[0] : "catalogo";
+		RoleType rol = args.length > 1 ? RoleType.valueOf(args[1]) : RoleType.ADMIN;
+
+		SpringApplication app = new SpringApplication(ActihomeApplication.class);
+		app.setWebApplicationType(WebApplicationType.NONE);
+
+		// La URL va como argumento de línea de comandos y NO con setDefaultProperties.
+		// Es una diferencia que parece de matiz y no lo es: los "default properties" son
+		// lo ÚLTIMO en el orden de precedencia de Spring Boot, por debajo de
+		// application.yaml, así que el yaml ganaba y esta herramienta acababa
+		// escribiendo su usuario de prueba en la base de datos real del usuario. Los
+		// argumentos de línea de comandos están arriba del todo y sí mandan.
+		try (ConfigurableApplicationContext context = app.run("--spring.datasource.url=" + BASE_EN_MEMORIA,
+				"--spring.datasource.username=sa")) {
+
+			comprobarQueLaBaseEsDesechable(context);
+
+			abrirSesion(context, rol);
+
+			ShowHousingsFrame catalogo = context.getBean(ShowHousingsFrame.class);
+
+			for (Season estacion : Season.values()) {
+
+				Theme.cambiarA(estacion);
+
+				File salida = new File(DESTINO, prefijo + "-" + estacion.name().toLowerCase() + ".png");
+				ImageIO.write(dibujar(catalogo), "png", salida);
+
+				System.out.println("Captura generada: " + salida.getPath());
+			}
+		}
+
+		// Swing deja hilos vivos (el de eventos, el de temporizadores) que impedirían
+		// que el proceso termine solo. En una herramienta de línea de comandos eso se
+		// traduce en una consola colgada.
+		System.exit(0);
+	}
+
+	/**
+	 * Se asegura de que estamos sobre la base desechable antes de escribir nada.
+	 *
+	 * <p>
+	 * Esta comprobación existe porque el fallo ya ocurrió: una configuración con la
+	 * precedencia equivocada hizo que la herramienta se conectara a
+	 * {@code ~/.actihome} y dejara allí su usuario de prueba. Un error de
+	 * configuración no avisa —todo funciona, solo que contra la base que no era—, así
+	 * que la única defensa es preguntar en voz alta a dónde nos hemos conectado.
+	 */
+	private static void comprobarQueLaBaseEsDesechable(ConfigurableApplicationContext context) {
+
+		String url = context.getEnvironment().getProperty("spring.datasource.url", "");
+
+		if (!url.startsWith("jdbc:h2:mem:")) {
+			throw new IllegalStateException(
+					"Esta herramienta escribe datos de prueba y solo debe usar una base en memoria. Conectada a: " + url);
+		}
+	}
+
+	/**
+	 * Registra un usuario de prueba y lo deja como sesión activa.
+	 *
+	 * <p>
+	 * Se pasa por {@code signUp} en lugar de insertar la fila a mano para que la
+	 * contraseña quede cifrada con BCrypt igual que en la aplicación real. La base es
+	 * en memoria, así que este usuario desaparece al terminar.
+	 */
+	private static void abrirSesion(ConfigurableApplicationContext context, RoleType rol) {
+
+		UserService userService = context.getBean(UserService.class);
+		SessionManager sessionManager = context.getBean(SessionManager.class);
+
+		User usuario = new User("alex", "1234", "Alejandro", "Sampedro", "Coruña", 666777892,
+				"alex@actihome.example", LocalDateTime.now().minusYears(32), rol);
+
+		try {
+			userService.signUp(usuario);
+		} catch (Exception ex) {
+			throw new IllegalStateException("No se pudo crear el usuario de captura", ex);
+		}
+
+		sessionManager.login(usuario);
+	}
+
+	/**
+	 * Pinta una ventana sobre una imagen, al tamaño de captura, sin mostrarla.
+	 *
+	 * <p>
+	 * {@code setVisible(true)} sí se llama —es donde cada pantalla recarga sus
+	 * datos— pero sobre una ventana colocada muy fuera de la pantalla, para que no
+	 * aparezca delante de lo que estés haciendo. Es el único modo de que la captura
+	 * refleje el estado real: una pantalla que nunca se ha mostrado tiene la lista
+	 * vacía.
+	 */
+	private static BufferedImage dibujar(JFrame ventana) {
+
+		ventana.setSize(new Dimension(ANCHO, ALTO));
+		ventana.setLocation(-20000, -20000);
+		ventana.setVisible(true);
+
+		disponer(ventana.getContentPane());
+
+		// La imagen se hace del tamaño del panel de contenido, no del de la ventana. La
+		// diferencia es la barra de título y los bordes que pone Windows: si se usara el
+		// tamaño de la ventana quedarían unas franjas negras abajo y a la derecha, y una
+		// franja negra en una captura se interpreta como un fallo de maquetación que no
+		// existe. Ya nos costó un diagnóstico equivocado una herramienta que mentía.
+		int ancho = ventana.getContentPane().getWidth();
+		int alto = ventana.getContentPane().getHeight();
+
+		BufferedImage imagen = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g2 = imagen.createGraphics();
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+		// printAll pinta el componente y toda su descendencia de forma síncrona, que es
+		// justo lo que hace falta al dibujar fuera de la pantalla; paint() no garantiza
+		// que los hijos estén ya dibujados cuando vuelve.
+		ventana.getContentPane().printAll(g2);
+
+		g2.dispose();
+
+		return imagen;
+	}
+
+	/** Recorre el árbol colocando cada componente. Ver {@code ThemeSnapshots}. */
+	private static void disponer(Component componente) {
+
+		synchronized (componente.getTreeLock()) {
+
+			componente.doLayout();
+
+			if (componente instanceof Container) {
+				for (Component hijo : ((Container) componente).getComponents()) {
+					disponer(hijo);
+				}
+			}
+		}
+	}
+}

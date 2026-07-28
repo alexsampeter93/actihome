@@ -174,4 +174,23 @@ public final class Typography {
 	public static Font label() {
 		return label(LABEL);
 	}
+
+	/**
+	 * Serif con las letras separadas: el tratamiento del wordmark "ACTIHOME".
+	 *
+	 * <p>
+	 * Es la única combinación del sistema que mezcla los dos recursos —la serif de
+	 * display y el espaciado de la versalita— y existe solo para la marca. El
+	 * espaciado es algo menor que el de las etiquetas ({@code .14em} frente a
+	 * {@code .18em}): a 20px, el mismo tracking que a 11px desharía la palabra.
+	 *
+	 * <p>
+	 * Un detalle tipográfico que conviene saber: <b>el espaciado entre letras debe
+	 * bajar según sube el tamaño</b>. Las mayúsculas pequeñas necesitan aire para no
+	 * empastarse; las grandes ya lo tienen de serie, y añadírselo las convierte en
+	 * letras sueltas en vez de en una palabra.
+	 */
+	public static Font serifTracked(float size) {
+		return serifMedium.deriveFont(size).deriveFont(Collections.singletonMap(TextAttribute.TRACKING, 0.14f));
+	}
 }
