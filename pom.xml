@@ -62,6 +62,17 @@
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
+		<!-- H2: base de datos embebida, escrita en Java puro. Es la de por defecto:
+			viaja dentro del jar y guarda los datos en un fichero del usuario, así que la
+			aplicación se abre sin instalar ni configurar nada. -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- MySQL sigue disponible con el perfil "mysql", para trabajar contra un
+			motor de servidor real cuando interese. -->
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>

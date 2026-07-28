@@ -204,8 +204,16 @@ public class ReviewServiceTests {
 		assertEquals(reviews.get(1), review3);
 		assertEquals(reviews.get(2), review2);
 		assertEquals(reviews.get(3), review1);
-		assertEquals(housing.getScore(), housingScore);
 
+		// Comparación con tolerancia, no exacta. Dos números decimales que "deberían"
+		// ser iguales casi nunca lo son bit a bit: el orden de las sumas cambia el
+		// último dígito, y cada base de datos redondea a su manera al guardarlos y
+		// leerlos. Este test fallaba con 3,4050000000000002 frente a 3,405.
+		//
+		// La regla: los decimales nunca se comparan con igualdad, siempre con un
+		// margen. (Y el dinero no se guarda en decimales, sino en BigDecimal, que es
+		// lo que ya hace esta aplicación con los precios.)
+		assertEquals(housingScore, housing.getScore(), 0.0001);
 	}
 
 	@Test

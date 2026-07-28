@@ -1,0 +1,27 @@
+# Perfil de tests: H2 en memoria.
+#
+# Cada ejecución arranca con una base recién creada que desaparece al terminar,
+# así que los tests no dependen de nada instalado ni se estorban entre
+# ejecuciones. Antes atacaban la misma base real que la aplicación y solo
+# quedaban limpios porque cada clase de test hace rollback: bastaba con que un
+# test olvidara @Transactional para ensuciar los datos de trabajo.
+#
+# Este perfil desactiva además los beans de interfaz (@Profile("!test")), para
+# que levantar el contexto de test no construya ventanas de Swing.
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:actihome-test;DB_CLOSE_DELAY=-1;MODE=MySQL
+    username: sa
+    password: ""
+    driverClassName: org.h2.Driver
+    schema: classpath:schema.sql
+    data: classpath:data.sql
+    initialization-mode: always
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect

@@ -1,44 +1,70 @@
-INSERT INTO USERS(username, password, name, surname, locality, phoneNumber, email, birthDate, role)
-VALUES("Admin", "1234", "Alejandro", "Sampedro", "Coruña", 666777892, "alejsamcalo@gmail.com", "1993-01-03", 0); 
+-- Datos de ejemplo de ActiHome.
+--
+-- Este script se ejecuta en cada arranque, así que cada inserción va protegida
+-- por un WHERE NOT EXISTS: si la fila ya está, no se duplica. A eso se le llama
+-- idempotente — ejecutarlo una vez o cien veces deja el mismo resultado.
+--
+-- Antes no hacía falta porque el esquema se borraba entero en cada arranque.
+-- Ahora los datos persisten, así que el script tiene que poder convivir con lo
+-- que ya haya.
+--
+-- Se usa FROM DUAL porque MySQL exige un FROM cuando hay WHERE; H2 también lo
+-- acepta, así que el script vale para las dos bases.
+--
+-- Las comillas son simples y no dobles: en SQL estándar las dobles delimitan
+-- nombres de columna, no texto. MySQL era permisivo con eso; H2 no.
+--
+-- NOTA: la contraseña de estos usuarios está en texto plano, así que NO pueden
+-- iniciar sesión (el login usa BCrypt). Son datos para poblar el catálogo;
+-- para entrar hay que registrarse.
+--
+-- Se han retirado las reseñas y reservas de ejemplo que había antes: apuntaban a
+-- identificadores fijos (2, 3, 4) que solo eran correctos si la base estaba
+-- recién creada, y sus fechas de 2026 ya son pasado, así que las reservas
+-- aparecían en estados imposibles. Los datos de demostración del catálogo se
+-- rehacen en la Fase 3, cuando la pantalla que los muestra esté diseñada.
+--
+-- Las referencias entre tablas se resuelven con subconsultas por el nombre de
+-- usuario y no con el número de fila: un id fijo deja de ser correcto en cuanto
+-- la base no está vacía.
 
 INSERT INTO USERS(username, password, name, surname, locality, phoneNumber, email, birthDate, role)
-VALUES("Customer", "1234", "Jorge", "Sampedro", "Coruña", 664567076, "jorgesamcalo@gmail.com", "1999-12-09", 1); 
+SELECT 'Admin', '1234', 'Alejandro', 'Sampedro', 'Coruña', 666777892, 'alejsamcalo@gmail.com', '1993-01-03', 'ADMIN'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM USERS WHERE username = 'Admin');
 
 INSERT INTO USERS(username, password, name, surname, locality, phoneNumber, email, birthDate, role)
-VALUES("Customer10", "1234", "Jorge", "Sampedro", "Coruña", 664567076, "jorgesamcalo@gmail.com", "1999-12-09", 1); 
+SELECT 'Customer', '1234', 'Jorge', 'Sampedro', 'Coruña', 664567076, 'jorgesamcalo@gmail.com', '1999-12-09', 'CUSTOMER'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM USERS WHERE username = 'Customer');
 
 INSERT INTO USERS(username, password, name, surname, locality, phoneNumber, email, birthDate, role)
-VALUES("Customer16", "1234", "Jorge", "Sampedro", "Coruña", 664567076, "jorgesamcalo@gmail.com", "1999-12-09", 1); 
+SELECT 'Customer10', '1234', 'Jorge', 'Sampedro', 'Coruña', 664567076, 'jorgesamcalo@gmail.com', '1999-12-09', 'CUSTOMER'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM USERS WHERE username = 'Customer10');
+
+INSERT INTO USERS(username, password, name, surname, locality, phoneNumber, email, birthDate, role)
+SELECT 'Customer16', '1234', 'Jorge', 'Sampedro', 'Coruña', 664567076, 'jorgesamcalo@gmail.com', '1999-12-09', 'CUSTOMER'
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM USERS WHERE username = 'Customer16');
 
 INSERT INTO HOUSINGS(housingCode, type, numberOfRooms, pricePerNight, description, breakfast, lunch, dinner, score, available, location, ownerId)
-VALUES(204183, "Casa en la playa", 6, 40.42, "Descripcion", TRUE, FALSE, TRUE, NULL, TRUE, "Andalucia", 1);
+SELECT 204183, 'Casa en la playa', 6, 40.42, 'Descripcion', TRUE, FALSE, TRUE, NULL, TRUE, 'Andalucia',
+	(SELECT id FROM USERS WHERE username = 'Admin')
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 204183);
 
 INSERT INTO HOUSINGS(housingCode, type, numberOfRooms, pricePerNight, description, breakfast, lunch, dinner, score, available, location, ownerId)
-VALUES(204184, "Casa en la playa", 6, 40.42, "Descripcion", TRUE, FALSE, TRUE, NULL, TRUE, "Andalucia", 1);
+SELECT 204184, 'Casa en la playa', 6, 40.42, 'Descripcion', TRUE, FALSE, TRUE, NULL, TRUE, 'Andalucia',
+	(SELECT id FROM USERS WHERE username = 'Admin')
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 204184);
 
 INSERT INTO HOUSINGS(housingCode, type, numberOfRooms, pricePerNight, description, breakfast, lunch, dinner, score, available, location, ownerId)
-VALUES(204163, "Casa en la playa", 6, 40.42, "Descripcion", TRUE, FALSE, TRUE, NULL, TRUE, "Andalucia", 1);
+SELECT 204163, 'Casa en la playa', 6, 40.42, 'Descripcion', TRUE, FALSE, TRUE, NULL, TRUE, 'Andalucia',
+	(SELECT id FROM USERS WHERE username = 'Admin')
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 204163);
 
 INSERT INTO HOUSINGS(housingCode, type, numberOfRooms, pricePerNight, description, breakfast, lunch, dinner, score, available, location, ownerId)
-VALUES(204132, "Casa en la playa", 6, 40.42, "Descripcion", TRUE, FALSE, TRUE, NULL, TRUE, "Andalucia", 1);
+SELECT 204132, 'Casa en la playa', 6, 40.42, 'Descripcion', TRUE, FALSE, TRUE, NULL, TRUE, 'Andalucia',
+	(SELECT id FROM USERS WHERE username = 'Admin')
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 204132);
 
 INSERT INTO HOUSINGS(housingCode, type, numberOfRooms, pricePerNight, description, breakfast, lunch, dinner, score, available, location, ownerId)
-VALUES(2042183, "Casa en la playa", 6, 40.42, "Descripcion", TRUE, FALSE, TRUE, NULL, TRUE, "Andalucia", 1);
-
-INSERT INTO REVIEWS(title, body, locationScore, serviceScore, wifiScore, foodScore, cleaningScore, totalScore, publicationDate, authorId, housingId)
-VALUES("Titulo1", "Cuerpo", 4, 4, 4, 4, 4, 4, "2026-02-04", 2, 1);
-
-INSERT INTO REVIEWS(title, body, locationScore, serviceScore, wifiScore, foodScore, cleaningScore, totalScore, publicationDate, authorId, housingId)
-VALUES("Titulo1", "Cuerpo", 4, 4, 4, 4, 4, 4, "2026-02-04", 3, 1);
-
-INSERT INTO REVIEWS(title, body, locationScore, serviceScore, wifiScore, foodScore, cleaningScore, totalScore, publicationDate, authorId, housingId)
-VALUES("Titulo1", "Cuerpo", 4, 4, 4, 4, 4, 4, "2026-02-04", 4, 1);
-
-INSERT INTO RESERVATIONS(reservationCode, checkIn, checkOut, paymentMethod, reservationDate, totalPrice, checkedIn, customerId, housingId)
-VALUES("3910", "2026-02-13", "2026-02-18", "Tarjeta", "2026-02-05", 50.50, TRUE, 2, 1);
-
-INSERT INTO RESERVATIONS(reservationCode, checkIn, checkOut, paymentMethod, reservationDate, totalPrice, checkedIn, customerId, housingId)
-VALUES("3915", "2026-03-13", "2026-03-18", "Tarjeta", "2026-02-05", 50.50, TRUE, 2, 2);
-
-INSERT INTO RESERVATIONS(reservationCode, checkIn, checkOut, paymentMethod, reservationDate, totalPrice, checkedIn, customerId, housingId)
-VALUES("3920", "2026-05-05 03:00:00", "2026-05-18", "Tarjeta", "2026-01-05", 50.50, FALSE, 3, 3);
+SELECT 2042183, 'Casa en la playa', 6, 40.42, 'Descripcion', TRUE, FALSE, TRUE, NULL, TRUE, 'Andalucia',
+	(SELECT id FROM USERS WHERE username = 'Admin')
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 2042183);

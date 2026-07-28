@@ -3,6 +3,8 @@ package fp.project.actihome.model.entities;
 import java.time.LocalDateTime;
 
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -143,6 +145,21 @@ public class User {
 		this.birthDate = birthDate;
 	}
 
+	/**
+	 * El rol se persiste como <b>texto</b> ("ADMIN", "CUSTOMER").
+	 *
+	 * <p>
+	 * Sin esta anotación, JPA guarda los enums por su <em>número de orden</em>: 0
+	 * para el primero, 1 para el segundo. Eso significa que reordenar la
+	 * declaración del enum, o insertar un valor nuevo en medio, convierte
+	 * silenciosamente a todos los administradores en clientes. La base de datos
+	 * seguiría siendo válida y nadie se enteraría hasta que fuera grave.
+	 *
+	 * <p>
+	 * Guardar texto ocupa unos bytes más y a cambio hace que el dato sea legible y
+	 * a prueba de refactorizaciones del código.
+	 */
+	@Enumerated(EnumType.STRING)
 	public RoleType getRole() {
 		return role;
 	}

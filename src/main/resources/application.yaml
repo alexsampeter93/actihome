@@ -3,44 +3,55 @@ logging:
   level:
     org:
       hibernate:
-        SQL: debug
+        SQL: warn
 
 spring:
   main:
     headless: false
 
+  # ---------------------------------------------------------------------------
+  # Base de datos por defecto: H2 embebida, en fichero.
+  #
+  # H2 está escrita en Java puro y viaja dentro del jar, así que la aplicación se
+  # abre sin instalar ni configurar nada. Los datos se guardan en la carpeta del
+  # usuario y persisten entre arranques.
+  #
+  # Antes hacía falta un servidor MySQL con una base y unas credenciales
+  # concretas. Eso convertía la aplicación en algo que solo funcionaba en el
+  # ordenador donde se había montado: ni se podía compartir, ni los tests corrían
+  # en una máquina limpia.
+  #
+  # MySQL sigue disponible con el perfil "mysql":
+  #     mvnw spring-boot:run "-Dspring-boot.run.profiles=mysql"
+  # ---------------------------------------------------------------------------
   datasource:
-    url: jdbc:mysql://localhost:3306/actihome?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: alex
-    password: password
-    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:h2:file:${user.home}/.actihome/actihome;DB_CLOSE_DELAY=-1;MODE=MySQL
+    username: actihome
+    password: ""
+    driverClassName: org.h2.Driver
+
+    # Los scripts se declaran explícitamente en vez de dejar que Spring los
+    # descubra por convención: así queda a la vista cuál se ejecuta y cuándo.
+    schema: classpath:schema.sql
+    data: classpath:data.sql
     initialization-mode: always
 
-  # DevTools se ha eliminado del pom.xml, no solo desactivado aquí.
-  #
-  # Reinicia la aplicación con un cargador de clases nuevo para recargar cambios en
-  # caliente: útil en una aplicación web, inútil en una de escritorio. El efecto
-  # aquí era que main() se ejecutaba dos veces, en dos cargadores distintos, con lo
-  # que cada clase existía por duplicado y su estado estático no se compartía. El
-  # síntoma fue el splash: la primera ejecución mostraba uno, la segunda mostraba
-  # otro y al terminar cerraba solo el suyo, dejando el primero colgado detrás de
-  # la ventana.
-  #
-  # Desactivarlo desde este archivo no basta: el reiniciador se instala antes de
-  # que se lea la configuración. O se pone como propiedad del sistema antes de
-  # arrancar, o se quita la dependencia. Se ha quitado.
   jackson:
     default-property-inclusion: NON_NULL
 
   jpa:
     hibernate:
-      ddl-auto: none
-      show-sql: true
-      format-sql: true
-      use-sql-comments: true
+      # "validate" comprueba al arrancar que las entidades y las tablas cuadran, y
+      # falla si no. Es la red que avisa cuando alguien cambia una entidad y se
+      # olvida del esquema, que es un fallo que si no aparece tarde y en forma de
+      # error incomprensible.
+      ddl-auto: validate
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
 
+    show-sql: false
+    open-in-view: false
+
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
+        dialect: org.hibernate.dialect.H2Dialect

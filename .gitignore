@@ -34,3 +34,6 @@ build/
 
 ### Temporales de generación de documentación (LibreOffice) ###
 docs/tmp/
+
+### Ejecutable generado por jpackage (170 MB: incluye el runtime de Java) ###
+dist/

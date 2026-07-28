@@ -16,7 +16,22 @@ public interface HousingDao extends PagingAndSortingRepository<Housing, Long> {
 
 	ArrayList<Housing> findAllBy();
 
-	@Query("Select h from Housing h where LOWER(h.type) LIKE %?1%")
+	/**
+	 * Búsqueda por tipo, sin distinguir mayúsculas.
+	 *
+	 * <p>
+	 * La consulta ponía en minúsculas <b>la columna pero no el parámetro</b>, así
+	 * que buscar "Casa" comparaba "casa en la playa" contra "%Casa%" y no
+	 * encontraba nada. Funcionaba solo porque MySQL compara texto sin distinguir
+	 * mayúsculas por defecto; al pasar a H2, que sí distingue, el fallo salió a la
+	 * luz.
+	 *
+	 * <p>
+	 * Es un buen ejemplo de por qué conviene no apoyarse en el comportamiento
+	 * particular de un motor: lo que parece que funciona puede estar funcionando
+	 * por accidente.
+	 */
+	@Query("select h from Housing h where lower(h.type) like lower(concat('%', ?1, '%'))")
 	ArrayList<Housing> findHousingsByType(String type);
 
 	@Query("Select h from Housing h where h.numberOfRooms >= ?1")

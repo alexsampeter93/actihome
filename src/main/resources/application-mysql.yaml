@@ -1,0 +1,26 @@
+# Perfil MySQL: trabajar contra un motor de servidor real.
+#
+#     mvnw spring-boot:run "-Dspring-boot.run.profiles=mysql"
+#
+# Requiere un MySQL 8 vivo en localhost:3306 con una base "actihome". Las
+# credenciales se leen de variables de entorno para no dejarlas escritas en el
+# repositorio; los valores tras los dos puntos son solo el respaldo de
+# desarrollo:
+#
+#     $env:ACTIHOME_DB_USER = "alex"
+#     $env:ACTIHOME_DB_PASSWORD = "password"
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/actihome?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${ACTIHOME_DB_USER:alex}
+    password: ${ACTIHOME_DB_PASSWORD:password}
+    driverClassName: com.mysql.cj.jdbc.Driver
+    schema: classpath:schema.sql
+    data: classpath:data.sql
+    initialization-mode: always
+
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect

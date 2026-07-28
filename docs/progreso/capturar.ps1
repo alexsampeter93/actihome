@@ -72,8 +72,14 @@ public class Win {
 '@
 if (-not ("Win" -as [type])) { Add-Type -TypeDefinition $sig }
 
+# Se buscan los procesos candidatos por nombre: "java" cuando se ejecuta con
+# Maven y "ActiHome" cuando se ejecuta el empaquetado con jpackage.
 $h = [IntPtr]::Zero
-foreach ($p in (Get-Process java -ErrorAction SilentlyContinue)) {
+$procesos = @()
+$procesos += Get-Process java -ErrorAction SilentlyContinue
+$procesos += Get-Process ActiHome -ErrorAction SilentlyContinue
+
+foreach ($p in $procesos) {
     $candidato = [Win]::Buscar([uint32]$p.Id, $Titulo)
     if ($candidato -ne [IntPtr]::Zero) { $h = $candidato; break }
 }
