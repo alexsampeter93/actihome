@@ -23,8 +23,19 @@ Write-Host "==> Compilando y empaquetando..." -ForegroundColor Cyan
 & "$raiz\mvnw.cmd" -q package -DskipTests
 if ($LASTEXITCODE -ne 0) { throw "Fallo al empaquetar" }
 
-$jar = Get-ChildItem "$raiz\target\*.jar" | Where-Object { $_.Name -notlike "*sources*" } | Select-Object -First 1
+$jar = Get-ChildItem "$raiz\target\*.jar" | Where-Object { $_.Name -notlike "*sources*" -and $_.Name -notlike "*.original" } | Select-Object -First 1
 Write-Host "    $($jar.Name)  ($([math]::Round($jar.Length/1MB,1)) MB)"
+
+# Carpeta de preparación con SOLO el jar.
+#
+# jpackage copia al ejecutable todo lo que encuentre en la carpeta de entrada, y
+# si se le pasa "target" directamente se lleva también las clases sueltas, los
+# tests compilados, los informes de Surefire y los fuentes generados. Funciona,
+# pero reparte basura en la distribución y engorda la carpeta final.
+$preparacion = "$raiz\target\jpackage-input"
+if (Test-Path $preparacion) { Remove-Item $preparacion -Recurse -Force }
+New-Item -ItemType Directory -Path $preparacion | Out-Null
+Copy-Item $jar.FullName -Destination $preparacion
 
 # ---------------------------------------------------------------------------
 # 2. Construir el .ico a partir de los PNG del icono
@@ -118,7 +129,7 @@ if (-not (Test-Path $destino)) { New-Item -ItemType Directory -Path $destino | O
     --type app-image `
     --name $nombre `
     --app-version $version `
-    --input "$raiz\target" `
+    --input $preparacion `
     --main-jar $jar.Name `
     --main-class org.springframework.boot.loader.JarLauncher `
     --icon $ico `
