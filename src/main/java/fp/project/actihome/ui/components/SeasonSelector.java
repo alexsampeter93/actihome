@@ -135,6 +135,28 @@ public class SeasonSelector extends JPanel {
 			return new Dimension(ancho + 2, alto);
 		}
 
+		/**
+		 * El mínimo es el preferido: este componente no se puede encoger.
+		 *
+		 * <p>
+		 * <b>Y omitirlo cuesta caro.</b> Un {@code JComponent} que solo declara el
+		 * tamaño preferido informa de un mínimo de <b>cero</b>, porque la
+		 * implementación por defecto devuelve el tamaño actual —que antes del primer
+		 * reparto es 0×0—. Mientras sobra sitio no se nota nada; en cuanto la ventana
+		 * se queda corta, el gestor de layout reparte quitándole espacio a quien dice
+		 * poder cederlo, y estas pestañas se aplastaban a dos píxeles: quedaba
+		 * únicamente el subrayado de la estación activa, flotando sin texto.
+		 *
+		 * <p>
+		 * Es un fallo que no da error y que solo aparece a partir de cierto tamaño de
+		 * ventana. La regla, para todo componente propio: <b>si defines el preferido,
+		 * define también el mínimo.</b>
+		 */
+		@Override
+		public Dimension getMinimumSize() {
+			return getPreferredSize();
+		}
+
 		private String texto() {
 			return estacion.nombre().toUpperCase();
 		}

@@ -70,7 +70,7 @@ public class HousingRow extends JPanel {
 	 * proporción natural de una foto de alojamiento: el paisaje o la fachada entran
 	 * mejor apaisados que cuadrados.
 	 */
-	private static final int ALTO_FOTO = 200;
+	private static final int ALTO_FOTO = 190;
 
 	private final transient Housing housing;
 
@@ -83,7 +83,7 @@ public class HousingRow extends JPanel {
 	 */
 	public HousingRow(Housing housing, int resenas, Runnable alAbrir, Runnable alIntercambiar) {
 
-		super(new MigLayout(Space.insets(Space.XL, 0, Space.XL, 0), "[46%:46%:46%]" + Space.HUGE + "[grow,fill]",
+		super(new MigLayout(Space.insets(Space.LG, 0, Space.LG, 0), "[46%:46%:46%]" + Space.HUGE + "[grow,fill]",
 				"[]"));
 
 		this.housing = housing;
@@ -112,7 +112,7 @@ public class HousingRow extends JPanel {
 	private JPanel informacion(int resenas, Runnable alIntercambiar) {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.SM + "[]" + Space.MD + "[]" + Space.MD + "[]" + Space.MD + "[]push[]"));
+				"[]" + Space.XS + "[]" + Space.SM + "[]" + Space.SM + "[]" + Space.SM + "[]push[]"));
 		panel.setOpaque(false);
 
 		panel.add(referencia());

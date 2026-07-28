@@ -23,6 +23,7 @@ import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.services.UserService;
 import fp.project.actihome.ui.ShowHousingsFrame;
+import fp.project.actihome.ui.components.Segmented;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
 import fp.project.actihome.ui.theme.Season;
@@ -67,8 +68,8 @@ public final class ScreenSnapshots {
 	private static final String BASE_EN_MEMORIA = "jdbc:h2:mem:snapshots;DB_CLOSE_DELAY=-1;MODE=MySQL";
 
 	/** Tamaño de ventana con el que se capturan las pantallas. */
-	private static final int ANCHO = 1240;
-	private static final int ALTO = 840;
+	private static final int ANCHO = 1400;
+	private static final int ALTO = 900;
 
 	private ScreenSnapshots() {
 	}
@@ -102,18 +103,50 @@ public final class ScreenSnapshots {
 			for (Season estacion : Season.values()) {
 
 				Theme.cambiarA(estacion);
-
-				File salida = new File(DESTINO, prefijo + "-" + estacion.name().toLowerCase() + ".png");
-				ImageIO.write(dibujar(catalogo), "png", salida);
-
-				System.out.println("Captura generada: " + salida.getPath());
+				guardar(catalogo, prefijo + "-" + estacion.name().toLowerCase());
 			}
+
+			// Y la otra vista, para poder compararlas. Se cambia por código en lugar de
+			// simular un clic: el conmutador expone setActivo justamente para esto.
+			Theme.cambiarA(Season.VERANO);
+			buscarConmutador(catalogo).setActivo(1);
+			guardar(catalogo, prefijo + "-cuadricula");
 		}
 
 		// Swing deja hilos vivos (el de eventos, el de temporizadores) que impedirían
 		// que el proceso termine solo. En una herramienta de línea de comandos eso se
 		// traduce en una consola colgada.
 		System.exit(0);
+	}
+
+	private static void guardar(JFrame ventana, String nombre) throws IOException {
+
+		File salida = new File(DESTINO, nombre + ".png");
+		ImageIO.write(dibujar(ventana), "png", salida);
+
+		System.out.println("Captura generada: " + salida.getPath());
+	}
+
+	/** Localiza el conmutador de vista recorriendo el árbol de componentes. */
+	private static Segmented buscarConmutador(Component raiz) {
+
+		if (raiz instanceof Segmented) {
+			return (Segmented) raiz;
+		}
+
+		if (raiz instanceof Container) {
+
+			for (Component hijo : ((Container) raiz).getComponents()) {
+
+				Segmented encontrado = buscarConmutador(hijo);
+
+				if (encontrado != null) {
+					return encontrado;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	/**

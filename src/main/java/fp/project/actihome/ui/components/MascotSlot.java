@@ -65,6 +65,7 @@ public class MascotSlot extends JComponent {
 
 		this.tamano = tamano;
 		setPreferredSize(new Dimension(tamano.lado, tamano.lado));
+		setMinimumSize(new Dimension(tamano.lado / 2, tamano.lado / 2));
 	}
 
 	@Override

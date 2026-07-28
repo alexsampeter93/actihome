@@ -42,6 +42,21 @@ spring:
     data: classpath:data.sql
     initialization-mode: always
 
+    # Los scripts SQL se leen como UTF-8 SIEMPRE, y no con la codificación por
+    # defecto de la máquina.
+    #
+    # Sin esta línea, Spring lee schema.sql y data.sql con el juego de caracteres
+    # del sistema, que en Windows en español es Windows-1252. El resultado es que
+    # "Loft Barrio Gótico" se siembra como "Loft Barrio GÃ³tico": cada carácter
+    # acentuado, que en UTF-8 ocupa dos bytes, se interpreta como dos caracteres.
+    #
+    # Y es un fallo especialmente traicionero porque **depende de cómo arranques**:
+    # con el ejecutable de jpackage no pasaba, porque ese lanzador fija
+    # -Dfile.encoding=UTF-8. Solo apareció al ejecutar la herramienta de capturas
+    # con Maven. Un dato corrompido según quién abra la aplicación es peor que uno
+    # corrompido siempre, porque no se reproduce.
+    sql-script-encoding: UTF-8
+
   jackson:
     default-property-inclusion: NON_NULL
 

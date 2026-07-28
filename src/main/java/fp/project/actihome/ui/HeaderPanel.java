@@ -287,6 +287,12 @@ public class HeaderPanel extends JPanel {
 					getFontMetrics(getFont()).getHeight() + 6);
 		}
 
+		/** Ver la nota de {@code SeasonSelector.Pestana}: sin mínimo, se aplasta. */
+		@Override
+		public Dimension getMinimumSize() {
+			return getPreferredSize();
+		}
+
 		@Override
 		protected void paintComponent(Graphics g) {
 

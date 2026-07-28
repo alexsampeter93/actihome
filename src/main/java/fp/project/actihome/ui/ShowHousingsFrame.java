@@ -10,7 +10,10 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -30,6 +33,8 @@ import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.ReviewService;
+import fp.project.actihome.ui.catalog.CatalogFilters;
+import fp.project.actihome.ui.catalog.HousingCard;
 import fp.project.actihome.ui.catalog.HousingRow;
 import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.Labels;
@@ -85,6 +90,9 @@ public class ShowHousingsFrame extends JFrame {
 	/** Tamaño del titular del hero. Ver la nota en {@code titular()}. */
 	private static final float TITULAR = 40f;
 
+	/** Columnas de la vista de cuadrícula, según el handoff. */
+	private static final int COLUMNAS_CUADRICULA = 3;
+
 	private final transient HousingService housingService;
 	private final transient ReviewService reviewService;
 	private final transient SessionManager sessionManager;
@@ -92,6 +100,28 @@ public class ShowHousingsFrame extends JFrame {
 	private final HeaderPanel headerPanel;
 
 	private JPanel lista;
+	private CatalogFilters filtros;
+
+	/**
+	 * El catálogo completo, cargado una vez al abrir la pantalla.
+	 *
+	 * <p>
+	 * Los filtros trabajan sobre esta lista en memoria en lugar de volver a la base
+	 * de datos. Con un buscador que filtra en vivo, la alternativa sería una consulta
+	 * por cada tecla pulsada.
+	 */
+	private transient List<Housing> catalogo = Collections.emptyList();
+
+	/**
+	 * Reseñas por alojamiento, contadas una sola vez por visita.
+	 *
+	 * <p>
+	 * Sin esta caché, cada cambio de filtro volvería a pedir las reseñas de cada
+	 * alojamiento que sobreviva al filtro — y eso ocurre en cada pulsación del
+	 * buscador.
+	 */
+	private final transient Map<Long, Integer> resenasPorAlojamiento = new HashMap<>();
+
 	private JLabel tituloPrimera;
 	private JLabel tituloSegunda;
 	private JLabel fraseEstacional;
@@ -145,8 +175,13 @@ public class ShowHousingsFrame extends JFrame {
 	private void initUI() {
 
 		setTitle("ActiHome");
-		setSize(1240, 840);
-		setMinimumSize(new Dimension(1040, 700));
+
+		// El catálogo pide más ventana que el login: tiene una cabecera, un hero, tres
+		// bandas de filtros y una lista, y todo eso tiene un ancho mínimo real. El
+		// mínimo no es un capricho, es el ancho por debajo del cual los chips de
+		// comodidad empiezan a salirse.
+		setSize(1400, 900);
+		setMinimumSize(new Dimension(1180, 760));
 		setLocationRelativeTo(null);
 
 		headerPanel.marcarActual(ShowHousingsFrame.class);
@@ -154,9 +189,11 @@ public class ShowHousingsFrame extends JFrame {
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]",
 				"[]0[]0[]0[grow,fill]0[]"));
 
+		filtros = new CatalogFilters(this::aplicarFiltros);
+
 		raiz.add(headerPanel, "growx");
 		raiz.add(hero(), "growx");
-		raiz.add(Hairline.horizontal(), "growx, h 1!");
+		raiz.add(filtros, "growx");
 		raiz.add(zonaDeLista(), "grow");
 		raiz.add(colofon(), "growx");
 
@@ -186,7 +223,7 @@ public class ShowHousingsFrame extends JFrame {
 		// ventana de escritorio el alto es el recurso escaso: cada píxel que se lleva
 		// el hero se lo quita a la lista, que es lo único que el usuario ha venido a
 		// mirar. El aire lateral se mantiene, que es el que se nota.
-		JPanel panel = new JPanel(new MigLayout(Space.insets(Space.XXXL, Space.HUGE, Space.LG, Space.HUGE),
+		JPanel panel = new JPanel(new MigLayout(Space.insets(Space.XL, Space.HUGE, Space.SM, Space.HUGE),
 				"[grow]" + Space.XXXL + "[]", "[]"));
 		panel.setOpaque(false);
 
@@ -198,36 +235,43 @@ public class ShowHousingsFrame extends JFrame {
 
 	private JPanel titular() {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.MD + "[]0[]"));
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.SM + "[]"));
 		panel.setOpaque(false);
 
 		fraseEstacional = Labels.capsAccent(Theme.estacion().etiqueta());
 		panel.add(fraseEstacional);
 
-		// Dos etiquetas en lugar de una con salto de línea: el renderizado HTML de
-		// Swing calcula sus tamaños por su cuenta y se lleva mal con las fuentes
-		// registradas en tiempo de ejecución.
+		// En UNA línea, no en dos como el mockup.
 		//
-		// El titular va a 40px y no a los 46 del handoff, por el mismo motivo que las
-		// filas son más bajas: en escritorio, seis píxeles de titular por línea son
-		// doce píxeles menos de catálogo visible. La segunda línea en cursiva es la
-		// que hace el trabajo editorial, y esa no se toca.
+		// El handoff parte el titular porque en una web sobra alto. Aquí el alto es lo
+		// que se le quita al catálogo: la segunda línea costaba sesenta píxeles, que es
+		// casi una cuarta parte de una ficha. En una línea el titular funciona además
+		// como cabecera de revista, que es exactamente la referencia del diseño.
+		//
+		// Son dos etiquetas seguidas y no una con marcado: el renderizado HTML de Swing
+		// calcula sus tamaños por su cuenta y se lleva mal con las fuentes registradas
+		// en tiempo de ejecución. La cursiva de "despertar" es la que hace el trabajo
+		// editorial, y esa no se toca.
+		JPanel linea = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]push", "[]"));
+		linea.setOpaque(false);
+
 		tituloPrimera = Labels.hero("Elige dónde quieres");
 		tituloPrimera.setFont(Typography.serifMedium(TITULAR));
 
 		tituloSegunda = Labels.hero("despertar");
 		tituloSegunda.setFont(Typography.serifItalic(TITULAR));
 
-		panel.add(tituloPrimera);
-		panel.add(tituloSegunda, "gaptop -8");
+		linea.add(tituloPrimera, "aligny bottom");
+		linea.add(tituloSegunda, "aligny bottom");
+
+		panel.add(linea);
 
 		return panel;
 	}
 
 	private JPanel controles() {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXL + "[]"));
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.MD + "[]"));
 		panel.setOpaque(false);
 
 		panel.add(new SeasonSelector());
@@ -277,44 +321,113 @@ public class ShowHousingsFrame extends JFrame {
 		scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 
 		// El salto por defecto de Swing es de un píxel por muesca de rueda, que en una
-		// lista de filas de 290px se percibe como que el scroll no funciona.
+		// lista de filas de doscientos píxeles se percibe como que el scroll no funciona.
 		scroll.getVerticalScrollBar().setUnitIncrement(24);
+
+		// Mínimo cero: cuando la ventana se queda corta, el espacio se lo tiene que
+		// quitar la lista —que para eso tiene scroll— y no la cabecera, el hero o los
+		// filtros. Sin esto, el reparto castiga a quien no ha declarado su mínimo, que
+		// es exactamente cómo se aplastaron las pestañas del selector de estación.
+		scroll.setMinimumSize(new Dimension(0, 0));
 
 		return scroll;
 	}
 
+	/** Recarga el catálogo desde la base de datos. Solo al abrir la pantalla. */
 	private void cargarAlojamientos() {
+
+		catalogo = housingService.showHousings();
+		resenasPorAlojamiento.clear();
+
+		actualizarCifras(catalogo);
+		aplicarFiltros();
+	}
+
+	/**
+	 * Repinta el contenido con los filtros vigentes.
+	 *
+	 * <p>
+	 * Se llama en cada cambio de filtro, incluida cada tecla del buscador. Por eso no
+	 * toca la base de datos: trabaja sobre {@link #catalogo}, que ya está en memoria.
+	 */
+	private void aplicarFiltros() {
+
+		if (filtros == null) {
+			return;
+		}
+
+		List<Housing> resultado = filtros.aplicar(catalogo);
+		filtros.setResultado(resultado.size());
 
 		lista.removeAll();
 
-		List<Housing> alojamientos = housingService.showHousings();
+		// El layout se rehace porque la cuadrícula necesita tres columnas y la lista
+		// una. Cambiar el gestor de layout en caliente es legítimo en Swing; lo que hay
+		// que recordar es revalidar después, o los componentes se quedan colocados según
+		// el layout anterior.
+		lista.setLayout(new MigLayout(
+				"wrap " + (filtros.esCuadricula() ? COLUMNAS_CUADRICULA : 1) + ", "
+						+ Space.insets(0, Space.HUGE, Space.XXL, Space.HUGE),
+				columnasDe(filtros.esCuadricula()), "[]"));
 
-		actualizarCifras(alojamientos);
+		if (resultado.isEmpty()) {
+			lista.add(estadoVacio(catalogo.isEmpty()),
+					"growx" + (filtros.esCuadricula() ? ", span " + COLUMNAS_CUADRICULA : ""));
 
-		if (alojamientos.isEmpty()) {
-			lista.add(estadoVacio(), "growx");
+		} else if (filtros.esCuadricula()) {
+			pintarCuadricula(resultado);
 
 		} else {
-			boolean primera = true;
-
-			for (Housing housing : alojamientos) {
-
-				if (!primera) {
-					lista.add(Hairline.horizontal(), "growx, h 1!");
-				}
-
-				lista.add(fila(housing), "growx");
-				primera = false;
-			}
+			pintarLista(resultado);
 		}
 
 		lista.revalidate();
 		lista.repaint();
 	}
 
-	private HousingRow fila(Housing housing) {
+	private String columnasDe(boolean cuadricula) {
 
-		Runnable abrir = () -> navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(housing));
+		if (!cuadricula) {
+			return "[grow,fill]";
+		}
+
+		StringBuilder columnas = new StringBuilder();
+
+		for (int i = 0; i < COLUMNAS_CUADRICULA; i++) {
+			columnas.append(i == 0 ? "" : String.valueOf(Space.XXL)).append("[grow,fill]");
+		}
+
+		return columnas.toString();
+	}
+
+	private void pintarLista(List<Housing> alojamientos) {
+
+		boolean primera = true;
+
+		for (Housing housing : alojamientos) {
+
+			if (!primera) {
+				lista.add(Hairline.horizontal(), "growx, h 1!");
+			}
+
+			lista.add(fila(housing), "growx");
+			primera = false;
+		}
+	}
+
+	private void pintarCuadricula(List<Housing> alojamientos) {
+
+		for (Housing housing : alojamientos) {
+			lista.add(new HousingCard(housing, contarResenas(housing), abrir(housing)),
+					"growx, aligny top, gapbottom " + Space.LG);
+		}
+	}
+
+	private Runnable abrir(Housing housing) {
+		return () -> navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(housing));
+	}
+
+	private HousingRow fila(Housing housing) {
 
 		// El intercambio es cosa del ADMIN propietario del alojamiento, igual que en el
 		// detalle. Se decide aquí y no dentro de la fila: la fila pinta lo que le den,
@@ -324,7 +437,7 @@ public class ShowHousingsFrame extends JFrame {
 				? () -> navigator.ir(TradeHousingsFrame.class)
 				: null;
 
-		return new HousingRow(housing, contarResenas(housing), abrir, intercambiar);
+		return new HousingRow(housing, contarResenas(housing), abrir(housing), intercambiar);
 	}
 
 	private boolean puedeIntercambiar(Housing housing) {
@@ -348,27 +461,47 @@ public class ShowHousingsFrame extends JFrame {
 	 */
 	private int contarResenas(Housing housing) {
 
-		try {
-			return reviewService.showHousingReviews(housing.getId()).size();
+		return resenasPorAlojamiento.computeIfAbsent(housing.getId(), id -> {
 
-		} catch (Exception ex) {
-			return 0;
-		}
+			try {
+				return reviewService.showHousingReviews(id).size();
+
+			} catch (Exception ex) {
+				return 0;
+			}
+		});
 	}
 
-	private JPanel estadoVacio() {
+	/**
+	 * Pantalla vacía, con Olaz y un texto que explica <b>por qué</b> está vacía.
+	 *
+	 * <p>
+	 * Los dos casos se dicen distinto a propósito. Que el catálogo esté vacío y que
+	 * tus filtros no encuentren nada son situaciones opuestas: en la primera no hay
+	 * nada que hacer, en la segunda basta con soltar un chip. Un único mensaje
+	 * genérico —"No hay resultados"— dejaría al usuario sin saber en cuál de las dos
+	 * está, que es lo único que necesita saber.
+	 *
+	 * <p>
+	 * Es también uno de los sitios donde Olaz aparece <b>en grande</b>: la regla del
+	 * proyecto es tamaño según el vacío, y esto es literalmente el vacío.
+	 */
+	private JPanel estadoVacio(boolean catalogoVacio) {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.MAX, 0, Space.MAX, 0), "[grow,fill]",
-				"[]" + Space.XL + "[]" + Space.XS + "[]"));
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.HUGE, 0, Space.HUGE, 0), "[grow,fill]",
+				"[]" + Space.LG + "[]" + Space.XS + "[]"));
 		panel.setOpaque(false);
 
-		JPanel centrado = new JPanel(new MigLayout(Space.insets(0), "push[]push", ""));
-		centrado.setOpaque(false);
-		centrado.add(new MascotSlot(MascotSlot.Tamano.MEDIANO));
+		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO)));
 
-		panel.add(centrado);
-		panel.add(centrar(Labels.title("Todavía no hay estancias")));
-		panel.add(centrar(Labels.muted("Cuando un anfitrión publique la primera, aparecerá aquí.")));
+		if (catalogoVacio) {
+			panel.add(centrar(Labels.title("Todavía no hay estancias")));
+			panel.add(centrar(Labels.muted("Cuando un anfitrión publique la primera, aparecerá aquí.")));
+
+		} else {
+			panel.add(centrar(Labels.title("Ninguna estancia encaja")));
+			panel.add(centrar(Labels.muted("Prueba a quitar algún filtro o a buscar otra cosa.")));
+		}
 
 		return panel;
 	}
@@ -387,11 +520,11 @@ public class ShowHousingsFrame extends JFrame {
 
 	private JPanel colofon() {
 
-		JPanel panel = new JPanel(new MigLayout(Space.insets(Space.MD, Space.HUGE, Space.MD, Space.HUGE),
+		JPanel panel = new JPanel(new MigLayout(Space.insets(Space.XS, Space.HUGE, Space.XS, Space.HUGE),
 				"[]" + Space.MD + "[]push[]", "[]"));
 		panel.setOpaque(false);
 
-		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO), "w 56!, h 56!");
+		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO), "w 48!, h 48!");
 		panel.add(Labels.caps("por CocoBrain"));
 
 		accionAdmin = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]", "[]"));
@@ -485,6 +618,7 @@ public class ShowHousingsFrame extends JFrame {
 			this.accion = accion;
 
 			setPreferredSize(new Dimension(44, 44));
+			setMinimumSize(new Dimension(44, 44));
 			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 			setToolTipText("Registrar alojamiento");
 

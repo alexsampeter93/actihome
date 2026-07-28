@@ -55,6 +55,7 @@ public class ScoreDisc extends JComponent {
 		this.puntuacion = puntuacion;
 		this.tamano = tamano;
 		setPreferredSize(new Dimension(tamano.diametro, tamano.diametro));
+		setMinimumSize(new Dimension(tamano.diametro, tamano.diametro));
 	}
 
 	public void setPuntuacion(Double puntuacion) {

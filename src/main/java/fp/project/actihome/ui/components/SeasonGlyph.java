@@ -50,7 +50,13 @@ public class SeasonGlyph extends JComponent {
 	}
 
 	public SeasonGlyph(int lado) {
+
 		setPreferredSize(new Dimension(lado, lado));
+
+		// Mínimo igual que el preferido: un componente que solo declara el preferido
+		// informa de un mínimo de cero y el gestor de layout lo aplasta en cuanto falta
+		// sitio. Ver la nota extensa en SeasonSelector.Pestana.
+		setMinimumSize(new Dimension(lado, lado));
 	}
 
 	@Override
