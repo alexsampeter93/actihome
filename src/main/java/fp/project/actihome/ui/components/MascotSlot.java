@@ -80,7 +80,7 @@ public class MascotSlot extends JComponent {
 		g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
 		Season estacion = Theme.estacion();
-		BufferedImage imagen = BrandAssets.olaz(estacion, pose);
+		BufferedImage imagen = BrandAssets.olaz(estacion, poseEfectiva(estacion));
 
 		if (imagen != null) {
 			pintarAjustada(g2, imagen);
@@ -89,6 +89,37 @@ public class MascotSlot extends JComponent {
 		}
 
 		g2.dispose();
+	}
+
+	/**
+	 * La pose que se pinta de verdad, que en verano no siempre es la que pidió la
+	 * pantalla.
+	 *
+	 * <p>
+	 * <b>Verano tiene un trato aparte por decisión de producto:</b> su ilustración
+	 * de la toalla es la única de las ocho en la que Olaz enseña la propia
+	 * aplicación en el móvil, así que es la que más trabaja como imagen de marca y
+	 * se quiere ver más. Pero no se puede poner en cualquier sitio, y la razón es
+	 * de composición, no de gusto: esa escena es <b>apaisada</b> —personaje, toalla
+	 * y sombrilla— mientras que las siete restantes son figuras <b>verticales</b>.
+	 * Una escena apaisada metida en una ranura cuadrada de 56px se reduce hasta que
+	 * no se distingue qué es, así que ahí «más protagonismo» acabaría dando lo
+	 * contrario.
+	 *
+	 * <p>
+	 * De modo que se usa en las ranuras <b>mediana y grande</b>, donde hay sitio
+	 * para leerla, y en las pequeñas se mantiene la figura vertical que sí llena un
+	 * cuadrado. Es la misma idea que la regla de «tamaño según el vacío» del
+	 * sistema, aplicada ahora también a <em>qué</em> se dibuja y no solo a cómo de
+	 * grande.
+	 */
+	private Pose poseEfectiva(Season estacion) {
+
+		if (estacion == Season.VERANO && tamano != Tamano.PEQUENO) {
+			return Pose.ACCION;
+		}
+
+		return pose;
 	}
 
 	/** Dibuja la imagen conservando su proporción y centrada en la ranura. */

@@ -31,7 +31,7 @@ import javax.imageio.ImageIO;
 public final class BrandAssets {
 
 	/** Tamaños del icono de aplicación. Windows elige el que mejor le encaja en cada sitio. */
-	private static final int[] TAMANOS_ICONO = { 16, 32, 48, 64, 128, 256 };
+	private static final int[] TAMANOS_ICONO = { 16, 24, 32, 48, 64, 128, 256 };
 
 	private static final Map<String, BufferedImage> CACHE = new HashMap<>();
 
