@@ -1,5 +1,6 @@
 package fp.project.actihome.ui.nav;
 
+import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.GraphicsConfiguration;
 import java.awt.Image;
@@ -198,7 +199,14 @@ public class Navigator {
 	private void heredarGeometria(JFrame anterior, JFrame ventana) {
 
 		if (anterior == null || !anterior.isDisplayable()) {
-			// Primera ventana de la sesión: su tamaño de diseño, centrada.
+
+			// Primera ventana de la sesión: su tamaño de diseño, pero sin quedarse corta
+			// para su propio contenido.
+			Dimension necesaria = loQueNecesitaElContenido(ventana);
+
+			ventana.setSize(acotarAPantalla(ventana, Math.max(ventana.getWidth(), necesaria.width),
+					Math.max(ventana.getHeight(), necesaria.height)));
+
 			ventana.setLocationRelativeTo(null);
 			return;
 		}
@@ -211,10 +219,12 @@ public class Navigator {
 		ventana.setExtendedState(Frame.NORMAL);
 
 		Rectangle previa = anterior.getBounds();
-		int ancho = Math.max(previa.width, ventana.getWidth());
-		int alto = Math.max(previa.height, ventana.getHeight());
+		Dimension necesaria = loQueNecesitaElContenido(ventana);
 
-		ventana.setSize(ancho, alto);
+		int ancho = Math.max(Math.max(previa.width, ventana.getWidth()), necesaria.width);
+		int alto = Math.max(Math.max(previa.height, ventana.getHeight()), necesaria.height);
+
+		ventana.setSize(acotarAPantalla(ventana, ancho, alto));
 
 		// Centrada sobre donde estaba la anterior, y no en su esquina: si la ventana
 		// nueva es más grande, conservar la esquina la desplazaría hacia abajo y a la
@@ -222,6 +232,66 @@ public class Navigator {
 		ventana.setLocation(previa.x + (previa.width - ancho) / 2, previa.y + (previa.height - alto) / 2);
 
 		encajarEnPantalla(ventana);
+	}
+
+	/**
+	 * El tamaño de ventana que hace falta para que el contenido quepa entero.
+	 *
+	 * <p>
+	 * <b>Este método es el arreglo de un fallo real y repetido.</b> Cada pantalla
+	 * declara su tamaño con un {@code setSize(...)} de números fijos, y esos
+	 * números se ajustaron mirando capturas generadas a 1400×900. Pero el tamaño
+	 * que ocupa un formulario <em>no</em> es una constante: depende de cuánto miden
+	 * las fuentes y los controles, y eso cambia con el <b>escalado del sistema</b>.
+	 * En un Windows al 125 %, todo mide un cuarto más, así que un formulario que en
+	 * la captura entraba justo deja los botones fuera de la ventana.
+	 *
+	 * <p>
+	 * Por eso el tamaño no puede salir solo de una constante escrita a mano: hay
+	 * que preguntárselo al contenido ya construido, que es quien sabe cuánto mide
+	 * de verdad en la máquina donde se está ejecutando. Preguntarlo aquí, en el
+	 * navegador, lo arregla <b>en las diecisiete pantallas a la vez</b> en lugar de
+	 * ir parcheando la que se detecte rota.
+	 *
+	 * <p>
+	 * Al preferido del contenido hay que sumarle los <i>insets</i> de la ventana:
+	 * la barra de título y los bordes que pone Windows, que no forman parte del
+	 * área de contenido pero sí del tamaño de la ventana.
+	 */
+	private Dimension loQueNecesitaElContenido(JFrame ventana) {
+
+		Dimension contenido = ventana.getContentPane().getPreferredSize();
+		Insets bordes = ventana.getInsets();
+
+		return new Dimension(contenido.width + bordes.left + bordes.right,
+				contenido.height + bordes.top + bordes.bottom);
+	}
+
+	/**
+	 * Limita un tamaño al área utilizable de la pantalla.
+	 *
+	 * <p>
+	 * Es la otra mitad del arreglo anterior: preguntarle al contenido cuánto
+	 * necesita puede devolver un número enorme —una lista larga pediría el alto de
+	 * todas sus filas—, y una ventana más grande que el escritorio es tan inservible
+	 * como una que se queda corta. Con el tope, la lista simplemente usa su barra de
+	 * desplazamiento, que es para lo que está.
+	 */
+	private Dimension acotarAPantalla(JFrame ventana, int ancho, int alto) {
+
+		GraphicsConfiguration configuracion = ventana.getGraphicsConfiguration();
+
+		if (configuracion == null) {
+			return new Dimension(ancho, alto);
+		}
+
+		Rectangle pantalla = configuracion.getBounds();
+		Insets margenes = Toolkit.getDefaultToolkit().getScreenInsets(configuracion);
+
+		int maxAncho = pantalla.width - margenes.left - margenes.right;
+		int maxAlto = pantalla.height - margenes.top - margenes.bottom;
+
+		return new Dimension(Math.min(ancho, maxAncho), Math.min(alto, maxAlto));
 	}
 
 	/** Empuja la ventana dentro del área utilizable si se ha salido. */

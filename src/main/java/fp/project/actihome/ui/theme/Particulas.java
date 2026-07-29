@@ -41,8 +41,52 @@ import java.util.Random;
  */
 public final class Particulas {
 
-	/** Cuántas piezas hay a la vez. Bajo a propósito: es fondo, no es el contenido. */
-	public static final int CUANTAS = 16;
+	/** Cuántas piezas hay a la vez. */
+	public static final int CUANTAS = 26;
+
+	/**
+	 * Cuánto se atenúan según bajan por la pantalla.
+	 *
+	 * <p>
+	 * Arriba se ven bien —es la zona de la cabecera y el titular, donde no hay
+	 * texto que leer con detalle— y según bajan se apagan hasta casi desaparecer
+	 * sobre el contenido. La curva no es lineal sino cuadrática, así que la caída es
+	 * rápida en el primer tercio y luego se aplana: eso concentra el efecto arriba
+	 * en lugar de repartirlo.
+	 */
+	private static float atenuacionPorAltura(float y, int alto) {
+
+		if (alto <= 0) {
+			return 1f;
+		}
+
+		// Nada sobre la barra de navegación. No es un ajuste estético: al pintar las
+		// partículas por delante del contenido, una hoja cruzando el selector de
+		// estación convertía "VERANO" en "-VERANO", y eso se lee como una errata de la
+		// aplicación, no como decoración. La franja de entrada evita además que las
+		// piezas aparezcan de golpe al asomar por arriba.
+		if (y < FIN_CABECERA) {
+			return 0f;
+		}
+
+		if (y < FIN_ENTRADA) {
+			return (y - FIN_CABECERA) / (FIN_ENTRADA - FIN_CABECERA);
+		}
+
+		float t = Math.max(0f, Math.min(1f, (y - FIN_ENTRADA) / Math.max(1, alto - FIN_ENTRADA)));
+		float restante = 1f - t;
+
+		return MINIMO_ABAJO + (1f - MINIMO_ABAJO) * restante * restante;
+	}
+
+	/** Alto de la cabecera, por debajo del cual no se pinta nada. */
+	private static final float FIN_CABECERA = 68f;
+
+	/** Dónde alcanzan su intensidad máxima, ya en la zona del titular. */
+	private static final float FIN_ENTRADA = 150f;
+
+	/** Lo que queda de opacidad al pie de la pantalla. */
+	private static final float MINIMO_ABAJO = 0.18f;
 
 	private Particulas() {
 	}
@@ -64,6 +108,9 @@ public final class Particulas {
 		private float giro;
 		private float velocidadDeGiro;
 		private float opacidad;
+
+		/** Opacidad ya atenuada por la altura, recalculada en cada pintado. */
+		private float efectiva;
 
 		/** Para primavera, que mezcla dos tipos. */
 		private boolean esPetalo;
@@ -93,7 +140,7 @@ public final class Particulas {
 			fase = azar.nextFloat() * (float) Math.PI * 2;
 			giro = azar.nextFloat() * (float) Math.PI * 2;
 			velocidadDeGiro = (azar.nextFloat() - 0.5f) * 0.03f;
-			opacidad = 0.16f + azar.nextFloat() * 0.20f;
+			opacidad = 0.30f + azar.nextFloat() * 0.26f;
 			esPetalo = azar.nextBoolean();
 		}
 
@@ -137,9 +184,13 @@ public final class Particulas {
 			return new Rectangle((int) x - lado, (int) y - lado, lado * 2, lado * 2);
 		}
 
-		public void pintar(Graphics2D g2) {
+		public void pintar(Graphics2D g2, int altoDeLaPantalla) {
 
 			Season estacion = Theme.estacion();
+
+			// La opacidad efectiva se calcula en cada pintado, no se guarda: depende de
+			// dónde esté la pieza ahora mismo, y la pieza se mueve.
+			efectiva = opacidad * atenuacionPorAltura(y, altoDeLaPantalla);
 
 			AffineTransform original = g2.getTransform();
 			g2.translate(x, y);
@@ -176,7 +227,7 @@ public final class Particulas {
 		/** Pétalo: una elipse asimétrica, en el acento de la estación aclarado. */
 		private void petalo(Graphics2D g2) {
 
-			g2.setColor(tinta(Theme.acc(), opacidad));
+			g2.setColor(tinta(Theme.acc(), efectiva));
 			g2.fill(new Ellipse2D.Float(-tamano * 0.55f, -tamano * 0.32f, tamano * 1.1f, tamano * 0.64f));
 		}
 
@@ -190,7 +241,7 @@ public final class Particulas {
 		 */
 		private void vilano(Graphics2D g2) {
 
-			g2.setColor(tinta(Theme.mut(), opacidad * 0.9f));
+			g2.setColor(tinta(Theme.mut(), efectiva * 0.9f));
 
 			for (int i = 0; i < 7; i++) {
 
@@ -201,31 +252,31 @@ public final class Particulas {
 						(int) Math.round(Math.sin(angulo) * largo));
 			}
 
-			g2.setColor(tinta(Theme.mut(), opacidad));
+			g2.setColor(tinta(Theme.mut(), efectiva));
 			g2.fill(new Ellipse2D.Float(-1.2f, -1.2f, 2.4f, 2.4f));
 		}
 
 		/** Mota de luz: un punto muy tenue, sin forma reconocible. */
 		private void mota(Graphics2D g2) {
 
-			g2.setColor(tinta(Theme.acc(), opacidad * 0.75f));
+			g2.setColor(tinta(Theme.acc(), efectiva * 0.75f));
 			g2.fill(new Ellipse2D.Float(-tamano * 0.18f, -tamano * 0.18f, tamano * 0.36f, tamano * 0.36f));
 		}
 
 		/** Hoja: elipse con nervio, más ancha por un lado. */
 		private void hoja(Graphics2D g2) {
 
-			g2.setColor(tinta(Theme.acc(), opacidad));
+			g2.setColor(tinta(Theme.acc(), efectiva));
 			g2.fill(new Ellipse2D.Float(-tamano * 0.6f, -tamano * 0.34f, tamano * 1.2f, tamano * 0.68f));
 
-			g2.setColor(tinta(Theme.hdr(), opacidad * 0.5f));
+			g2.setColor(tinta(Theme.hdr(), efectiva * 0.5f));
 			g2.drawLine((int) (-tamano * 0.5f), 0, (int) (tamano * 0.5f), 0);
 		}
 
 		/** Copo: círculo blanco blando, sin puntas. */
 		private void copo(Graphics2D g2) {
 
-			g2.setColor(tinta(Color.WHITE, Math.min(0.55f, opacidad * 2.2f)));
+			g2.setColor(tinta(Color.WHITE, Math.min(0.75f, efectiva * 2.0f)));
 			g2.fill(new Ellipse2D.Float(-tamano * 0.28f, -tamano * 0.28f, tamano * 0.56f, tamano * 0.56f));
 		}
 

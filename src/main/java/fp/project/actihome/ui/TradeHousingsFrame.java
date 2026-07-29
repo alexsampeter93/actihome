@@ -260,7 +260,7 @@ public class TradeHousingsFrame extends JFrame {
 		Card card = new Card(new MigLayout("wrap 1, " + Space.insets(Space.MD), "[grow,fill]", ""));
 
 		card.add(new ImagePlaceholder(housing.getType(), housing.isAvailable() ? "Disponible" : "Reservada",
-				housing.isAvailable()), "h 100!, growx, gapbottom " + Space.SM);
+				housing.isAvailable(), housing.getImage()), "h 100!, growx, gapbottom " + Space.SM);
 
 		card.add(Labels.capsAccent("Nº " + housing.getHousingCode()));
 

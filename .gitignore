@@ -37,3 +37,18 @@ docs/tmp/
 
 ### Ejecutable generado por jpackage (170 MB: incluye el runtime de Java) ###
 dist/
+
+# Fotos de alojamiento descargadas de Unsplash.
+#
+# Se versionan SOLO las seis que usa la aplicacion; las demas se quedan en local.
+# El motivo es de peso: las treinta ocupan 81 MB, y en git eso no se recupera
+# nunca —aunque se borren despues, siguen en el historial y en cada clon—. Las
+# seis que se usan si van al repositorio, para que GenerarAssets pueda
+# reproducir las imagenes reducidas sin depender de volver a descargarlas.
+assets/References/Alojamientos de ejemplo/*
+!assets/References/Alojamientos de ejemplo/abby-rurenko-uOYak90r4L0-unsplash.jpg
+!assets/References/Alojamientos de ejemplo/roberto-nickson-tleCJiDOri0-unsplash.jpg
+!assets/References/Alojamientos de ejemplo/wes-fischer-g39p1kDjvSY-unsplash.jpg
+!assets/References/Alojamientos de ejemplo/li-yan-cZOouJsXs8k-unsplash.jpg
+!assets/References/Alojamientos de ejemplo/andrea-davis-nbI8gqbBaHo-unsplash.jpg
+!assets/References/Alojamientos de ejemplo/bernard-hermant-nM5-mS5eA8I-unsplash.jpg

@@ -268,3 +268,24 @@ FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM REVIEWS WHERE title = 'Correcto de pri
 UPDATE HOUSINGS h
 SET score = (SELECT AVG(r.totalScore) FROM REVIEWS r WHERE r.housingId = h.id)
 WHERE EXISTS (SELECT 1 FROM REVIEWS r WHERE r.housingId = h.id);
+
+-- ---------------------------------------------------------------------------
+-- Fotos de los alojamientos de ejemplo
+--
+-- El archivo se llama como el código del alojamiento, así que basta una regla en
+-- lugar de seis asignaciones. Las fotos las prepara ui/dev/GenerarAssets a
+-- partir de assets/References/Alojamientos de ejemplo; son de Unsplash y están
+-- acreditadas en CREDITOS.md.
+--
+-- Va como UPDATE al final y no dentro de cada INSERT por el mismo motivo que la
+-- migración de contraseñas de la Fase 3d: los INSERT van protegidos por
+-- WHERE NOT EXISTS, así que en una base que ya existía no se ejecutan nunca y
+-- los alojamientos se habrían quedado sin foto para siempre.
+--
+-- La condición "image IS NULL" lo hace idempotente y además respeta a quien haya
+-- puesto una foto propia: solo rellena lo que está vacío.
+-- ---------------------------------------------------------------------------
+
+UPDATE HOUSINGS
+SET image = CONCAT(housingCode, '.jpg')
+WHERE image IS NULL AND housingCode BETWEEN 10001 AND 10006;

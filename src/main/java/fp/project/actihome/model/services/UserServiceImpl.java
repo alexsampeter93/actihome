@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import fp.project.actihome.model.entities.User;
+import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.entities.UserDao;
 import fp.project.actihome.model.exceptions.DuplicateInstanceException;
 import fp.project.actihome.model.exceptions.IncorrectLoginException;
@@ -94,5 +95,18 @@ public class UserServiceImpl implements UserService {
 		} else {
 			user.setPassword(passwordEncoder.encode(newPassword));
 		}
+	}
+
+	@Override
+	public User changeRole(Long userId) throws InstanceNotFoundException {
+
+		User user = permissionChecker.checkUser(userId);
+
+		user.setRole(user.getRole() == RoleType.ADMIN ? RoleType.CUSTOMER : RoleType.ADMIN);
+
+		// No hace falta llamar a save: dentro de la transacción, JPA detecta que la
+		// entidad ha cambiado y lanza el UPDATE al terminar. Es el mismo dirty
+		// checking en el que se apoyan updateProfile y changePassword aquí arriba.
+		return user;
 	}
 }

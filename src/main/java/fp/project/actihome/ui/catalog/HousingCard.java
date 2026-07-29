@@ -97,7 +97,7 @@ public class HousingCard extends JPanel {
 		}
 
 		capa.add(new ImagePlaceholder(housing.getType(), housing.isAvailable() ? "Disponible" : "Reservada",
-				housing.isAvailable()), "pos 0 0 container.x2 container.y2");
+				housing.isAvailable(), housing.getImage()), "pos 0 0 container.x2 container.y2");
 
 		return capa;
 	}

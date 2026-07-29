@@ -125,12 +125,40 @@ public class Page extends JPanel {
 
 		g.setColor(Theme.bg());
 		g.fillRect(0, 0, getWidth(), getHeight());
+	}
+
+	/**
+	 * Pinta las partículas <b>por encima</b> del contenido.
+	 *
+	 * <p>
+	 * <b>Por qué aquí y no en {@code paintComponent}.</b> Ese método pinta solo el
+	 * fondo del panel, y Swing dibuja los hijos <em>después</em>, así que las
+	 * partículas quedaban tapadas por todo lo opaco: las tarjetas del catálogo, la
+	 * cabecera, las listas. El efecto solo asomaba en los márgenes, y en pantallas
+	 * llenas no se veía en absoluto. {@code paint} es el que ordena las tres fases
+	 * —fondo, hijos y borde—, así que dibujar tras llamar a {@code super} deja las
+	 * partículas delante de todo.
+	 *
+	 * <p>
+	 * Ponerlas delante obliga a que sean discretas de verdad, y de ahí la
+	 * atenuación por altura de {@link Particulas}: arriba, sobre la cabecera y el
+	 * titular, se ven; abajo, sobre el texto que hay que leer, se apagan casi del
+	 * todo.
+	 */
+	@Override
+	public void paint(Graphics g) {
+
+		super.paint(g);
+
+		if (piezas.isEmpty()) {
+			return;
+		}
 
 		Graphics2D g2 = (Graphics2D) g.create();
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
 		for (Particulas.Pieza pieza : piezas) {
-			pieza.pintar(g2);
+			pieza.pintar(g2, getHeight());
 		}
 
 		g2.dispose();

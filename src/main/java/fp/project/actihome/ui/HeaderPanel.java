@@ -27,6 +27,8 @@ import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
+import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.services.UserService;
 import fp.project.actihome.ui.brand.AboutDialog;
 import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Labels;
@@ -81,16 +83,18 @@ public class HeaderPanel extends JPanel {
 
 	private final transient SessionManager sessionManager;
 	private final transient Navigator navigator;
+	private final transient UserService userService;
 
 	private final List<Destino> destinos = new ArrayList<>();
 	private JPanel navegacion;
 	private JPanel zonaUsuario;
 	private Class<?> pantallaActual;
 
-	public HeaderPanel(SessionManager sessionManager, Navigator navigator) {
+	public HeaderPanel(SessionManager sessionManager, Navigator navigator, UserService userService) {
 
 		this.sessionManager = sessionManager;
 		this.navigator = navigator;
+		this.userService = userService;
 
 		initUI();
 	}
@@ -235,6 +239,9 @@ public class HeaderPanel extends JPanel {
 		JMenuItem contrasena = new JMenuItem("Cambiar contraseña");
 		contrasena.addActionListener(e -> navigator.ir(ChangePasswordFrame.class));
 
+		JMenuItem rol = new JMenuItem(esCliente() ? "Cambiar a administrador" : "Cambiar a cliente");
+		rol.addActionListener(e -> cambiarRol());
+
 		JMenuItem acerca = new JMenuItem("Acerca de ActiHome");
 		acerca.addActionListener(e -> AboutDialog.mostrar(SwingUtilities.getWindowAncestor(this)));
 
@@ -247,10 +254,45 @@ public class HeaderPanel extends JPanel {
 		menu.add(perfil);
 		menu.add(contrasena);
 		menu.addSeparator();
+		menu.add(rol);
+		menu.addSeparator();
 		menu.add(acerca);
 		menu.add(salir);
 
 		return menu;
+	}
+
+	/**
+	 * Cambia el rol de la cuenta y vuelve al catálogo.
+	 *
+	 * <p>
+	 * <b>Se vuelve al catálogo a propósito, en lugar de quedarse donde se estaba.</b>
+	 * Las pantallas dependen del rol: un ADMIN no tiene "Mis reservas" y un CUSTOMER
+	 * no puede editar alojamientos. Quedarse quieto podría dejar al usuario en una
+	 * pantalla que su nuevo rol no debería ver. El catálogo lo ven los dos.
+	 *
+	 * <p>
+	 * La sesión se actualiza con el usuario que devuelve el servicio, no tocando el
+	 * que ya había: el rol de verdad es el que quedó guardado, y copiarlo de la
+	 * respuesta evita que la interfaz y la base de datos digan cosas distintas.
+	 */
+	private void cambiarRol() {
+
+		User usuario = sessionManager.getLoggedInUser();
+
+		if (usuario == null) {
+			return;
+		}
+
+		try {
+			sessionManager.setLoggedInUser(userService.changeRole(usuario.getId()));
+			navigator.ir(ShowHousingsFrame.class);
+
+		} catch (InstanceNotFoundException ex) {
+			// La cuenta ya no existe: lo único sensato es volver al login.
+			sessionManager.logout();
+			navigator.ir(LoginFrame.class);
+		}
 	}
 
 	@Override

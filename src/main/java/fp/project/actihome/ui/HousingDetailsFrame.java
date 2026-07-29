@@ -236,7 +236,7 @@ public class HousingDetailsFrame extends JFrame {
 	private ImagePlaceholder foto() {
 
 		ImagePlaceholder placeholder = new ImagePlaceholder(housing.getType(),
-				housing.isAvailable() ? "Disponible" : "Reservada", housing.isAvailable());
+				housing.isAvailable() ? "Disponible" : "Reservada", housing.isAvailable(), housing.getImage());
 		placeholder.setMinimumSize(new Dimension(0, 320));
 		return placeholder;
 	}

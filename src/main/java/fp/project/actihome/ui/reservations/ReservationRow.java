@@ -51,7 +51,7 @@ public class ReservationRow extends JPanel {
 		setOpaque(false);
 		setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-		add(miniatura(), "w 96!, h 96!");
+		add(miniatura(reservation.getHousing().getImage()), "w 96!, h 96!");
 		add(informacion(reservation), "aligny center");
 		add(totalYEstado(reservation), "aligny center");
 
@@ -68,8 +68,8 @@ public class ReservationRow extends JPanel {
 	 * Miniatura sin etiquetas de tipo o disponibilidad: a 96px no hay sitio para
 	 * leerlas y solo añadirían ruido.
 	 */
-	private ImagePlaceholder miniatura() {
-		return new ImagePlaceholder();
+	private ImagePlaceholder miniatura(String imagen) {
+		return new ImagePlaceholder(null, null, true, imagen);
 	}
 
 	private JPanel informacion(Reservation reservation) {

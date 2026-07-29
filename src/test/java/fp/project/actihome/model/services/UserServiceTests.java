@@ -1,6 +1,7 @@
 package fp.project.actihome.model.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.LocalDateTime;
@@ -133,5 +134,44 @@ public class UserServiceTests {
 
 		assertThrows(WrongPasswordException.class, () -> userService.changePassword(user.getId(), "wrong", "b"));
 
+	}
+
+	@Test
+	public void testChangeRoleAlternaEntreLosDosRoles()
+			throws DuplicateInstanceException, InstanceNotFoundException {
+
+		User user = createUser("Sampi");
+		userService.signUp(user);
+
+		RoleType inicial = user.getRole();
+
+		User cambiado = userService.changeRole(user.getId());
+		assertNotEquals(inicial, cambiado.getRole());
+
+		// Y vuelve: es un interruptor, no un camino de ida.
+		User devuelto = userService.changeRole(user.getId());
+		assertEquals(inicial, devuelto.getRole());
+	}
+
+	@Test
+	public void testChangeRoleSeGuardaDeVerdad() throws DuplicateInstanceException, InstanceNotFoundException {
+
+		User user = createUser("Sampi");
+		userService.signUp(user);
+
+		RoleType inicial = user.getRole();
+		userService.changeRole(user.getId());
+
+		// Se vuelve a leer desde el servicio, no se mira el objeto que devolvió el
+		// cambio. Es lo que de verdad importa: la autorización de los demás servicios
+		// consulta la base de datos, así que un cambio que solo viviera en memoria
+		// dejaría la interfaz y los permisos diciendo cosas distintas.
+		assertNotEquals(inicial, userService.loginFromId(user.getId()).getRole());
+	}
+
+	@Test
+	public void testChangeRoleUserNotFound() {
+
+		assertThrows(InstanceNotFoundException.class, () -> userService.changeRole(Long.valueOf(9999)));
 	}
 }

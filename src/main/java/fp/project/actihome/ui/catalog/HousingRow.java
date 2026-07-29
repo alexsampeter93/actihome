@@ -104,7 +104,7 @@ public class HousingRow extends JPanel {
 	private ImagePlaceholder foto() {
 
 		return new ImagePlaceholder(housing.getType(), housing.isAvailable() ? "Disponible" : "Reservada",
-				housing.isAvailable());
+				housing.isAvailable(), housing.getImage());
 	}
 
 	private JPanel informacion(int resenas, Runnable alIntercambiar) {

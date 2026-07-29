@@ -63,6 +63,35 @@ public final class GenerarAssets {
 
 	private static final int[] TAMANOS_ICONO = { 16, 24, 32, 48, 64, 128, 256 };
 
+	/**
+	 * Lado mayor de las fotos de alojamiento.
+	 *
+	 * <p>
+	 * La ficha más grande del catálogo mide unos 640 px de ancho, así que 1200
+	 * deja margen para pantallas con escalado sin que las fotos pesen de más.
+	 */
+	private static final int LADO_FOTO = 1200;
+
+	/**
+	 * Qué foto le toca a cada alojamiento de ejemplo, por código.
+	 *
+	 * <p>
+	 * Elegidas para que <b>cada una diga lo que dice su descripción</b>: la casa
+	 * rural es de piedra y con jardín, la cabaña es de madera entre árboles, la
+	 * villa es encalada con piscina. Una foto bonita pero que no corresponde con el
+	 * texto se nota enseguida y resta credibilidad al catálogo.
+	 */
+	private static final Map<String, String> FOTOS = new LinkedHashMap<>();
+
+	static {
+		FOTOS.put("abby-rurenko-uOYak90r4L0-unsplash.jpg", "10001.jpg");
+		FOTOS.put("roberto-nickson-tleCJiDOri0-unsplash.jpg", "10002.jpg");
+		FOTOS.put("wes-fischer-g39p1kDjvSY-unsplash.jpg", "10003.jpg");
+		FOTOS.put("li-yan-cZOouJsXs8k-unsplash.jpg", "10004.jpg");
+		FOTOS.put("andrea-davis-nbI8gqbBaHo-unsplash.jpg", "10005.jpg");
+		FOTOS.put("bernard-hermant-nM5-mS5eA8I-unsplash.jpg", "10006.jpg");
+	}
+
 	/** Original → nombre con el que lo pide {@code BrandAssets}. */
 	private static final Map<String, String> OLAZ = new LinkedHashMap<>();
 
@@ -93,6 +122,59 @@ public final class GenerarAssets {
 		olaz(origenes, new File(destino, "olaz"));
 		iconos(origenes, new File(destino, "brand"));
 		lockup(origenes, new File(destino, "brand"));
+		fotos(origenes, new File(destino, "housings"));
+	}
+
+	/**
+	 * Las fotos de los alojamientos de ejemplo.
+	 *
+	 * <p>
+	 * Son de <b>Unsplash</b>, cuya licencia permite usarlas y modificarlas, incluso
+	 * comercialmente, sin atribución obligatoria. Se atribuyen igualmente en
+	 * {@code CREDITOS.md}: no cuesta nada y es lo correcto.
+	 *
+	 * <p>
+	 * <b>Se guardan en JPEG y no en PNG</b>, al revés que el resto de recursos del
+	 * proyecto. PNG comprime sin pérdida, que es lo que hace falta para una
+	 * ilustración con zonas planas y transparencia; una fotografía no tiene ni lo
+	 * uno ni lo otro, y en PNG ocuparía varias veces más sin ninguna ganancia
+	 * visible.
+	 */
+	private static void fotos(File origenes, File destino) throws IOException {
+
+		File carpeta = new File(origenes, "Alojamientos de ejemplo");
+
+		if (!carpeta.isDirectory()) {
+			System.out.println("(sin fotos que procesar: falta " + carpeta + ")");
+			return;
+		}
+
+		destino.mkdirs();
+
+		for (Map.Entry<String, String> foto : FOTOS.entrySet()) {
+
+			File original = new File(carpeta, foto.getKey());
+
+			if (!original.isFile()) {
+				System.out.println("(falta " + foto.getKey() + ")");
+				continue;
+			}
+
+			BufferedImage reducida = escalarACaja(ImageIO.read(original), LADO_FOTO);
+
+			// A RGB sin alfa antes de escribir: JPEG no tiene canal de transparencia, y
+			// pasarle una imagen ARGB hace que el codificador interprete los cuatro
+			// canales como si fueran color. El resultado son fotos con un tinte rosado,
+			// y es un fallo que solo se ve al abrir el archivo, no al generarlo.
+			BufferedImage sinAlfa = copiar(reducida, reducida.getWidth(), reducida.getHeight(),
+					BufferedImage.TYPE_INT_RGB, null);
+
+			File salida = new File(destino, foto.getValue());
+			ImageIO.write(sinAlfa, "jpg", salida);
+
+			System.out.printf("%-16s %4dx%-4d  %3d KB%n", foto.getValue(), reducida.getWidth(), reducida.getHeight(),
+					salida.length() / 1024);
+		}
 	}
 
 	/**

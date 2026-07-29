@@ -5,10 +5,12 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.awt.image.BufferedImage;
 
 import javax.swing.JComponent;
 
+import fp.project.actihome.ui.theme.BrandAssets;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
@@ -56,6 +58,22 @@ public class ImagePlaceholder extends JComponent {
 		this.disponible = disponible;
 	}
 
+	/**
+	 * Con la foto del alojamiento, si la tiene.
+	 *
+	 * <p>
+	 * Recibe el <b>nombre del archivo</b> y no la entidad {@code Housing}. Es
+	 * deliberado: este componente vive en el vocabulario visual del sistema y no
+	 * debe conocer el modelo de negocio, o dejaría de poder usarse —y probarse—
+	 * fuera de esta aplicación. Quien lo construye ya tiene el alojamiento delante
+	 * y le cuesta lo mismo pasarle {@code housing.getImage()}.
+	 */
+	public ImagePlaceholder(String tipo, String estado, boolean disponible, String imagen) {
+
+		this(tipo, estado, disponible);
+		this.foto = BrandAssets.fotoDeAlojamiento(imagen);
+	}
+
 	/** Etiqueta de tipo, arriba a la izquierda ("Casa", "Villa"...). */
 	public void setTipo(String tipo) {
 		this.tipo = tipo;
@@ -86,7 +104,7 @@ public class ImagePlaceholder extends JComponent {
 		int alto = getHeight();
 
 		if (foto != null) {
-			g2.drawImage(foto, 0, 0, ancho, alto, null);
+			pintarCubriendo(g2, ancho, alto);
 		} else {
 			g2.setColor(Theme.img());
 			g2.fillRect(0, 0, ancho, alto);
@@ -112,6 +130,38 @@ public class ImagePlaceholder extends JComponent {
 		g2.drawRect(0, 0, ancho - 1, alto - 1);
 
 		g2.dispose();
+	}
+
+	/**
+	 * Dibuja la foto <b>cubriendo</b> el hueco: se escala hasta llenarlo
+	 * conservando su proporción y se recorta lo que sobra.
+	 *
+	 * <p>
+	 * La alternativa —estirarla hasta que encaje, que es lo que hace
+	 * {@code drawImage} con un ancho y un alto cualesquiera— deforma la fotografía.
+	 * Y se nota especialmente aquí, porque la misma foto aparece en una ficha
+	 * apaisada en la vista de lista y en un cuadrado en la de cuadrícula: estirada,
+	 * las dos versiones parecerían edificios distintos.
+	 *
+	 * <p>
+	 * El recorte se centra en el eje que sobra, salvo en vertical, donde se sube un
+	 * poco el encuadre: en una foto de una casa, lo interesante suele estar en el
+	 * tercio superior y el inferior suele ser suelo.
+	 */
+	private void pintarCubriendo(Graphics2D g2, int ancho, int alto) {
+
+		double escala = Math.max((double) ancho / foto.getWidth(), (double) alto / foto.getHeight());
+
+		int nuevoAncho = (int) Math.ceil(foto.getWidth() * escala);
+		int nuevoAlto = (int) Math.ceil(foto.getHeight() * escala);
+
+		int x = (ancho - nuevoAncho) / 2;
+		int y = (int) ((alto - nuevoAlto) * 0.38);
+
+		Shape recorte = g2.getClip();
+		g2.clipRect(0, 0, ancho, alto);
+		g2.drawImage(foto, x, y, nuevoAncho, nuevoAlto, null);
+		g2.setClip(recorte);
 	}
 
 	/**

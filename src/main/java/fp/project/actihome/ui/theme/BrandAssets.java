@@ -95,6 +95,24 @@ public final class BrandAssets {
 		}
 	}
 
+	/**
+	 * La foto de un alojamiento, o {@code null} si no tiene.
+	 *
+	 * @param nombre lo que guarda {@code Housing.image}: solo el nombre del
+	 *               archivo, nunca una ruta. Que la entidad no sepa dónde viven las
+	 *               imágenes es lo que permite cambiar la carpeta —o pasar mañana a
+	 *               servirlas desde disco o desde una URL— sin tocar la base de
+	 *               datos
+	 */
+	public static BufferedImage fotoDeAlojamiento(String nombre) {
+
+		if (nombre == null || nombre.trim().isEmpty()) {
+			return null;
+		}
+
+		return cargar("/images/housings/" + nombre.trim());
+	}
+
 	/** Olaz en la variante de una estación y una pose. */
 	public static BufferedImage olaz(Season estacion, Pose pose) {
 		return cargar("/images/olaz/olaz-" + estacion.name().toLowerCase() + "-" + pose.sufijo + ".png");
