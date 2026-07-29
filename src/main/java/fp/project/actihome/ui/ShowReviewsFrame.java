@@ -1,184 +1,311 @@
 package fp.project.actihome.ui;
 
-import java.awt.BorderLayout;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
+import java.awt.Dimension;
+import java.util.List;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.ScrollPaneConstants;
 
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import net.miginfocom.swing.MigLayout;
+
+import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.entities.Review;
+import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.ReviewService;
+import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Hairline;
+import fp.project.actihome.ui.components.Labels;
+import fp.project.actihome.ui.components.MascotSlot;
+import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.nav.Navigator;
+import fp.project.actihome.ui.reviews.ReviewRow;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
+import fp.project.actihome.ui.theme.Formato;
+import fp.project.actihome.ui.theme.Layout;
+import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Typography;
 
+/**
+ * Las reseñas de un alojamiento.
+ *
+ * <p>
+ * Cabecera con la nota media grande y la lista debajo, con scroll propio: la
+ * regla de escritorio del proyecto, igual que el catálogo y "mis reservas".
+ *
+ * <p>
+ * <b>Sustituye a una {@code JTable} de cuatro columnas</b> (id, autor, título,
+ * nota). Una tabla ordena datos homogéneos y cortos; una reseña es un texto con
+ * autoría, fecha y cinco sub-notas, y meterla en celdas obligaba a esconder casi
+ * todo. El listado editorial enseña de cada reseña lo que permite decidir si
+ * abrirla, que es justo para lo que sirve un listado.
+ */
 @Component
 @Profile("!test")
 @Lazy
 public class ShowReviewsFrame extends JFrame {
 
-	private final ReviewService reviewService;
-	private ApplicationContext context;
-	private SessionManager sessionManager;
-	private HeaderPanel headerPanel;
+	private static final long serialVersionUID = 1L;
 
-	private DefaultTableModel reviewsModel;
-	private JTable reviewsTable;
-	private JButton button;
+	private final transient ReviewService reviewService;
+	private final transient HousingService housingService;
+	private final transient SessionManager sessionManager;
+	private final transient Navigator navigator;
+	private final HeaderPanel headerPanel;
+
 	private Long housingId;
+	private transient Housing housing;
 
-	public ShowReviewsFrame(ReviewService reviewService, ApplicationContext context, SessionManager sessionManager,
-			HeaderPanel headerPanel) throws InstanceNotFoundException {
+	private JPanel titular;
+	private JPanel lista;
+
+	public ShowReviewsFrame(ReviewService reviewService, HousingService housingService, SessionManager sessionManager,
+			Navigator navigator, HeaderPanel headerPanel) {
 
 		this.reviewService = reviewService;
-		this.context = context;
+		this.housingService = housingService;
 		this.sessionManager = sessionManager;
+		this.navigator = navigator;
 		this.headerPanel = headerPanel;
+
 		initUI();
 	}
 
-	public void setHousingId(Long id) {
-
-		this.housingId = id;
+	/** Prepara de qué alojamiento son las reseñas. La llama el {@link Navigator}. */
+	public void setHousingId(Long housingId) {
+		this.housingId = housingId;
 	}
 
 	@Override
 	public void setVisible(boolean visible) {
-		if (visible) {
-			try {
-				loadReviews();
-			} catch (InstanceNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 
+		if (visible) {
 			headerPanel.refresh();
-			refreshActions();
+			recargar();
 		}
 
 		super.setVisible(visible);
 	}
 
-	private void initUI() throws InstanceNotFoundException {
+	private void initUI() {
 
-		setTitle("Actihome");
-		setSize(500, 500);
+		setTitle("ActiHome");
+		setSize(1040, 800);
+		setMinimumSize(new Dimension(860, 640));
 		setLocationRelativeTo(null);
 
-		JPanel jpanel = new JPanel(new BorderLayout());
-		jpanel.setBorder(BorderFactory.createTitledBorder("Críticas"));
+		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[]0[grow,fill]"));
 
-		String[] columns = { "ID", "Autor", "Título", "Nota total" };
+		titular = new JPanel();
+		titular.setOpaque(false);
 
-		reviewsModel = new DefaultTableModel(columns, 0) {
-			/**
-			 * 
-			 */
-			private static final long serialVersionUID = 1L;
+		raiz.add(headerPanel, "growx");
+		raiz.add(titular, "growx");
+		raiz.add(zonaDeLista(), "grow");
 
-			@Override
-			public boolean isCellEditable(int row, int column) {
-				return false;
-			}
-		};
-
-		reviewsTable = new JTable(reviewsModel);
-		reviewsTable.getColumnModel().getColumn(0).setMinWidth(0);
-		reviewsTable.getColumnModel().getColumn(0).setMaxWidth(0);
-		reviewsTable.getColumnModel().getColumn(0).setPreferredWidth(0);
-		reviewsTable.setRowHeight(40);
-		reviewsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-		reviewsTable.addMouseListener(new MouseAdapter() {
-
-			@Override
-			public void mouseClicked(MouseEvent e) {
-
-				if (e.getClickCount() == 2) {
-					try {
-						showReviewDetails();
-					} catch (InstanceNotFoundException e1) { // TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
-				}
-			}
-		});
-
-		JScrollPane scrollPane = new JScrollPane(reviewsTable);
-
-		jpanel.add(scrollPane, BorderLayout.CENTER);
-
-		button = new JButton("Publicar reseña");
-		button.setVisible(false);
-		jpanel.add(button, BorderLayout.SOUTH);
-		add(headerPanel, BorderLayout.NORTH);
-		add(jpanel);
-
+		setContentPane(raiz);
 	}
 
-	private void loadReviews() throws InstanceNotFoundException {
+	private JScrollPane zonaDeLista() {
 
-		reviewsModel.setRowCount(0);
+		lista = new JPanel(
+				new MigLayout("wrap 1, " + Space.insets(0, Space.HUGE, Space.XXL, Space.HUGE), "[grow,fill]", "[]"));
+		lista.setOpaque(false);
 
-		ArrayList<Review> reviewsList = reviewService.showHousingReviews(housingId);
+		JScrollPane scroll = new JScrollPane(lista);
+		scroll.setOpaque(false);
+		scroll.getViewport().setOpaque(false);
+		scroll.setBorder(null);
+		scroll.setViewportBorder(null);
+		scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+		scroll.getVerticalScrollBar().setUnitIncrement(24);
 
-		for (Review review : reviewsList) {
-			reviewsModel.addRow(new Object[] { review.getId(), review.getAuthor().getUsername(), review.getTitle(),
-					review.getTotalScore() });
+		// Mínimo cero para que sea la lista la que ceda espacio cuando la ventana se
+		// queda corta, y no la cabecera.
+		scroll.setMinimumSize(new Dimension(0, 0));
 
-		}
+		return scroll;
 	}
 
-	private void publish() {
+	private void recargar() {
 
-		dispose();
-		PublishReviewFrame publishReviewFrame = context.getBean(PublishReviewFrame.class);
-		publishReviewFrame.setHousingId(housingId);
-		publishReviewFrame.setVisible(true);
-	}
-
-	private void showReviewDetails() throws InstanceNotFoundException {
-
-		int selectedRow = reviewsTable.getSelectedRow();
-
-		if (selectedRow == -1) {
-
+		if (housingId == null) {
 			return;
 		}
 
-		Long reviewId = (Long) reviewsTable.getValueAt(selectedRow, 0);
+		List<Review> resenas;
 
-		Review review = reviewService.findReview(reviewId);
+		try {
+			housing = housingService.findHousing(housingId);
+			resenas = reviewService.showHousingReviews(housingId);
 
-		dispose();
-		ReviewDetailsFrame reviewDetailsFrame = context.getBean(ReviewDetailsFrame.class);
-		reviewDetailsFrame.loadDetails(review);
-		reviewDetailsFrame.setVisible(true);
+		} catch (InstanceNotFoundException ex) {
+			// El alojamiento ya no existe. No hay pantalla que enseñar, así que se vuelve
+			// al catálogo en lugar de dejar una lista vacía sin explicación.
+			navigator.ir(ShowHousingsFrame.class);
+			return;
+		}
 
+		reconstruirTitular(resenas);
+		reconstruirLista(resenas);
 	}
 
-	private void refreshActions() {
+	// ------------------------------------------------------------------
+	// Cabecera
+	// ------------------------------------------------------------------
 
-		if (sessionManager.getLoggedInUser().getRole() == RoleType.CUSTOMER) {
+	private void reconstruirTitular(List<Review> resenas) {
 
-			button.addActionListener(e -> publish());
-			button.setSize(10, 20);
-			button.setVisible(true);
-		} else {
-			button.setVisible(false);
+		titular.removeAll();
+		titular.setLayout(new MigLayout("wrap 1, " + Space.insets(Space.XL, Space.HUGE, Space.LG, Space.HUGE),
+				"[grow,fill]", "[]" + Space.XS + "[]" + Space.MD + "[]"));
+
+		titular.add(migaDePan(), "growx");
+		titular.add(Labels.title("Reseñas · " + housing.getName()));
+		titular.add(notaMedia(resenas), "growx");
+
+		titular.revalidate();
+		titular.repaint();
+	}
+
+	private JPanel migaDePan() {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XS + "[]" + Space.XS + "[]", "[]"));
+		panel.setOpaque(false);
+
+		panel.add(Buttons.link("Catálogo", e -> navigator.ir(ShowHousingsFrame.class)));
+		panel.add(Labels.muted("›"));
+		panel.add(Buttons.link(housing.getName(),
+				e -> navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(housing))));
+
+		return panel;
+	}
+
+	/**
+	 * La media del alojamiento, en grande, con el número de reseñas al lado.
+	 *
+	 * <p>
+	 * La media se lee de {@code housing.getScore()} y no se calcula aquí: el
+	 * servicio ya la recalcula y la reescribe cada vez que se publica o se
+	 * actualiza una reseña. Recalcularla también en la pantalla sería tener la
+	 * misma regla en dos sitios, y el día que cambiara solo se corregiría uno.
+	 */
+	private JPanel notaMedia(List<Review> resenas) {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.MD + "[]" + Space.XL + "[]push[]", "[]"));
+		panel.setOpaque(false);
+
+		JLabel media = Labels.price(Formato.nota(housing.getScore()));
+		media.setFont(Typography.serifMedium(40f));
+		panel.add(media, "aligny center");
+
+		panel.add(Labels.muted(resenas.isEmpty() ? "sin reseñas"
+				: Formato.plural(resenas.size(), "reseña", "reseñas")), "aligny center");
+
+		if (esCliente() && !yaOpino(resenas)) {
+			panel.add(Buttons.primary("Publicar reseña", e -> publicar()), "aligny center");
 		}
+
+		return panel;
+	}
+
+	/** Solo un CUSTOMER publica reseñas; el servicio impone la misma regla. */
+	private boolean esCliente() {
+
+		User usuario = sessionManager.getLoggedInUser();
+
+		return usuario != null && usuario.getRole() == RoleType.CUSTOMER;
+	}
+
+	/**
+	 * Si el usuario ya tiene una reseña de este alojamiento.
+	 *
+	 * <p>
+	 * El servicio impide publicar dos veces ({@code AlreadyPublishedException}), y
+	 * ofrecer un botón que siempre va a fallar es peor que no ofrecerlo. Esto
+	 * <b>no</b> es duplicar la regla de negocio: no se consulta nada de más, se mira
+	 * la lista que la pantalla acaba de cargar para pintarse. La validación de
+	 * verdad la sigue haciendo el servicio, y {@code PublishReviewFrame} sigue
+	 * teniendo su mensaje por si se llegara ahí por otro camino.
+	 */
+	private boolean yaOpino(List<Review> resenas) {
+
+		User usuario = sessionManager.getLoggedInUser();
+
+		return usuario != null
+				&& resenas.stream().anyMatch(r -> r.getAuthor().getId().equals(usuario.getId()));
+	}
+
+	// ------------------------------------------------------------------
+	// Lista
+	// ------------------------------------------------------------------
+
+	private void reconstruirLista(List<Review> resenas) {
+
+		lista.removeAll();
+
+		if (resenas.isEmpty()) {
+			lista.add(estadoVacio(), "growx");
+
+		} else {
+			boolean primera = true;
+
+			for (Review resena : resenas) {
+
+				if (!primera) {
+					lista.add(Hairline.horizontal(), "growx, h 1!");
+				}
+
+				lista.add(fila(resena), "growx, " + Layout.ancho(Layout.CONTENIDO));
+				primera = false;
+			}
+		}
+
+		lista.revalidate();
+		lista.repaint();
+	}
+
+	private ReviewRow fila(Review resena) {
+
+		return new ReviewRow(resena,
+				() -> navigator.ir(ReviewDetailsFrame.class, frame -> frame.loadDetails(resena)));
+	}
+
+	private JPanel estadoVacio() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.HUGE, 0, Space.HUGE, 0), "[grow,fill]",
+				"[]" + Space.LG + "[]" + Space.XS + "[]"));
+		panel.setOpaque(false);
+
+		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.ACCION)));
+		panel.add(centrar(Labels.title("Todavía no hay reseñas")));
+		panel.add(centrar(Labels.muted(esCliente() ? "Si te has alojado aquí, cuéntalo: serás la primera persona."
+				: "Cuando alguien se aloje y opine, aparecerá aquí.")));
+
+		return panel;
+	}
+
+	private JPanel centrar(JComponent componente) {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "push[]push", ""));
+		fila.setOpaque(false);
+		fila.add(componente);
+		return fila;
+	}
+
+	private void publicar() {
+		navigator.ir(PublishReviewFrame.class, frame -> frame.setHousingId(housingId));
 	}
 }

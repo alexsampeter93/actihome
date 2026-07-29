@@ -22,6 +22,7 @@ import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.components.ScoreBar;
 import fp.project.actihome.ui.components.ScoreDisc;
 
@@ -243,9 +244,9 @@ public class StyleGuidePanel extends JPanel {
 		medios.setOpaque(false);
 		medios.add(new ImagePlaceholder("Casa", "Disponible", true), "growx, height 150!");
 		medios.add(new ImagePlaceholder("Villa", "Reservada", false), "growx, height 150!");
-		medios.add(new MascotSlot(MascotSlot.Tamano.GRANDE), "bottom");
-		medios.add(new MascotSlot(MascotSlot.Tamano.MEDIANO), "bottom");
-		medios.add(new MascotSlot(MascotSlot.Tamano.PEQUENO), "bottom");
+		medios.add(new MascotSlot(MascotSlot.Tamano.GRANDE, Pose.BIENVENIDA), "bottom");
+		medios.add(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.ACCION), "bottom");
+		medios.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "bottom");
 		panel.add(medios);
 
 		return panel;

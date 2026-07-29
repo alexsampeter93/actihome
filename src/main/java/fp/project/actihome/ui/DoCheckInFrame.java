@@ -28,6 +28,7 @@ import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
@@ -186,7 +187,7 @@ public class DoCheckInFrame extends JFrame {
 		titulos.add(subtituloFechas, "gaptop " + Space.XXS);
 
 		panel.add(titulos);
-		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO), "top, w 56!, h 56!");
+		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "top, w 56!, h 56!");
 
 		return panel;
 	}

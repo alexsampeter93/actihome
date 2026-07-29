@@ -72,9 +72,32 @@ public final class BrandAssets {
 		return cargar("/images/brand/fondo.png");
 	}
 
-	/** Olaz en la variante de una estación. */
-	public static BufferedImage olaz(Season estacion) {
-		return cargar("/images/olaz/olaz-" + estacion.name().toLowerCase() + ".png");
+	/**
+	 * Las dos poses en las que está ilustrado Olaz, en cada estación.
+	 *
+	 * <p>
+	 * No son dos dibujos intercambiables del mismo personaje: cuentan cosas
+	 * distintas. En {@link #BIENVENIDA} Olaz está de pie, mirando de frente y con
+	 * algo en la mano que tiene que ver con llegar a un sitio —las llaves de una
+	 * casa, una maleta, una taza—; en {@link #ACCION} está haciendo algo —en bici,
+	 * esquiando, tumbado en la toalla, de ruta con la mochila—. Por eso la pose la
+	 * elige la pantalla y no el azar: una que pide datos acompaña mejor con
+	 * alguien que te recibe, y una de explorar, con alguien que ya está de viaje.
+	 */
+	public enum Pose {
+
+		BIENVENIDA("bienvenida"), ACCION("accion");
+
+		private final String sufijo;
+
+		Pose(String sufijo) {
+			this.sufijo = sufijo;
+		}
+	}
+
+	/** Olaz en la variante de una estación y una pose. */
+	public static BufferedImage olaz(Season estacion, Pose pose) {
+		return cargar("/images/olaz/olaz-" + estacion.name().toLowerCase() + "-" + pose.sufijo + ".png");
 	}
 
 	private static BufferedImage cargar(String ruta) {

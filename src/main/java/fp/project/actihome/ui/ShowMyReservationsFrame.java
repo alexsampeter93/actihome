@@ -22,6 +22,7 @@ import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.reservations.ReservationRow;
@@ -175,7 +176,7 @@ public class ShowMyReservationsFrame extends JFrame {
 				"[]" + Space.LG + "[]" + Space.XS + "[]" + Space.LG + "[]"));
 		panel.setOpaque(false);
 
-		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO)));
+		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.ACCION)));
 		panel.add(centrar(Labels.title("Todavía no tienes reservas")));
 		panel.add(centrar(Labels.muted("Cuando reserves un alojamiento, aparecerá aquí.")));
 		panel.add(centrar(Buttons.link("Ir al catálogo →", e -> navigator.ir(ShowHousingsFrame.class))));

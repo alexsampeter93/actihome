@@ -1,8 +1,11 @@
 package fp.project.actihome.ui.components;
 
+import javax.swing.BorderFactory;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.text.JTextComponent;
 
@@ -45,6 +48,10 @@ public class Field extends JPanel {
 	private final JTextComponent input;
 
 	private Field(String etiqueta, JTextComponent input) {
+		this(etiqueta, input, 38);
+	}
+
+	private Field(String etiqueta, JTextComponent input, int alto) {
 
 		super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 
@@ -55,7 +62,12 @@ public class Field extends JPanel {
 		input.setForeground(Theme.txt());
 
 		add(Labels.caps(etiqueta));
-		add((JComponent) input, "gaptop " + Space.XXS + ", height 38!");
+
+		// Un JTextArea no trae barras de desplazamiento propias: hay que envolverlo.
+		// El resto de campos son de una línea y no las necesitan.
+		JComponent visible = input instanceof JTextArea ? new JScrollPane(input) : (JComponent) input;
+
+		add(visible, "gaptop " + Space.XXS + ", height " + alto + "!");
 	}
 
 	/** Campo de texto normal. */
@@ -74,6 +86,31 @@ public class Field extends JPanel {
 	/** Campo de contraseña: oculta lo que se escribe. */
 	public static Field password(String etiqueta) {
 		return new Field(etiqueta, new JPasswordField());
+	}
+
+	/**
+	 * Campo de varias líneas, para texto largo.
+	 *
+	 * <p>
+	 * Va dentro de un {@code JScrollPane} porque un {@code JTextArea} suelto crece
+	 * hacia abajo sin límite según se escribe, y eso rompería la regla de escritorio
+	 * del proyecto: la pantalla dejaría de caber en la ventana en cuanto alguien
+	 * escribiera un párrafo. Con el scroll, el alto lo fija el formulario y el texto
+	 * se desplaza dentro.
+	 *
+	 * <p>
+	 * El ajuste de palabra va activado por el mismo motivo que en
+	 * {@link WrappingText}: sin él, una frase larga se convierte en una única línea
+	 * con barra de desplazamiento horizontal, que es una forma pésima de escribir.
+	 */
+	public static Field textArea(String etiqueta, int alto) {
+
+		JTextArea area = new JTextArea();
+		area.setLineWrap(true);
+		area.setWrapStyleWord(true);
+		area.setBorder(BorderFactory.createEmptyBorder(Space.XS, Space.XS, Space.XS, Space.XS));
+
+		return new Field(etiqueta, area, alto);
 	}
 
 	public String getText() {

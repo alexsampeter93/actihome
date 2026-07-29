@@ -39,6 +39,7 @@ import fp.project.actihome.ui.catalog.HousingRow;
 import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.SeasonSelector;
 import fp.project.actihome.ui.components.Stat;
@@ -492,7 +493,7 @@ public class ShowHousingsFrame extends JFrame {
 				"[]" + Space.LG + "[]" + Space.XS + "[]"));
 		panel.setOpaque(false);
 
-		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO)));
+		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.ACCION)));
 
 		if (catalogoVacio) {
 			panel.add(centrar(Labels.title("Todavía no hay estancias")));
@@ -524,7 +525,7 @@ public class ShowHousingsFrame extends JFrame {
 				"[]" + Space.MD + "[]push[]", "[]"));
 		panel.setOpaque(false);
 
-		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO), "w 48!, h 48!");
+		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "w 48!, h 48!");
 		panel.add(Labels.caps("por CocoBrain"));
 
 		accionAdmin = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]", "[]"));

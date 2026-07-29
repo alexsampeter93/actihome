@@ -25,6 +25,7 @@ import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
@@ -205,7 +206,7 @@ public class LoginFrame extends JFrame {
 		panel.add(claimPrimera, Layout.ancho(Layout.TEXTO));
 		panel.add(claimSegunda, Layout.ancho(Layout.TEXTO) + ", gaptop -10");
 
-		panel.add(new MascotSlot(MascotSlot.Tamano.GRANDE), "align left");
+		panel.add(new MascotSlot(MascotSlot.Tamano.GRANDE, Pose.BIENVENIDA), "align left");
 
 		fraseEstacional = Labels.editorialOnHeader(Theme.estacion().frase());
 		panel.add(fraseEstacional, Layout.ancho(Layout.TEXTO));

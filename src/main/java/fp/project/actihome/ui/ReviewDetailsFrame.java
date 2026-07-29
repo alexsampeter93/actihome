@@ -1,62 +1,100 @@
 package fp.project.actihome.ui;
 
-import java.awt.BorderLayout;
-import java.awt.GridLayout;
-import java.text.NumberFormat;
+import java.awt.Dimension;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import fp.project.actihome.model.entities.Review;
-import fp.project.actihome.model.services.ReviewService;
-import fp.project.actihome.ui.sessionManagement.SessionManager;
+import net.miginfocom.swing.MigLayout;
 
+import fp.project.actihome.model.entities.Review;
+import fp.project.actihome.model.entities.User;
+import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.services.ReviewService;
+import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Hairline;
+import fp.project.actihome.ui.components.Labels;
+import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.components.ScoreBar;
+import fp.project.actihome.ui.components.ScoreDisc;
+import fp.project.actihome.ui.components.WrappingText;
+import fp.project.actihome.ui.nav.Navigator;
+import fp.project.actihome.ui.sessionManagement.SessionManager;
+import fp.project.actihome.ui.theme.Layout;
+import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Typography;
+
+/**
+ * Una reseña completa.
+ *
+ * <p>
+ * Título y disco de nota arriba, autoría, el cuerpo entero —aquí no se recorta,
+ * a diferencia del listado— y las cinco sub-notas como barras.
+ *
+ * <p>
+ * <b>Por qué barras y no cifras.</b> Cinco números obligan a leerlos y
+ * compararlos mentalmente uno a uno; cinco barras alineadas se comparan de un
+ * vistazo, porque la longitud se percibe sin tener que interpretarla. Es el
+ * mismo dato codificado de una forma que cuesta menos leer, y es exactamente el
+ * trabajo de una interfaz. En el listado, en cambio, van como cifras: allí lo
+ * que se compara son reseñas entre sí, y las barras ocuparían el alto de cada
+ * fila.
+ */
 @Component
 @Profile("!test")
 @Lazy
 public class ReviewDetailsFrame extends JFrame {
 
-	private final ReviewService reviewService;
-	private ApplicationContext context;
-	private SessionManager sessionManager;
-	private HeaderPanel headerPanel;
-	private Review review;
+	private static final long serialVersionUID = 1L;
 
-	private JLabel titleLabel;
-	private JLabel bodyArea;
-	private JLabel locationScoreLabel;
-	private JLabel serviceScoreLabel;
-	private JLabel wifiScoreLabel;
-	private JLabel foodScoreLabel;
-	private JLabel cleaningScoreLabel;
-	private JLabel totalScoreLabel;
-	private JButton updateButton;
+	private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy",
+			new Locale("es", "ES"));
 
-	public ReviewDetailsFrame(ReviewService reviewService, ApplicationContext context, SessionManager sessionManager,
+	private final transient ReviewService reviewService;
+	private final transient SessionManager sessionManager;
+	private final transient Navigator navigator;
+	private final HeaderPanel headerPanel;
+
+	private Long reviewId;
+	private transient Review review;
+
+	private JPanel contenido;
+
+	public ReviewDetailsFrame(ReviewService reviewService, SessionManager sessionManager, Navigator navigator,
 			HeaderPanel headerPanel) {
 
 		this.reviewService = reviewService;
-		this.context = context;
 		this.sessionManager = sessionManager;
+		this.navigator = navigator;
 		this.headerPanel = headerPanel;
+
 		initUI();
+	}
+
+	/**
+	 * Prepara qué reseña mostrar. La llama el {@link Navigator}.
+	 *
+	 * <p>
+	 * Guarda solo el identificador y recarga en cada apertura: si vienes de
+	 * editarla, el objeto que traía el listado en memoria ya está desactualizado.
+	 */
+	public void loadDetails(Review review) {
+		this.reviewId = review.getId();
 	}
 
 	@Override
 	public void setVisible(boolean visible) {
 
 		if (visible) {
-
-			loadDetails(review);
 			headerPanel.refresh();
+			recargar();
 		}
 
 		super.setVisible(visible);
@@ -64,94 +102,138 @@ public class ReviewDetailsFrame extends JFrame {
 
 	private void initUI() {
 
-		setTitle("Actihome");
-		setSize(500, 500);
+		setTitle("ActiHome");
+		setSize(1000, 780);
+		setMinimumSize(new Dimension(820, 620));
 		setLocationRelativeTo(null);
 
-		JPanel jpanel = new JPanel(new BorderLayout());
-		jpanel.setBorder(BorderFactory.createTitledBorder("Datos de la reseña"));
+		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));
 
-		JPanel dataPanel = new JPanel(new GridLayout(0, 2, 10, 10));
+		contenido = new JPanel();
+		contenido.setOpaque(false);
 
-		JPanel buttonPanel = new JPanel(new BorderLayout());
+		raiz.add(headerPanel, "growx");
+		raiz.add(contenido, "grow");
 
-		NumberFormat roomsAndCodeformat = NumberFormat.getIntegerInstance();
-		roomsAndCodeformat.setGroupingUsed(false);
-
-		NumberFormat pricePerNightFormat = NumberFormat.getNumberInstance();
-		pricePerNightFormat.setMaximumFractionDigits(2);
-		pricePerNightFormat.setMinimumFractionDigits(2);
-
-		dataPanel.add(new JLabel("Título"));
-		titleLabel = new JLabel();
-		dataPanel.add(titleLabel);
-
-		dataPanel.add(new JLabel("Cuerpo"));
-		bodyArea = new JLabel();
-		dataPanel.add(bodyArea);
-
-		dataPanel.add(new JLabel("Calificación de ubicación"));
-		locationScoreLabel = new JLabel();
-		dataPanel.add(locationScoreLabel);
-
-		dataPanel.add(new JLabel("Calificación de servicio"));
-		serviceScoreLabel = new JLabel();
-		dataPanel.add(serviceScoreLabel);
-
-		dataPanel.add(new JLabel("Calificación de wifi"));
-		wifiScoreLabel = new JLabel();
-		dataPanel.add(wifiScoreLabel);
-
-		dataPanel.add(new JLabel("Calificación de comida"));
-		foodScoreLabel = new JLabel();
-		dataPanel.add(foodScoreLabel);
-
-		dataPanel.add(new JLabel("Calificación de limpieza"));
-		cleaningScoreLabel = new JLabel();
-		dataPanel.add(cleaningScoreLabel);
-
-		dataPanel.add(new JLabel("Calificación total"));
-		totalScoreLabel = new JLabel();
-		dataPanel.add(totalScoreLabel);
-
-		updateButton = new JButton("Actualizar reseña");
-		updateButton.addActionListener(e -> update());
-		updateButton.setVisible(false);
-		buttonPanel.add(updateButton, BorderLayout.CENTER);
-
-		jpanel.add(dataPanel, BorderLayout.CENTER);
-		jpanel.add(buttonPanel, BorderLayout.SOUTH);
-		add(headerPanel, BorderLayout.NORTH);
-		add(jpanel);
-
+		setContentPane(raiz);
 	}
 
-	private void update() {
+	private void recargar() {
 
-		dispose();
-		UpdateReviewFrame updateReviewFrame = context.getBean(UpdateReviewFrame.class);
-		updateReviewFrame.setReviewId(review.getId());
-		updateReviewFrame.setVisible(true);
-	}
-
-	public void loadDetails(Review review) {
-
-		this.review = review;
-
-		titleLabel.setText(review.getTitle());
-		bodyArea.setText(review.getBody());
-		locationScoreLabel.setText(String.valueOf(review.getLocationScore()));
-		serviceScoreLabel.setText(String.valueOf(review.getServiceScore()));
-		wifiScoreLabel.setText(String.valueOf(review.getWifiScore()));
-		foodScoreLabel.setText(String.valueOf(review.getFoodScore()));
-		cleaningScoreLabel.setText(String.valueOf(review.getCleaningScore()));
-		totalScoreLabel.setText(String.valueOf(review.getTotalScore()));
-
-		if (sessionManager.getLoggedInUser().getId().equals(review.getAuthor().getId())) {
-			updateButton.setVisible(true);
-		} else {
-			updateButton.setVisible(false);
+		if (reviewId == null) {
+			return;
 		}
 
+		try {
+			review = reviewService.findReview(reviewId);
+
+		} catch (InstanceNotFoundException ex) {
+			navigator.ir(ShowHousingsFrame.class);
+			return;
+		}
+
+		reconstruir();
+	}
+
+	private void reconstruir() {
+
+		contenido.removeAll();
+		contenido.setLayout(new MigLayout("fill, " + Space.insets(Space.XL, Space.HUGE, Space.XL, Space.HUGE),
+				"[grow,fill]", "[grow,fill]"));
+
+		// Una sola columna centrada, y dentro todo alineado a la izquierda. Es la
+		// diferencia entre un margen izquierdo recto y uno dentado: si cada bloque se
+		// centrase por su cuenta según su propio ancho máximo, el cuerpo del texto
+		// arrancaría más adentro que el título.
+		JPanel columna = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
+				"[]" + Space.LG + "[]" + Space.MD + "[]" + Space.XXL + "[]" + Space.XXL + "[]push[]"));
+		columna.setOpaque(false);
+
+		columna.add(migaDePan(), "growx");
+		columna.add(cabecera(), "growx");
+		columna.add(new WrappingText(review.getBody()), "growx, " + Layout.ancho(Layout.TEXTO));
+		columna.add(Hairline.horizontal(), "growx, h 1!");
+		columna.add(subNotas(), "growx, " + Layout.ancho(Layout.TEXTO));
+		columna.add(acciones(), "growx");
+
+		contenido.add(columna, "grow, " + Layout.anchoCentrado(Layout.CONTENIDO));
+
+		contenido.revalidate();
+		contenido.repaint();
+	}
+
+	private JPanel migaDePan() {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XS + "[]" + Space.XS + "[]", "[]"));
+		panel.setOpaque(false);
+
+		panel.add(Buttons.link("Reseñas de " + review.getHousing().getName(),
+				e -> navigator.ir(ShowReviewsFrame.class, frame -> frame.setHousingId(review.getHousing().getId()))));
+		panel.add(Labels.muted("›"));
+		panel.add(Labels.muted(review.getTitle()));
+
+		return panel;
+	}
+
+	/** Disco de nota grande a la izquierda, título y autoría a la derecha. */
+	private JPanel cabecera() {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XL + "[grow,fill]", "[]"));
+		panel.setOpaque(false);
+
+		panel.add(new ScoreDisc(review.getTotalScore(), ScoreDisc.Tamano.GRANDE), "w 64!, h 64!, aligny center");
+
+		JPanel texto = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]"));
+		texto.setOpaque(false);
+
+		JLabel titulo = Labels.title(review.getTitle());
+		titulo.setFont(Typography.serifMedium(28f));
+		texto.add(titulo);
+
+		texto.add(Labels.muted("por " + review.getAuthor().getUsername() + " · "
+				+ FECHA.format(review.getPublicationDate())));
+
+		panel.add(texto, "aligny center");
+
+		return panel;
+	}
+
+	private JPanel subNotas() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
+				"[]" + Space.SM + "[]" + Space.SM + "[]" + Space.SM + "[]" + Space.SM + "[]"));
+		panel.setOpaque(false);
+
+		panel.add(new ScoreBar("Ubicación", review.getLocationScore()), "growx");
+		panel.add(new ScoreBar("Servicio", review.getServiceScore()), "growx");
+		panel.add(new ScoreBar("Wifi", review.getWifiScore()), "growx");
+		panel.add(new ScoreBar("Comida", review.getFoodScore()), "growx");
+		panel.add(new ScoreBar("Limpieza", review.getCleaningScore()), "growx");
+
+		return panel;
+	}
+
+	/** "Actualizar reseña" solo para quien la escribió. */
+	private JPanel acciones() {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]push[]", "[]"));
+		panel.setOpaque(false);
+
+		if (esSuya()) {
+			panel.add(Buttons.secondary("Actualizar reseña",
+					e -> navigator.ir(UpdateReviewFrame.class, frame -> frame.setReviewId(review.getId()))));
+		}
+
+		panel.add(Buttons.link("Volver a las reseñas →",
+				e -> navigator.ir(ShowReviewsFrame.class, frame -> frame.setHousingId(review.getHousing().getId()))));
+
+		return panel;
+	}
+
+	private boolean esSuya() {
+
+		User usuario = sessionManager.getLoggedInUser();
+
+		return usuario != null && usuario.getId().equals(review.getAuthor().getId());
 	}
 }

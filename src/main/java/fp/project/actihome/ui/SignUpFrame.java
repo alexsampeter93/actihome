@@ -31,6 +31,7 @@ import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.theme.Layout;
@@ -139,7 +140,7 @@ public class SignUpFrame extends JFrame {
 				"gaptop " + Space.XS);
 		panel.add(titulos);
 
-		panel.add(new MascotSlot(MascotSlot.Tamano.MEDIANO), "top");
+		panel.add(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.BIENVENIDA), "top");
 
 		return panel;
 	}

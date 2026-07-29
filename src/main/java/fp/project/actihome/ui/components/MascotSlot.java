@@ -10,6 +10,7 @@ import java.awt.image.BufferedImage;
 import javax.swing.JComponent;
 
 import fp.project.actihome.ui.theme.BrandAssets;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Season;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
@@ -32,17 +33,18 @@ import fp.project.actihome.ui.theme.Typography;
  * (catálogo, listados). La mascota nunca compite con la información.</li>
  * <li><b>Variante estacional siempre.</b> Cambiar de estación cambia a Olaz, y
  * eso convierte el selector en algo que apetece tocar.</li>
+ * <li><b>Pose según lo que hace la pantalla.</b> {@link Pose#BIENVENIDA} donde
+ * se pide algo al usuario (formularios, confirmaciones) y {@link Pose#ACCION}
+ * donde se explora (catálogo, listados, detalles). La regla es fija por
+ * pantalla, no aleatoria: una mascota que sale distinta cada vez que abres la
+ * misma ventana se lee como ruido, no como identidad.</li>
  * </ol>
  *
  * <p>
- * <b>Ausencia elegante.</b> Las ilustraciones actuales tienen el fondo blanco
- * horneado y no sirven para componer sobre la interfaz; faltan las versiones
- * con transparencia. Mientras no lleguen, la ranura dibuja un contorno
- * discontinuo con el nombre de la variante que irá ahí. Así el trabajo de
- * maquetación puede avanzar con el espacio ya reservado, y el día que se
- * copien los archivos a {@code resources/images/olaz/} aparecen sin tocar una
- * línea de código. Un componente que se rompe porque falta un recurso obliga a
- * parar; uno que degrada bien, no.
+ * <b>Ausencia elegante.</b> Si faltara el archivo, la ranura dibuja un contorno
+ * discontinuo con el nombre de la variante en lugar de reventar. Un componente
+ * que se rompe por un recurso decorativo obliga a parar; uno que degrada bien,
+ * no.
  */
 public class MascotSlot extends JComponent {
 
@@ -60,10 +62,12 @@ public class MascotSlot extends JComponent {
 	}
 
 	private final Tamano tamano;
+	private final Pose pose;
 
-	public MascotSlot(Tamano tamano) {
+	public MascotSlot(Tamano tamano, Pose pose) {
 
 		this.tamano = tamano;
+		this.pose = pose;
 		setPreferredSize(new Dimension(tamano.lado, tamano.lado));
 		setMinimumSize(new Dimension(tamano.lado / 2, tamano.lado / 2));
 	}
@@ -76,7 +80,7 @@ public class MascotSlot extends JComponent {
 		g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
 		Season estacion = Theme.estacion();
-		BufferedImage imagen = cargar(estacion);
+		BufferedImage imagen = BrandAssets.olaz(estacion, pose);
 
 		if (imagen != null) {
 			pintarAjustada(g2, imagen);
@@ -121,12 +125,5 @@ public class MascotSlot extends JComponent {
 
 		g2.drawString(texto, (ancho - anchoTexto) / 2, alto / 2 - 2);
 		g2.drawString(subtexto, (ancho - anchoSub) / 2, alto / 2 + 14);
-	}
-
-	private static BufferedImage cargar(Season estacion) {
-
-		// La carga y la caché viven en BrandAssets, que es el único sitio del proyecto
-		// que sabe leer imágenes empaquetadas. Este componente solo sabe dibujarlas.
-		return BrandAssets.olaz(estacion);
 	}
 }

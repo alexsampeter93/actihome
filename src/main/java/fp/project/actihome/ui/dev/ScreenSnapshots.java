@@ -25,15 +25,21 @@ import fp.project.actihome.ActihomeApplication;
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.entities.Reservation;
 import fp.project.actihome.model.entities.ReservationDao;
+import fp.project.actihome.model.entities.Review;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.services.HousingService;
+import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.model.services.UserService;
 import fp.project.actihome.ui.DoCheckInFrame;
 import fp.project.actihome.ui.HousingDetailsFrame;
+import fp.project.actihome.ui.PublishReviewFrame;
 import fp.project.actihome.ui.ReserveHousingFrame;
+import fp.project.actihome.ui.ReviewDetailsFrame;
 import fp.project.actihome.ui.ShowHousingsFrame;
 import fp.project.actihome.ui.ShowMyReservationsFrame;
+import fp.project.actihome.ui.ShowReviewsFrame;
+import fp.project.actihome.ui.UpdateReviewFrame;
 import fp.project.actihome.ui.components.Segmented;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
@@ -109,6 +115,9 @@ public final class ScreenSnapshots {
 
 			if ("fase4".equals(prefijo)) {
 				capturarFase4(context);
+
+			} else if ("fase5".equals(prefijo)) {
+				capturarFase5(context);
 
 			} else {
 
@@ -188,6 +197,68 @@ public final class ScreenSnapshots {
 		HousingDetailsFrame detalleAdmin = context.getBean(HousingDetailsFrame.class);
 		detalleAdmin.loadDetails(paraDetalle);
 		guardar(detalleAdmin, "fase4-detalle-propietario");
+	}
+
+	/**
+	 * Captura las cuatro pantallas de la Fase 5: listado de reseñas, detalle,
+	 * publicar y editar.
+	 *
+	 * <p>
+	 * Aquí <b>no</b> hace falta fabricar datos de attrezzo, a diferencia de la Fase
+	 * 4: {@code data.sql} ya siembra dos reseñas por alojamiento con texto real,
+	 * autoría y sub-notas variadas. Sembrar más sería duplicar en la herramienta
+	 * algo que ya está en el arranque de la aplicación.
+	 *
+	 * <p>
+	 * La sesión se abre como <b>Customer16</b>, un usuario de {@code data.sql} que
+	 * es autor de una de las reseñas del alojamiento 10002. Así el detalle sale con
+	 * el botón "Actualizar reseña" visible, que es el caso interesante: con un
+	 * usuario cualquiera esa acción no aparece y la captura no enseñaría nada de
+	 * ella.
+	 */
+	private static void capturarFase5(ConfigurableApplicationContext context) throws IOException {
+
+		Theme.cambiarA(Season.VERANO);
+
+		HousingService housingService = context.getBean(HousingService.class);
+		ReviewService reviewService = context.getBean(ReviewService.class);
+
+		Housing alojamiento = housingService.showHousings().stream().filter(h -> h.getHousingCode().equals(10002L))
+				.findFirst().orElseThrow(IllegalStateException::new);
+
+		iniciarSesionComo(context, "Customer16");
+
+		ShowReviewsFrame listado = context.getBean(ShowReviewsFrame.class);
+		listado.setHousingId(alojamiento.getId());
+		guardar(listado, "fase5-resenas");
+
+		List<Review> resenas;
+
+		try {
+			resenas = reviewService.showHousingReviews(alojamiento.getId());
+		} catch (Exception ex) {
+			throw new IllegalStateException("No se pudieron leer las reseñas de ejemplo", ex);
+		}
+
+		Review propia = resenas.stream().filter(r -> "Customer16".equals(r.getAuthor().getUsername())).findFirst()
+				.orElseThrow(IllegalStateException::new);
+
+		ReviewDetailsFrame detalle = context.getBean(ReviewDetailsFrame.class);
+		detalle.loadDetails(propia);
+		guardar(detalle, "fase5-detalle-resena");
+
+		UpdateReviewFrame editar = context.getBean(UpdateReviewFrame.class);
+		editar.setReviewId(propia.getId());
+		guardar(editar, "fase5-editar-resena");
+
+		// Publicar exige no haber opinado ya sobre ese alojamiento, así que se usa
+		// otro: Customer16 no tiene reseña del 10004.
+		Housing sinResenaSuya = housingService.showHousings().stream().filter(h -> h.getHousingCode().equals(10004L))
+				.findFirst().orElseThrow(IllegalStateException::new);
+
+		PublishReviewFrame publicar = context.getBean(PublishReviewFrame.class);
+		publicar.setHousingId(sinResenaSuya.getId());
+		guardar(publicar, "fase5-publicar-resena");
 	}
 
 	/** Tres reservas del mismo cliente, una en cada estado visual. */
