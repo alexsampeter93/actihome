@@ -1,6 +1,11 @@
 package fp.project.actihome.ui.nav;
 
+import java.awt.Frame;
+import java.awt.GraphicsConfiguration;
 import java.awt.Image;
+import java.awt.Insets;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.Window;
 import java.util.List;
 import java.util.function.Consumer;
@@ -117,6 +122,8 @@ public class Navigator {
 			ventana.setIconImages(iconos);
 		}
 
+		heredarGeometria(anterior, ventana);
+
 		visible = ventana;
 		ventana.setVisible(true);
 
@@ -151,5 +158,99 @@ public class Navigator {
 		if (anterior != null && anterior != ventana) {
 			anterior.dispose();
 		}
+	}
+
+	/**
+	 * Da a la pantalla nueva el tamaño y la posición que tenía la anterior.
+	 *
+	 * <p>
+	 * <b>El problema.</b> Cada frame fija su tamaño en {@code initUI()} con un
+	 * {@code setSize(...)} propio. Sin esto, agrandar o maximizar una pantalla no
+	 * servía de nada: al abrir la siguiente volvía a su tamaño de fábrica, y la
+	 * aplicación daba la sensación de encogerse sola a cada paso.
+	 *
+	 * <p>
+	 * <b>La regla, y por qué no es simplemente "copiar el tamaño anterior".</b>
+	 * Copiarlo tal cual tiene el defecto simétrico: al pasar del login —que es una
+	 * ventana pequeña— al catálogo, el catálogo abriría pequeño, más apretado de lo
+	 * que se diseñó. Así que se toma <b>el mayor entre el tamaño anterior y el
+	 * propio de la pantalla de destino</b>. Con eso:
+	 *
+	 * <ul>
+	 * <li>Si el usuario agrandó la ventana, la siguiente respeta ese tamaño.</li>
+	 * <li>Si venimos de una pantalla más pequeña que el destino, el destino usa el
+	 * suyo y no se queda estrecho.</li>
+	 * <li>Ninguna pantalla aparece nunca por debajo del tamaño para el que está
+	 * pensada.</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * Maximizada es un caso aparte: no es un tamaño sino un estado, y se traslada
+	 * como tal. Copiar los píxeles de una ventana maximizada dejaría una ventana
+	 * del tamaño de la pantalla pero en estado normal, que al restaurar se comporta
+	 * de forma rara y tapa la barra de tareas.
+	 *
+	 * <p>
+	 * Nada de esto guarda estado entre ejecuciones: es solo continuidad dentro de
+	 * una sesión. Recordar el tamaño al cerrar la aplicación sería otra cosa, y
+	 * necesitaría dónde guardarlo.
+	 */
+	private void heredarGeometria(JFrame anterior, JFrame ventana) {
+
+		if (anterior == null || !anterior.isDisplayable()) {
+			// Primera ventana de la sesión: su tamaño de diseño, centrada.
+			ventana.setLocationRelativeTo(null);
+			return;
+		}
+
+		if ((anterior.getExtendedState() & Frame.MAXIMIZED_BOTH) == Frame.MAXIMIZED_BOTH) {
+			ventana.setExtendedState(Frame.MAXIMIZED_BOTH);
+			return;
+		}
+
+		ventana.setExtendedState(Frame.NORMAL);
+
+		Rectangle previa = anterior.getBounds();
+		int ancho = Math.max(previa.width, ventana.getWidth());
+		int alto = Math.max(previa.height, ventana.getHeight());
+
+		ventana.setSize(ancho, alto);
+
+		// Centrada sobre donde estaba la anterior, y no en su esquina: si la ventana
+		// nueva es más grande, conservar la esquina la desplazaría hacia abajo y a la
+		// derecha en cada salto hasta salirse de la pantalla.
+		ventana.setLocation(previa.x + (previa.width - ancho) / 2, previa.y + (previa.height - alto) / 2);
+
+		encajarEnPantalla(ventana);
+	}
+
+	/** Empuja la ventana dentro del área utilizable si se ha salido. */
+	private void encajarEnPantalla(JFrame ventana) {
+
+		GraphicsConfiguration configuracion = ventana.getGraphicsConfiguration();
+
+		// Una ventana que todavía no se ha mostrado nunca puede no tener configuración
+		// gráfica asignada. Aquí llegamos justo antes del primer setVisible, así que el
+		// caso es real y no teórico: sin esta guarda, navegar a una pantalla recién
+		// construida reventaría con un NullPointerException.
+		if (configuracion == null) {
+			return;
+		}
+
+		Rectangle pantalla = configuracion.getBounds();
+		Insets margenes = Toolkit.getDefaultToolkit().getScreenInsets(configuracion);
+
+		int minX = pantalla.x + margenes.left;
+		int minY = pantalla.y + margenes.top;
+		int maxX = pantalla.x + pantalla.width - margenes.right - ventana.getWidth();
+		int maxY = pantalla.y + pantalla.height - margenes.bottom - ventana.getHeight();
+
+		// Los max(minX, ...) de fuera cubren el caso de una ventana más ancha que la
+		// pantalla: ahí maxX queda por debajo de minX y sin ellos la ventana saldría
+		// colocada fuera por el otro lado.
+		int x = Math.max(minX, Math.min(ventana.getX(), Math.max(minX, maxX)));
+		int y = Math.max(minY, Math.min(ventana.getY(), Math.max(minY, maxY)));
+
+		ventana.setLocation(x, y);
 	}
 }
