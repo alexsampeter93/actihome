@@ -83,7 +83,7 @@ public class ScoreDisc extends JComponent {
 		String texto = sinNota ? "—" : String.format("%.1f", puntuacion).replace('.', ',');
 
 		g2.setFont(Typography.serifMedium(tamano.cuerpo));
-		g2.setColor(sinNota ? Theme.mut() : Theme.ON_ACCENT);
+		g2.setColor(sinNota ? Theme.mut() : Theme.onAccent());
 
 		int anchoTexto = g2.getFontMetrics().stringWidth(texto);
 		// Altura real de los dígitos, sin contar el espacio de los rasgos

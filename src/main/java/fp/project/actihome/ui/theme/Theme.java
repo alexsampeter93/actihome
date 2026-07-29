@@ -52,9 +52,6 @@ public final class Theme {
 	/** Borde de los campos de formulario. */
 	public static final Color FIELD_BORDER = new Color(0, 0, 0, 51);
 
-	/** Texto sobre el color de acento. */
-	public static final Color ON_ACCENT = Color.WHITE;
-
 	/**
 	 * Rojo de error, común a las cuatro estaciones.
 	 *
@@ -148,6 +145,34 @@ public final class Theme {
 
 	public static Color acc() {
 		return estacion.acc();
+	}
+
+	/** Acento para texto sobre fondo claro. Ver {@link Season#accText()}. */
+	public static Color accText() {
+		return estacion.accText();
+	}
+
+	/** Color de las partículas de la estación. Ver {@link Season#particula()}. */
+	public static Color particula() {
+		return estacion.particula();
+	}
+
+	/**
+	 * Texto y trazos que van <b>encima</b> del color de acento.
+	 *
+	 * <p>
+	 * Depende de la estación y no es una constante, que es lo que era antes. El
+	 * motivo es el amarillo de verano: una etiqueta blanca sobre él daría 2,4:1 —
+	 * ilegible—, mientras que en oscuro da 7,3:1. En las otras tres el acento es
+	 * suficientemente profundo y el blanco es lo correcto.
+	 *
+	 * <p>
+	 * Es la regla de siempre del sistema, aplicada también aquí: <b>el color no se
+	 * guarda, se resuelve al pintar</b>. Como constante, cambiar de estación no lo
+	 * habría actualizado.
+	 */
+	public static Color onAccent() {
+		return estacion == Season.VERANO ? estacion.txt() : Color.WHITE;
 	}
 
 	public static Color bg() {

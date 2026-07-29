@@ -115,9 +115,9 @@ public final class Buttons {
 
 			switch (estilo) {
 			case PRIMARIO:
-				return Theme.ON_ACCENT;
+				return Theme.onAccent();
 			case ENLACE_ACENTO:
-				return Theme.acc();
+				return Theme.accText();
 			default:
 				return Theme.txt();
 			}

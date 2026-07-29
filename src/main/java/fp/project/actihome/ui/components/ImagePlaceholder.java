@@ -123,7 +123,7 @@ public class ImagePlaceholder extends JComponent {
 		if (estado != null) {
 			int altoEtiqueta = 24;
 			pintarEtiqueta(g2, estado, Space.SM, alto - Space.SM - altoEtiqueta,
-					disponible ? Theme.acc() : new Color(0, 0, 0, 107), Theme.ON_ACCENT);
+					disponible ? Theme.acc() : new Color(0, 0, 0, 107), Theme.onAccent());
 		}
 
 		g2.setColor(Theme.HAIRLINE);

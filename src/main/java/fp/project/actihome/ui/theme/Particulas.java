@@ -28,11 +28,16 @@ import java.util.Random;
  * </ul>
  *
  * <p>
- * <b>Cómo se mantiene discreta.</b> Es decoración de fondo y compite
- * directamente con el contenido, así que todo está calibrado para que no se
- * note salvo que uno se pare a mirar: pocas piezas, tamaños pequeños, opacidad
- * muy baja y velocidades lentas. La regla que se aplicó al ajustarlo: <b>si al
- * leer una ficha del catálogo la partícula te distrae, sobra</b>.
+ * <b>Densas arriba, casi invisibles abajo.</b> Son setenta piezas, que es
+ * bastante, pero la atenuación por altura hace que el efecto se concentre en la
+ * franja del titular —donde no hay nada que leer con detalle— y se apague sobre
+ * el contenido. Así se nota de verdad sin llegar a competir con el texto.
+ *
+ * <p>
+ * <b>El color sale de {@link Season#particula()} y no del acento.</b> Un pétalo
+ * de cerezo es rosa, no verde; una hoja de otoño es más viva que el terracota de
+ * la interfaz; y la nieve blanca sobre el fondo lila de invierno daba 1,18:1 de
+ * contraste, o sea, era literalmente invisible.
  *
  * <p>
  * Esta clase es solo el <em>modelo</em> —posiciones, movimiento y dibujo de una
@@ -42,7 +47,7 @@ import java.util.Random;
 public final class Particulas {
 
 	/** Cuántas piezas hay a la vez. */
-	public static final int CUANTAS = 26;
+	public static final int CUANTAS = 70;
 
 	/**
 	 * Cuánto se atenúan según bajan por la pantalla.
@@ -86,7 +91,7 @@ public final class Particulas {
 	private static final float FIN_ENTRADA = 150f;
 
 	/** Lo que queda de opacidad al pie de la pantalla. */
-	private static final float MINIMO_ABAJO = 0.18f;
+	private static final float MINIMO_ABAJO = 0.12f;
 
 	private Particulas() {
 	}
@@ -134,13 +139,13 @@ public final class Particulas {
 			x = azar.nextFloat() * Math.max(1, ancho);
 			y = repartida ? azar.nextFloat() * Math.max(1, alto) : -20 - azar.nextFloat() * 60;
 
-			tamano = 4 + azar.nextFloat() * 7;
+			tamano = 4 + azar.nextFloat() * 8;
 			velocidad = 0.12f + azar.nextFloat() * 0.30f;
 			vaiven = 0.3f + azar.nextFloat() * 0.9f;
 			fase = azar.nextFloat() * (float) Math.PI * 2;
 			giro = azar.nextFloat() * (float) Math.PI * 2;
 			velocidadDeGiro = (azar.nextFloat() - 0.5f) * 0.03f;
-			opacidad = 0.30f + azar.nextFloat() * 0.26f;
+			opacidad = 0.34f + azar.nextFloat() * 0.30f;
 			esPetalo = azar.nextBoolean();
 		}
 
@@ -227,7 +232,7 @@ public final class Particulas {
 		/** Pétalo: una elipse asimétrica, en el acento de la estación aclarado. */
 		private void petalo(Graphics2D g2) {
 
-			g2.setColor(tinta(Theme.acc(), efectiva));
+			g2.setColor(tinta(Theme.particula(), Math.min(0.9f, efectiva * 1.6f)));
 			g2.fill(new Ellipse2D.Float(-tamano * 0.55f, -tamano * 0.32f, tamano * 1.1f, tamano * 0.64f));
 		}
 
@@ -241,7 +246,7 @@ public final class Particulas {
 		 */
 		private void vilano(Graphics2D g2) {
 
-			g2.setColor(tinta(Theme.mut(), efectiva * 0.9f));
+			g2.setColor(tinta(Theme.particula(), efectiva * 0.95f));
 
 			for (int i = 0; i < 7; i++) {
 
@@ -252,21 +257,21 @@ public final class Particulas {
 						(int) Math.round(Math.sin(angulo) * largo));
 			}
 
-			g2.setColor(tinta(Theme.mut(), efectiva));
+			g2.setColor(tinta(Theme.particula(), efectiva));
 			g2.fill(new Ellipse2D.Float(-1.2f, -1.2f, 2.4f, 2.4f));
 		}
 
 		/** Mota de luz: un punto muy tenue, sin forma reconocible. */
 		private void mota(Graphics2D g2) {
 
-			g2.setColor(tinta(Theme.acc(), efectiva * 0.75f));
-			g2.fill(new Ellipse2D.Float(-tamano * 0.18f, -tamano * 0.18f, tamano * 0.36f, tamano * 0.36f));
+			g2.setColor(tinta(Theme.particula(), Math.min(0.9f, efectiva * 1.5f)));
+			g2.fill(new Ellipse2D.Float(-tamano * 0.3f, -tamano * 0.3f, tamano * 0.6f, tamano * 0.6f));
 		}
 
 		/** Hoja: elipse con nervio, más ancha por un lado. */
 		private void hoja(Graphics2D g2) {
 
-			g2.setColor(tinta(Theme.acc(), efectiva));
+			g2.setColor(tinta(Theme.particula(), Math.min(0.9f, efectiva * 1.35f)));
 			g2.fill(new Ellipse2D.Float(-tamano * 0.6f, -tamano * 0.34f, tamano * 1.2f, tamano * 0.68f));
 
 			g2.setColor(tinta(Theme.hdr(), efectiva * 0.5f));
@@ -276,7 +281,7 @@ public final class Particulas {
 		/** Copo: círculo blanco blando, sin puntas. */
 		private void copo(Graphics2D g2) {
 
-			g2.setColor(tinta(Color.WHITE, Math.min(0.75f, efectiva * 2.0f)));
+			g2.setColor(tinta(Theme.particula(), Math.min(0.85f, efectiva * 1.9f)));
 			g2.fill(new Ellipse2D.Float(-tamano * 0.28f, -tamano * 0.28f, tamano * 0.56f, tamano * 0.56f));
 		}
 

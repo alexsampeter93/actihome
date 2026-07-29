@@ -103,15 +103,25 @@ public class Page extends JPanel {
 	 * veces por segundo, y con ella todas las filas del catálogo. Repintar la caja
 	 * de cada pieza deja el área sucia en unos pocos cientos de píxeles.
 	 */
-	private void avanzar() {
+	/** Crea las piezas que falten. Es seguro llamarlo tantas veces como haga falta. */
+	private void sembrar() {
 
-		if (!isShowing() || getWidth() <= 0) {
+		if (getWidth() <= 0 || getHeight() <= 0) {
 			return;
 		}
 
 		while (piezas.size() < Particulas.CUANTAS) {
 			piezas.add(new Particulas.Pieza(azar, getWidth(), getHeight()));
 		}
+	}
+
+	private void avanzar() {
+
+		if (!isShowing() || getWidth() <= 0) {
+			return;
+		}
+
+		sembrar();
 
 		for (Particulas.Pieza pieza : piezas) {
 
@@ -149,6 +159,13 @@ public class Page extends JPanel {
 	public void paint(Graphics g) {
 
 		super.paint(g);
+
+		// Se siembra también aquí y no solo en el temporizador. Sin esto, el primer
+		// fotograma sale sin partículas —el temporizador todavía no ha llegado a
+		// disparar— y en una captura hecha nada más mostrar la ventana la estación
+		// aparecía vacía. En la aplicación real duraba 40 ms y no se notaba; en la
+		// herramienta de capturas era el resultado.
+		sembrar();
 
 		if (piezas.isEmpty()) {
 			return;

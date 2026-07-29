@@ -61,12 +61,12 @@ public final class Labels {
 
 	/** Precio destacado, en serif y con el color de acento. */
 	public static JLabel price(String texto) {
-		return crear(texto, Typography.serif(Typography.PRICE_LG), Theme::acc);
+		return crear(texto, Typography.serif(Typography.PRICE_LG), Theme::accText);
 	}
 
 	/** Precio en tamaño de ficha. */
 	public static JLabel priceSmall(String texto) {
-		return crear(texto, Typography.serif(Typography.PRICE), Theme::acc);
+		return crear(texto, Typography.serif(Typography.PRICE), Theme::accText);
 	}
 
 	/**
@@ -82,7 +82,7 @@ public final class Labels {
 
 	/** Versalita en color de acento, para encabezar secciones. */
 	public static JLabel capsAccent(String texto) {
-		return crear(texto.toUpperCase(), Typography.label(), Theme::acc);
+		return crear(texto.toUpperCase(), Typography.label(), Theme::accText);
 	}
 
 	/** Texto sobre la barra de cabecera oscura. */
@@ -117,7 +117,7 @@ public final class Labels {
 
 	/** Frase editorial en cursiva, con el color de acento. */
 	public static JLabel editorial(String texto) {
-		return crear(texto, Typography.serifItalic(16f), Theme::acc);
+		return crear(texto, Typography.serifItalic(16f), Theme::accText);
 	}
 
 	/** Frase editorial en cursiva sobre fondo oscuro. */

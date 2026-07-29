@@ -94,7 +94,7 @@ public class Avatar extends JComponent {
 		if (relleno) {
 			g2.setColor(Theme.acc());
 			g2.fill(new Ellipse2D.Double(0, 0, lado, lado));
-			tinta = Theme.ON_ACCENT;
+			tinta = Theme.onAccent();
 
 		} else {
 			g2.setColor(Theme.acc());

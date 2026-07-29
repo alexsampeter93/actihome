@@ -66,7 +66,7 @@ public class SwapGlyph extends JComponent {
 		int d = Math.min(getWidth(), getHeight());
 		double grosor = Math.max(1.4, d / 14.0);
 
-		g2.setColor(sobreAcento ? Theme.ON_ACCENT : Theme.acc());
+		g2.setColor(sobreAcento ? Theme.onAccent() : Theme.acc());
 		g2.setStroke(new BasicStroke((float) grosor, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
 		double margen = d * 0.22;

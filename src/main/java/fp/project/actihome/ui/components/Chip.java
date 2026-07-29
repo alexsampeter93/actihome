@@ -93,7 +93,7 @@ public class Chip extends JToggleButton {
 	public Color getForeground() {
 
 		if (isSelected()) {
-			return Theme.ON_ACCENT;
+			return Theme.onAccent();
 		}
 
 		return Theme.mut();

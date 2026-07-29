@@ -155,7 +155,7 @@ public class Segmented extends JPanel {
 			if (esActivo) {
 				g2.setColor(Theme.acc());
 				g2.fillRect(0, 0, getWidth(), getHeight());
-				tinta = Theme.ON_ACCENT;
+				tinta = Theme.onAccent();
 			} else {
 				tinta = Theme.mut();
 			}
