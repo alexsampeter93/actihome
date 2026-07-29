@@ -162,12 +162,25 @@ public class HeaderPanel extends JPanel {
 		add(zonaUsuario);
 	}
 
+	/**
+	 * Los destinos que ve el usuario según su rol.
+	 *
+	 * <p>
+	 * <b>"Intercambio" aparece para todo administrador, tenga o no alojamientos.</b>
+	 * Antes solo existía como enlace dentro de la ficha de un alojamiento propio, y
+	 * el resultado era que quien no tuviera ninguno no llegaba a saber que la
+	 * pantalla existía: una función cuyas condiciones para aparecer son invisibles
+	 * es, en la práctica, una función que no está. Ahora el destino está siempre y
+	 * es la propia pantalla la que explica qué falta para poder usarlo.
+	 */
 	private void construirNavegacion() {
 
 		anadirDestino(navegacion, "Catálogo", ShowHousingsFrame.class);
 
 		if (esCliente()) {
 			anadirDestino(navegacion, "Mis reservas", ShowMyReservationsFrame.class);
+		} else {
+			anadirDestino(navegacion, "Intercambio", TradeHousingsFrame.class);
 		}
 	}
 

@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.services.HousingService;
@@ -27,10 +28,12 @@ import fp.project.actihome.ui.components.Card;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
+import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.SwapGlyph;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
@@ -79,6 +82,10 @@ public class TradeHousingsFrame extends JFrame {
 	private transient Housing propio;
 	private transient Housing candidato;
 
+	private JPanel comparacion;
+	private JPanel vacio;
+	private JPanel buscador;
+	private JPanel acciones;
 	private JPanel panelPropio;
 	private JPanel panelCandidato;
 	private Field codigo;
@@ -121,18 +128,31 @@ public class TradeHousingsFrame extends JFrame {
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));
 
-		JPanel exterior = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.XXL, Space.GIANT, Space.XXL, Space.GIANT), "[grow,fill]",
+		// "hidemode 3": un componente invisible deja de contar del todo, ni tamaño ni
+		// hueco. Sin esto, ocultar la comparación y el buscador para enseñar el estado
+		// vacío dejaba sus filas reservadas y el mensaje de Olaz aparecía al fondo de
+		// la pantalla, muy por debajo del titular.
+		JPanel exterior = new JPanel(new MigLayout(
+				"wrap 1, hidemode 3, " + Space.insets(Space.XXL, Space.GIANT, Space.XXL, Space.GIANT), "[grow,fill]",
 				"[]" + Space.LG + "[]" + Space.LG + "[]" + Space.XS + "[]" + Space.MD + "[]"));
 		exterior.setOpaque(false);
 
 		exterior.add(cabecera(), Layout.anchoCentrado(Layout.CONTENIDO));
-		exterior.add(comparacion(), Layout.anchoCentrado(Layout.CONTENIDO));
-		exterior.add(buscador(), Layout.anchoCentrado(Layout.TEXTO));
+
+		comparacion = comparacion();
+		exterior.add(comparacion, Layout.anchoCentrado(Layout.CONTENIDO));
+
+		vacio = estadoVacio();
+		exterior.add(vacio, Layout.anchoCentrado(Layout.CONTENIDO));
+
+		buscador = buscador();
+		exterior.add(buscador, Layout.anchoCentrado(Layout.TEXTO));
 
 		error = Labels.error(" ");
 		exterior.add(error, Layout.anchoCentrado(Layout.TEXTO));
 
-		exterior.add(acciones(), Layout.anchoCentrado(Layout.TEXTO));
+		acciones = acciones();
+		exterior.add(acciones, Layout.anchoCentrado(Layout.TEXTO));
 
 		raiz.add(headerPanel, "growx");
 		raiz.add(exterior, "grow");
@@ -203,23 +223,74 @@ public class TradeHousingsFrame extends JFrame {
 		return fila;
 	}
 
+	/**
+	 * Prepara la pantalla.
+	 *
+	 * <p>
+	 * <b>Se puede llegar aquí de dos maneras</b>, y por eso el alojamiento propio no
+	 * siempre viene dado: desde la ficha de uno concreto —y entonces ese es el que
+	 * se ofrece— o desde la barra de navegación, sin elegir nada. En el segundo caso
+	 * se toma el primero de los tuyos, y si no tienes ninguno se enseña el estado
+	 * vacío en lugar de una pantalla que no puede hacer nada.
+	 */
 	private void recargar() {
 
-		if (housingId == null) {
-			return;
-		}
-
-		try {
-			propio = housingService.findHousing(housingId);
-
-		} catch (InstanceNotFoundException ex) {
-			navigator.ir(ShowHousingsFrame.class);
-			return;
-		}
+		propio = resolverAlojamientoPropio();
 
 		candidato = null;
 		codigo.setText("");
 		error.setText(" ");
+
+		reconstruir();
+	}
+
+	/** El alojamiento que se ofrece, o {@code null} si el usuario no tiene ninguno. */
+	private Housing resolverAlojamientoPropio() {
+
+		if (housingId != null) {
+
+			try {
+				return housingService.findHousing(housingId);
+
+			} catch (InstanceNotFoundException ex) {
+				// Se ha quedado sin existir entre que se pidió la pantalla y se abrió.
+				// Seguimos abajo y buscamos otro suyo en lugar de mandarlo al catálogo.
+				housingId = null;
+			}
+		}
+
+		User usuario = sessionManager.getLoggedInUser();
+
+		if (usuario == null) {
+			return null;
+		}
+
+		return housingService.showHousings().stream()
+				.filter(h -> h.getOwner() != null && h.getOwner().getId().equals(usuario.getId())).findFirst()
+				.orElse(null);
+	}
+
+	/**
+	 * Decide qué se ve: la comparación normal o el estado vacío.
+	 *
+	 * <p>
+	 * El estado vacío no es un error ni un aviso de que algo ha fallado: es la
+	 * pantalla explicando <b>qué falta para poder usarla</b>. Por eso lleva a Olaz y
+	 * un botón que lleva directamente a resolverlo, en vez de un mensaje que se
+	 * limite a decir que no se puede.
+	 */
+	private void reconstruir() {
+
+		boolean sinAlojamiento = propio == null;
+
+		comparacion.setVisible(!sinAlojamiento);
+		buscador.setVisible(!sinAlojamiento);
+		acciones.setVisible(!sinAlojamiento);
+		vacio.setVisible(sinAlojamiento);
+
+		if (sinAlojamiento) {
+			return;
+		}
 
 		pintarPropio();
 		pintarCandidato();
@@ -233,6 +304,31 @@ public class TradeHousingsFrame extends JFrame {
 		panelPropio.add(tarjeta(propio), "growx");
 		panelPropio.revalidate();
 		panelPropio.repaint();
+	}
+
+	/** Lo que se ve cuando el administrador todavía no ha publicado nada. */
+	private JPanel estadoVacio() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.XXL, 0, Space.XXL, 0), "[grow,fill]",
+				"[]" + Space.LG + "[]" + Space.XS + "[]" + Space.XL + "[]"));
+		panel.setOpaque(false);
+
+		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.ACCION)));
+		panel.add(centrar(Labels.title("Todavía no tienes nada que ofrecer")));
+		panel.add(centrar(Labels.muted(
+				"Publica un alojamiento y podrás intercambiarlo por el de otro anfitrión.")));
+		panel.add(centrar(Buttons.primary("Publicar un alojamiento",
+				e -> navigator.ir(UploadHousingFrame.class))));
+
+		return panel;
+	}
+
+	private JPanel centrar(JComponent componente) {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "push[]push", ""));
+		fila.setOpaque(false);
+		fila.add(componente);
+		return fila;
 	}
 
 	private void pintarCandidato() {

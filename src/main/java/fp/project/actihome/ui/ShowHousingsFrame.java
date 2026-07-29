@@ -20,6 +20,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 import javax.swing.ScrollPaneConstants;
 
 import org.springframework.context.annotation.Lazy;
@@ -101,6 +102,7 @@ public class ShowHousingsFrame extends JFrame {
 	private final HeaderPanel headerPanel;
 
 	private JPanel lista;
+	private JScrollPane scroll;
 	private CatalogFilters filtros;
 
 	/**
@@ -161,7 +163,8 @@ public class ShowHousingsFrame extends JFrame {
 			refrescarAccionAdmin();
 			cargarAlojamientos();
 			actualizarTextosEstacionales();
-		}
+				volverArriba();
+	}
 
 		super.setVisible(visible);
 	}
@@ -251,8 +254,13 @@ public class ShowHousingsFrame extends JFrame {
 		//
 		// Son dos etiquetas seguidas y no una con marcado: el renderizado HTML de Swing
 		// calcula sus tamaños por su cuenta y se lleva mal con las fuentes registradas
-		// en tiempo de ejecución. La cursiva de "despertar" es la que hace el trabajo
-		// editorial, y esa no se toca.
+		// en tiempo de ejecución.
+		//
+		// El handoff pone "despertar" en cursiva, y así estuvo hasta que el usuario
+		// pidió quitarla. Es una desviación consciente del diseño: una cursiva serif de
+		// verdad no es la redonda inclinada, lleva las letras dibujadas aparte, y ese
+		// cambio de forma en mitad de la frase se percibía como que la palabra estaba
+		// en otra tipografía. El titular pierde el énfasis, pero gana uniformidad.
 		JPanel linea = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]push", "[]"));
 		linea.setOpaque(false);
 
@@ -260,7 +268,7 @@ public class ShowHousingsFrame extends JFrame {
 		tituloPrimera.setFont(Typography.serifMedium(TITULAR));
 
 		tituloSegunda = Labels.hero("despertar");
-		tituloSegunda.setFont(Typography.serifItalic(TITULAR));
+		tituloSegunda.setFont(Typography.serifMedium(TITULAR));
 
 		linea.add(tituloPrimera, "aligny bottom");
 		linea.add(tituloSegunda, "aligny bottom");
@@ -304,13 +312,36 @@ public class ShowHousingsFrame extends JFrame {
 	// Lista
 	// ------------------------------------------------------------------
 
+	/**
+	 * Devuelve la lista al principio.
+	 *
+	 * <p>
+	 * <b>Hace falta porque los frames son singleton.</b> El {@code JScrollPane} es
+	 * el mismo objeto en cada visita y conserva su posición, así que al volver a
+	 * esta pantalla la lista aparecía desplazada desde la vez anterior —con la
+	 * primera fila cortada por arriba— sin que el usuario hubiera tocado la rueda.
+	 * Se leía como un fallo de maquetación y era memoria de estado.
+	 *
+	 * <p>
+	 * Va dentro de {@code invokeLater} porque en el momento de llamarlo la lista
+	 * acaba de reconstruirse y todavía no se ha distribuido: poner el scroll a cero
+	 * antes de que el layout calcule el alto no serviría de nada.
+	 */
+	private void volverArriba() {
+
+		if (scroll != null) {
+			SwingUtilities.invokeLater(() -> scroll.getVerticalScrollBar().setValue(0));
+		}
+	}
+
 	private JScrollPane zonaDeLista() {
+
 
 		lista = new JPanel(new MigLayout("wrap 1, " + Space.insets(0, Space.HUGE, Space.XXL, Space.HUGE),
 				"[grow,fill]", "[]"));
 		lista.setOpaque(false);
 
-		JScrollPane scroll = new JScrollPane(lista);
+		scroll = new JScrollPane(lista);
 		scroll.setOpaque(false);
 		scroll.getViewport().setOpaque(false);
 		// Los dos bordes, no solo uno: JScrollPane tiene un borde propio y otro para el
@@ -604,7 +635,7 @@ public class ShowHousingsFrame extends JFrame {
 		int ancho = getWidth();
 
 		tituloPrimera.setFont(Typography.serifMedium(Layout.display(TITULAR, ancho)));
-		tituloSegunda.setFont(Typography.serifItalic(Layout.display(TITULAR, ancho)));
+		tituloSegunda.setFont(Typography.serifMedium(Layout.display(TITULAR, ancho)));
 
 		revalidate();
 		repaint();

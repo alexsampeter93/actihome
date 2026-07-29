@@ -310,6 +310,13 @@ public final class ScreenSnapshots {
 		// limpia el código, así que hacerla antes no dejaría rastro en la captura.
 		guardar(intercambio, "fase6-intercambio", () -> intercambio.buscarPorCodigo("10004"));
 
+		// Intercambio sin alojamientos propios: se abre con un ADMIN recien creado, que
+		// no es duenno de nada, para ver el estado vacio.
+		abrirSesion(context, "nuevoadmin", RoleType.ADMIN);
+		TradeHousingsFrame sinNada = context.getBean(TradeHousingsFrame.class);
+		sinNada.setHousingId(null);
+		guardar(sinNada, "fase6-intercambio-sin-alojamientos");
+
 		UpdateProfileFrame perfil = context.getBean(UpdateProfileFrame.class);
 		guardar(perfil, "fase6-perfil");
 

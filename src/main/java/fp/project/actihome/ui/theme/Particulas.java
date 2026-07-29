@@ -1,10 +1,12 @@
 package fp.project.actihome.ui.theme;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
+import java.awt.geom.Path2D;
 import java.util.Random;
 
 /**
@@ -205,7 +207,7 @@ public final class Particulas {
 				case PRIMAVERA:
 					if (esPetalo) {
 						g2.rotate(giro);
-						petalo(g2);
+						flor(g2);
 					} else {
 						vilano(g2);
 					}
@@ -229,11 +231,39 @@ public final class Particulas {
 			g2.setTransform(original);
 		}
 
-		/** Pétalo: una elipse asimétrica, en el acento de la estación aclarado. */
-		private void petalo(Graphics2D g2) {
+		/**
+		 * Flor de cerezo: cinco pétalos redondos alrededor de un corazón.
+		 *
+		 * <p>
+		 * <b>Cinco y no más, y sin contorno.</b> Una flor dibujada con detalle —nervios,
+		 * borde, degradado— a doce píxeles no se lee como una flor, se lee como una
+		 * mancha sucia; y repetida setenta veces satura el fondo. Aquí basta la
+		 * silueta: cinco círculos solapados dan la forma reconocible al tamaño mínimo
+		 * en el que una flor sigue siendo una flor.
+		 *
+		 * <p>
+		 * El corazón va un poco más opaco que los pétalos. Es lo que evita que el
+		 * conjunto se lea como cinco burbujas sueltas en lugar de como una sola pieza.
+		 */
+		private void flor(Graphics2D g2) {
 
-			g2.setColor(tinta(Theme.particula(), Math.min(0.9f, efectiva * 1.6f)));
-			g2.fill(new Ellipse2D.Float(-tamano * 0.55f, -tamano * 0.32f, tamano * 1.1f, tamano * 0.64f));
+			float alfa = Math.min(0.9f, efectiva * 1.6f);
+			float radio = tamano * 0.34f;
+			float centro = tamano * 0.30f;
+
+			g2.setColor(tinta(Theme.particula(), alfa));
+
+			for (int i = 0; i < 5; i++) {
+
+				double angulo = i * Math.PI * 2 / 5;
+				float cx = (float) Math.cos(angulo) * centro;
+				float cy = (float) Math.sin(angulo) * centro;
+
+				g2.fill(new Ellipse2D.Float(cx - radio, cy - radio, radio * 2, radio * 2));
+			}
+
+			g2.setColor(tinta(Theme.particula(), Math.min(1f, alfa * 1.35f)));
+			g2.fill(new Ellipse2D.Float(-radio * 0.42f, -radio * 0.42f, radio * 0.84f, radio * 0.84f));
 		}
 
 		/**
@@ -278,11 +308,55 @@ public final class Particulas {
 			g2.drawLine((int) (-tamano * 0.5f), 0, (int) (tamano * 0.5f), 0);
 		}
 
-		/** Copo: círculo blanco blando, sin puntas. */
+		/**
+		 * Copo de nieve: seis brazos con dos ramitas cada uno.
+		 *
+		 * <p>
+		 * <b>Seis es el número correcto y no un capricho de dibujo.</b> Los cristales
+		 * de hielo crecen con simetría hexagonal, así que un copo de cinco o de ocho
+		 * puntas se percibe como una estrella genérica. Las ramitas laterales son lo
+		 * que lo separa de un asterisco.
+		 *
+		 * <p>
+		 * Va con trazo redondeado y no relleno: a este tamaño una silueta maciza se
+		 * convertiría en un hexágono borroso, mientras que las líneas conservan la
+		 * estructura. El grosor se calcula a partir del tamaño de la pieza para que los
+		 * copos grandes no salgan de alambre.
+		 */
 		private void copo(Graphics2D g2) {
 
-			g2.setColor(tinta(Theme.particula(), Math.min(0.85f, efectiva * 1.9f)));
-			g2.fill(new Ellipse2D.Float(-tamano * 0.28f, -tamano * 0.28f, tamano * 0.56f, tamano * 0.56f));
+			float alfa = Math.min(0.85f, efectiva * 1.9f);
+			float brazo = tamano * 0.5f;
+
+			g2.setColor(tinta(Theme.particula(), alfa));
+			g2.setStroke(new BasicStroke(Math.max(0.9f, tamano * 0.09f), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+			Path2D copo = new Path2D.Float();
+
+			for (int i = 0; i < 6; i++) {
+
+				double angulo = giro + i * Math.PI / 3;
+				float px = (float) Math.cos(angulo) * brazo;
+				float py = (float) Math.sin(angulo) * brazo;
+
+				copo.moveTo(0, 0);
+				copo.lineTo(px, py);
+
+				// Las dos ramitas salen a dos tercios del brazo, abiertas 40 grados.
+				float bx = px * 0.62f;
+				float by = py * 0.62f;
+				float rama = brazo * 0.34f;
+
+				for (int lado = -1; lado <= 1; lado += 2) {
+
+					double abierto = angulo + lado * Math.PI / 4.5;
+
+					copo.moveTo(bx, by);
+					copo.lineTo(bx + (float) Math.cos(abierto) * rama, by + (float) Math.sin(abierto) * rama);
+				}
+			}
+
+			g2.draw(copo);
 		}
 
 		private static Color tinta(Color base, float alfa) {

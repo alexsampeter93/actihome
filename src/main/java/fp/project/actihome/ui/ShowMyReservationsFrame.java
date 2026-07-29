@@ -7,6 +7,7 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 import javax.swing.ScrollPaneConstants;
 
 import org.springframework.context.annotation.Lazy;
@@ -51,6 +52,7 @@ public class ShowMyReservationsFrame extends JFrame {
 	private final HeaderPanel headerPanel;
 
 	private JPanel lista;
+	private JScrollPane scroll;
 
 	public ShowMyReservationsFrame(ReservationService reservationService, SessionManager sessionManager,
 			Navigator navigator, HeaderPanel headerPanel) {
@@ -69,7 +71,8 @@ public class ShowMyReservationsFrame extends JFrame {
 		if (visible) {
 			headerPanel.refresh();
 			cargarReservas();
-		}
+				volverArriba();
+	}
 
 		super.setVisible(visible);
 	}
@@ -103,13 +106,36 @@ public class ShowMyReservationsFrame extends JFrame {
 		return panel;
 	}
 
+	/**
+	 * Devuelve la lista al principio.
+	 *
+	 * <p>
+	 * <b>Hace falta porque los frames son singleton.</b> El {@code JScrollPane} es
+	 * el mismo objeto en cada visita y conserva su posición, así que al volver a
+	 * esta pantalla la lista aparecía desplazada desde la vez anterior —con la
+	 * primera fila cortada por arriba— sin que el usuario hubiera tocado la rueda.
+	 * Se leía como un fallo de maquetación y era memoria de estado.
+	 *
+	 * <p>
+	 * Va dentro de {@code invokeLater} porque en el momento de llamarlo la lista
+	 * acaba de reconstruirse y todavía no se ha distribuido: poner el scroll a cero
+	 * antes de que el layout calcule el alto no serviría de nada.
+	 */
+	private void volverArriba() {
+
+		if (scroll != null) {
+			SwingUtilities.invokeLater(() -> scroll.getVerticalScrollBar().setValue(0));
+		}
+	}
+
 	private JScrollPane zonaDeLista() {
+
 
 		lista = new JPanel(
 				new MigLayout("wrap 1, " + Space.insets(0, Space.HUGE, Space.XXL, Space.HUGE), "[grow,fill]", "[]"));
 		lista.setOpaque(false);
 
-		JScrollPane scroll = new JScrollPane(lista);
+		scroll = new JScrollPane(lista);
 		scroll.setOpaque(false);
 		scroll.getViewport().setOpaque(false);
 		scroll.setBorder(null);
