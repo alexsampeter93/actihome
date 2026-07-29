@@ -82,81 +82,163 @@ public class CatalogFilters extends JPanel {
 	private Segmented vista;
 	private OptionLinks orden;
 
+	private Chip masFiltros;
+	private JPanel comodidadesVisibles;
+	private final transient java.util.Map<Amenity, Chip> chipsPorComodidad = new java.util.EnumMap<>(Amenity.class);
+
 	private String tipo = TODOS;
 	private final EnumSet<Amenity> comodidades = EnumSet.noneOf(Amenity.class);
 
 	public CatalogFilters(Runnable alCambiar) {
 
-		super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]0[]0[]0[]0[]0[]"));
+		// El "hidemode 3" va aquí, en el layout que CONTIENE la banda de comodidades, no
+		// en el layout interno de esa banda. Es un despiste fácil y silencioso: puesto
+		// dentro, la banda oculta no dibuja nada pero su fila sigue reservada en el
+		// padre, así que se ocultaba sin recuperar el espacio. Quien decide si un hueco
+		// existe es siempre el contenedor, no el contenido.
+		super(new MigLayout("wrap 1, hidemode 3, " + Space.insets(0), "[grow,fill]", "[]0[]0[]"));
 
 		this.alCambiar = alCambiar;
 		setOpaque(false);
 
-		add(Hairline.horizontal(), "growx, h 1!");
-		add(bandaDeBusqueda(), "growx");
+		// Se construye el buscador aunque no se añada aquí: se lo lleva el hero con
+		// extraerBuscador(). El estado sigue viviendo en esta clase, que es quien filtra.
+		buscador = new SearchField("Buscar por nombre, ubicación o tipo", this::notificar);
+
 		add(Hairline.horizontal(), "growx, h 1!");
 		add(bandaDeClasificado(), "growx");
 		add(bandaDeComodidades(), "growx");
+	}
+
+	/**
+	 * Entrega el buscador para que lo coloque el hero.
+	 *
+	 * <p>
+	 * <b>Por qué se cede el componente en lugar de duplicarlo.</b> El buscador vivía
+	 * en una banda propia de esta clase, que costaba unos 85px de alto. Moverlo al
+	 * hero recupera ese espacio, pero el <em>estado</em> —lo que hay escrito— tiene
+	 * que seguir aquí, porque es esta clase la que filtra. Así que se comparte el
+	 * mismo objeto: lo pinta el hero, lo lee el filtro. Un campo en el hero con su
+	 * propia variable y un {@code addChangeListener} para sincronizarlo habría sido
+	 * el mismo dato en dos sitios, que es como se desincronizan las cosas.
+	 */
+	public SearchField extraerBuscador() {
+		return buscador;
 	}
 
 	// ------------------------------------------------------------------
 	// Construcción
 	// ------------------------------------------------------------------
 
-	private JPanel bandaDeBusqueda() {
+	/**
+	 * La única banda visible: tipo, mínimo de habitaciones, orden, vista y el
+	 * interruptor de "Más filtros".
+	 *
+	 * <p>
+	 * Antes eran tres bandas apiladas que sumaban 186px — tanto como el titular
+	 * entero. Ahora es una sola: el buscador se ha ido al hero y las comodidades
+	 * están recogidas.
+	 */
+	private JPanel bandaDeClasificado() {
 
-		JPanel banda = new JPanel(new MigLayout(Space.insets(Space.SM, Space.HUGE, Space.SM, Space.HUGE),
-				"[]" + Space.XL + "[]" + Space.XS + "[]push[]" + Space.XL + "[]", "[]"));
+		JPanel banda = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.XS, Space.HUGE, Space.XS, Space.HUGE),
+				"[grow,fill]", "[]" + Space.XS + "[]"));
 		banda.setOpaque(false);
 
-		buscador = new SearchField("Buscar por nombre, ubicación o tipo", this::notificar);
-		banda.add(buscador, "w 320!, h 38!");
+		banda.add(filaDeTipo(), "growx");
+		banda.add(filaDeAjustes(), "growx");
 
-		banda.add(Labels.caps("Mín. hab."), "aligny center");
+		return banda;
+	}
+
+	/** Primera fila: qué tipo de alojamiento, y a la derecha el recuento y la vista. */
+	private JPanel filaDeTipo() {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]push[]" + Space.LG + "[]", "[]"));
+		fila.setOpaque(false);
+
+		fila.add(Labels.caps("Tipo"), "aligny center");
+		fila.add(chipsDeTipo(), "aligny center");
+
+		recuento = Labels.muted("");
+		fila.add(recuento, "aligny center");
+
+		vista = new Segmented(0, indice -> notificar(), "Lista", "Cuadrícula");
+		fila.add(vista, "aligny center");
+
+		return fila;
+	}
+
+	/** Segunda fila: cuántas habitaciones, más filtros, y a la derecha el orden. */
+	private JPanel filaDeAjustes() {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0),
+				"[]" + Space.XS + "[]" + Space.MD + "[]push[]" + Space.SM + "[]", "[]"));
+		fila.setOpaque(false);
+
+		fila.add(Labels.caps("Mín. hab."), "aligny center");
 
 		// Un contador numérico y no un campo de texto libre: el valor solo puede ser un
 		// entero positivo pequeño, y un control que impide escribir algo inválido
 		// ahorra tener que explicar después por qué no vale.
 		minimoHabitaciones = new JSpinner(new SpinnerNumberModel(1, 1, 20, 1));
 		minimoHabitaciones.addChangeListener(e -> notificar());
-		banda.add(minimoHabitaciones, "w 68!, h 34!, aligny center");
+		fila.add(minimoHabitaciones, "w 62!, h 32!, aligny center");
 
-		recuento = Labels.muted("");
-		banda.add(recuento, "aligny center");
+		masFiltros = new Chip("Más filtros");
+		masFiltros.addActionListener(e -> alternarComodidades());
+		fila.add(masFiltros, "aligny center");
 
-		vista = new Segmented(0, indice -> notificar(), "Lista", "Cuadrícula");
-		banda.add(vista, "aligny center");
-
-		return banda;
-	}
-
-	private JPanel bandaDeClasificado() {
-
-		JPanel banda = new JPanel(new MigLayout(Space.insets(Space.SM, Space.HUGE, Space.XXS, Space.HUGE),
-				"[]" + Space.SM + "[]push[]" + Space.SM + "[]", "[]"));
-		banda.setOpaque(false);
-
-		banda.add(Labels.caps("Tipo"), "aligny center");
-		banda.add(chipsDeTipo(), "aligny center");
-
-		banda.add(Labels.caps("Ordenar"), "aligny center");
+		fila.add(Labels.caps("Ordenar"), "aligny center");
 
 		orden = new OptionLinks(ORDEN_PUNTUACION, indice -> notificar(), ORDENES);
-		banda.add(orden, "aligny center");
+		fila.add(orden, "aligny center");
+
+		return fila;
+	}
+
+	/**
+	 * Las comodidades, ocultas hasta que se piden.
+	 *
+	 * <p>
+	 * <b>Recogerlas en lugar de quitarlas.</b> Son siete chips que ocupaban una
+	 * banda permanente para un filtro que no se usa en cada visita. Detrás de "Más
+	 * filtros" siguen estando a un clic, y el propio chip lleva el número de filtros
+	 * activos cuando hay alguno, así que nunca quedan olvidados y filtrando en
+	 * silencio.
+	 */
+	private JPanel bandaDeComodidades() {
+
+		JPanel banda = new JPanel(new MigLayout("hidemode 3, " + Space.insets(Space.XXS, Space.HUGE, Space.SM, Space.HUGE),
+				"[]" + Space.SM + "[]push", "[]"));
+		banda.setOpaque(false);
+		banda.setVisible(false);
+
+		banda.add(Labels.caps("Comodidades"), "aligny center");
+		banda.add(chipsDeComodidad(), "aligny center");
+
+		comodidadesVisibles = banda;
 
 		return banda;
 	}
 
-	private JPanel bandaDeComodidades() {
+	private void alternarComodidades() {
 
-		JPanel banda = new JPanel(new MigLayout(Space.insets(Space.XXS, Space.HUGE, Space.SM, Space.HUGE),
-				"[]" + Space.SM + "[]push", "[]"));
-		banda.setOpaque(false);
+		comodidadesVisibles.setVisible(masFiltros.isSelected());
+		revalidate();
+		repaint();
+	}
 
-		banda.add(Labels.caps("Filtrar"), "aligny center");
-		banda.add(chipsDeComodidad(), "aligny center");
+	/**
+	 * Actualiza el chip de "Más filtros" con cuántas comodidades hay marcadas.
+	 *
+	 * <p>
+	 * Es lo que evita el peor estado de un filtro plegable: dejarlo cerrado con algo
+	 * marcado dentro y no entender por qué faltan resultados.
+	 */
+	private void refrescarEtiquetaDeMasFiltros() {
 
-		return banda;
+		masFiltros.setText(comodidades.isEmpty() ? "Más filtros" : "Más filtros (" + comodidades.size() + ")");
 	}
 
 	private JPanel chipsDeTipo() {
@@ -202,13 +284,45 @@ public class CatalogFilters extends JPanel {
 					comodidades.remove(amenity);
 				}
 
+				refrescarEtiquetaDeMasFiltros();
 				notificar();
 			});
 
+			chipsPorComodidad.put(amenity, chip);
 			fila.add(chip, "gapright " + Space.XS);
 		}
 
 		return fila;
+	}
+
+	/**
+	 * Escribe en cada chip cuántos alojamientos tiene esa comodidad.
+	 *
+	 * <p>
+	 * <b>Es la única idea que este catálogo le copia a Booking, y merece la pena.</b>
+	 * Un filtro que dice de antemano "Piscina (3)" te ahorra pulsarlo para descubrir
+	 * que no hay nada, y evita el callejón de ir marcando hasta quedarse en cero
+	 * resultados sin saber cuál sobra.
+	 *
+	 * <p>
+	 * El recuento se calcula sobre el <b>catálogo completo</b> y no sobre el
+	 * resultado filtrado, y la diferencia importa: si se calculara sobre el
+	 * resultado, marcar un chip pondría a cero todos los demás y dejarían de servir
+	 * para nada. Lo que el número responde es "cuántos hay con esto", no "cuántos
+	 * quedarían".
+	 */
+	public void setRecuentosPorComodidad(List<Housing> catalogo) {
+
+		chipsPorComodidad.forEach((amenity, chip) -> {
+
+			long cuantos = catalogo.stream().filter(amenity::presenteEn).count();
+
+			chip.setText(amenity.etiqueta() + " (" + cuantos + ")");
+
+			// Un chip que no encontraría nada se deja visible pero apagado: enseñar que
+			// existe y que hoy está vacío informa más que esconderlo.
+			chip.setEnabled(cuantos > 0 || chip.isSelected());
+		});
 	}
 
 	private void notificar() {

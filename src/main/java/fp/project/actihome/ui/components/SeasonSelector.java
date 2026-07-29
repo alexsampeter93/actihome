@@ -55,17 +55,37 @@ public class SeasonSelector extends JPanel {
 	private static final int GAP = 22;
 
 	public SeasonSelector() {
+		this(false);
+	}
 
-		super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.SM + "[]"));
+	/**
+	 * @param sobreCabecera versión compacta para la barra de navegación oscura: sin
+	 *                      el rótulo "Viajar en" y con los colores del fondo oscuro.
+	 *                      Vive ahí desde que se comprobó que el selector solo
+	 *                      existía en el catálogo, así que estando en el detalle o en
+	 *                      un formulario <b>no había forma de cambiar de estación</b>
+	 *                      — siendo la característica más distintiva de la
+	 *                      aplicación. Subirlo a la cabecera lo hace alcanzable desde
+	 *                      las diecisiete pantallas y de paso devuelve al catálogo el
+	 *                      alto que ocupaba
+	 */
+	public SeasonSelector(boolean sobreCabecera) {
+
+		super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
+				sobreCabecera ? "[]" : "[]" + Space.SM + "[]"));
 		setOpaque(false);
 
-		add(alinearDerecha(Labels.caps("Viajar en")));
+		if (!sobreCabecera) {
+			add(alinearDerecha(Labels.caps("Viajar en")));
+		}
 
-		JPanel pestanas = new JPanel(new MigLayout(Space.insets(0), "push[]" + GAP + "[]" + GAP + "[]" + GAP + "[]", ""));
+		int gap = sobreCabecera ? Space.MD : GAP;
+
+		JPanel pestanas = new JPanel(new MigLayout(Space.insets(0), "push[]" + gap + "[]" + gap + "[]" + gap + "[]", ""));
 		pestanas.setOpaque(false);
 
 		for (Season estacion : Season.values()) {
-			pestanas.add(new Pestana(estacion));
+			pestanas.add(new Pestana(estacion, sobreCabecera));
 		}
 
 		add(pestanas);
@@ -92,12 +112,14 @@ public class SeasonSelector extends JPanel {
 		private static final int AIRE_BAJO_TEXTO = 7;
 
 		private final transient Season estacion;
+		private final boolean sobreCabecera;
 		private boolean encima;
 
-		Pestana(Season estacion) {
+		Pestana(Season estacion, boolean sobreCabecera) {
 
 			this.estacion = estacion;
-			setFont(Typography.label(12f));
+			this.sobreCabecera = sobreCabecera;
+			setFont(Typography.label(sobreCabecera ? 10f : 12f));
 			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 			setToolTipText(estacion.etiqueta());
 
@@ -168,7 +190,17 @@ public class SeasonSelector extends JPanel {
 			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
 			boolean activa = esActiva();
-			Color tinta = activa ? Theme.acc() : encima ? Theme.txt() : Theme.mut();
+			// Sobre la cabecera oscura no valen ni acc() ni mut(): el primero puede ser el
+			// amarillo de verano, que contra el marrón oscuro pierde fuerza, y el segundo
+			// está pensado para fondo claro y ahí queda casi ilegible. Se usa el blanco y
+			// su versión atenuada, que es lo que ya hace el resto de la barra.
+			Color tinta;
+
+			if (sobreCabecera) {
+				tinta = activa || encima ? Color.WHITE : Theme.mutSobreOscuro();
+			} else {
+				tinta = activa ? Theme.acc() : encima ? Theme.txt() : Theme.mut();
+			}
 
 			g2.setFont(getFont());
 			g2.setColor(tinta);

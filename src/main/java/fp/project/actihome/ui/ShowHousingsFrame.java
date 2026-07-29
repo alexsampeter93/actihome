@@ -56,25 +56,47 @@ import fp.project.actihome.ui.theme.Typography;
  * Catálogo de alojamientos: la pantalla principal tras iniciar sesión.
  *
  * <p>
- * Cuatro bandas de arriba abajo, y solo una de ellas crece:
+ * Tres bandas de alto fijo y la lista, que es la única que estira:
  *
  * <ol>
- * <li><b>Cabecera</b> oscura, de alto fijo.</li>
- * <li><b>Hero</b>, también de alto fijo: a la izquierda la frase de la estación
- * y el titular; a la derecha el selector de estación y las tres cifras del
- * catálogo.</li>
- * <li><b>La lista</b>, que es la única que estira y la única con scroll.</li>
- * <li><b>Colofón</b>, de alto fijo: Olaz y la firma de CocoBrain a la
- * izquierda, y el acceso de administrador a la derecha.</li>
+ * <li><b>Cabecera</b> oscura, con el selector de estación.</li>
+ * <li><b>Hero</b>: a la izquierda la frase de la estación y el titular; a la
+ * derecha el buscador y las tres cifras del catálogo. Se <b>contrae a una línea
+ * al bajar por la lista</b>.</li>
+ * <li><b>Filtros</b>: dos filas bajas, con las comodidades recogidas tras "Más
+ * filtros".</li>
+ * <li><b>La lista</b>, la única con scroll, con el botón de publicar flotando
+ * encima.</li>
  * </ol>
  *
  * <p>
  * <b>Ese reparto es la regla de escritorio del proyecto.</b> Una web se recorre
  * con la rueda y puede permitirse crecer hacia abajo sin fin; una aplicación de
  * escritorio no, porque su ventana tiene un tamaño y el usuario espera ver la
- * pantalla entera. Aquí el marco —cabecera, hero, colofón— está siempre a la
- * vista y lo que se desplaza es únicamente el contenido. Es la diferencia entre
- * una aplicación y una página web metida en una ventana.
+ * pantalla entera. Aquí el marco está siempre a la vista y lo que se desplaza es
+ * únicamente el contenido.
+ *
+ * <p>
+ * <b>El reparto se midió, no se estimó</b>, y el resultado era malo: el cromo se
+ * llevaba el 59 % de la pantalla y la lista el 41 %, o sea que en vista de lista
+ * se veía una ficha y pico. En una aplicación cuyo trabajo es enseñar
+ * alojamientos, eso está al revés. Cuatro cambios lo corrigen sin tocar la
+ * identidad editorial:
+ *
+ * <ul>
+ * <li>El <b>selector de estación</b> sube a la cabecera. Además de recuperar
+ * alto, arregla que solo fuera alcanzable desde esta pantalla de diecisiete.</li>
+ * <li>El <b>buscador</b> ocupa el hueco que dejó el selector, así que su banda
+ * de ~85px desaparece sin que el hero crezca.</li>
+ * <li>Las <b>comodidades</b> se recogen tras "Más filtros", que lleva el número
+ * de filtros activos para que nunca queden filtrando en silencio.</li>
+ * <li>El <b>colofón</b> desaparece: el botón de publicar ya era flotante y no
+ * necesitaba una banda de 80px propia.</li>
+ * </ul>
+ *
+ * <p>
+ * Resultado medido: la lista pasa de 351 a 512px —del 41 % al 59 %— y a 614px
+ * (74 %) con el hero contraído.
  *
  * <p>
  * <b>Las cifras del hero se calculan sobre el catálogo completo</b>, no sobre lo
@@ -132,6 +154,11 @@ public class ShowHousingsFrame extends JFrame {
 	private Stat disponibles;
 	private Stat media;
 	private JPanel accionAdmin;
+	private JPanel heroCompleto;
+	private JPanel heroCompacto;
+	private JLabel resumenCompacto;
+	private JLabel tituloCompacto;
+	private boolean heroContraido;
 
 	/**
 	 * Testigo de la suscripción a los cambios de estación.
@@ -190,16 +217,21 @@ public class ShowHousingsFrame extends JFrame {
 
 		headerPanel.marcarActual(ShowHousingsFrame.class);
 
-		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]",
-				"[]0[]0[]0[grow,fill]0[]"));
+		// "hidemode 3" para que el hero oculto no reserve su hueco: es lo que permite
+		// que al contraerse la lista gane el espacio de verdad y no quede un vacío.
+		JPanel raiz = new Page(new MigLayout("wrap 1, fill, hidemode 3, " + Space.insets(0), "[grow,fill]",
+				"[]0[]0[]0[]0[grow,fill]"));
 
 		filtros = new CatalogFilters(this::aplicarFiltros);
 
+		heroCompleto = hero();
+		heroCompacto = heroCompacto();
+
 		raiz.add(headerPanel, "growx");
-		raiz.add(hero(), "growx");
+		raiz.add(heroCompleto, "growx");
+		raiz.add(heroCompacto, "growx");
 		raiz.add(filtros, "growx");
-		raiz.add(zonaDeLista(), "grow");
-		raiz.add(colofon(), "growx");
+		raiz.add(listaConBotonFlotante(), "grow");
 
 		setContentPane(raiz);
 
@@ -220,6 +252,81 @@ public class ShowHousingsFrame extends JFrame {
 	// ------------------------------------------------------------------
 	// Hero
 	// ------------------------------------------------------------------
+
+	/**
+	 * El hero reducido a una línea, para cuando el usuario ya está explorando.
+	 *
+	 * <p>
+	 * <b>La idea es de Airbnb y resuelve una tensión real.</b> El titular editorial
+	 * es lo que le da carácter a la aplicación, pero mientras recorres fichas no
+	 * aporta nada y se lleva 140px de los 866 que hay. Con dos versiones no hay que
+	 * elegir: al llegar se ve el titular completo —el impacto— y al bajar por la
+	 * lista se contrae a una línea que sigue diciendo dónde estás, devolviendo el
+	 * espacio al contenido.
+	 *
+	 * <p>
+	 * Es una banda distinta y no el mismo hero encogido a propósito: cambiar tamaños
+	 * de fuente y márgenes a mitad de animación produce saltos de reflujo, mientras
+	 * que alternar dos paneles ya construidos es instantáneo y no recalcula nada.
+	 */
+	private JPanel heroCompacto() {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(Space.SM, Space.HUGE, Space.SM, Space.HUGE),
+				"[]" + Space.MD + "[]push[]", "[]"));
+		panel.setOpaque(false);
+		panel.setVisible(false);
+
+		resumenCompacto = Labels.capsAccent("");
+		panel.add(resumenCompacto, "aligny center");
+
+		tituloCompacto = Labels.body("");
+		tituloCompacto.setFont(Typography.serifMedium(19f));
+		panel.add(tituloCompacto, "aligny center");
+
+		return panel;
+	}
+
+	/**
+	 * Decide si toca el hero completo o el compacto, según lo desplazada que esté la
+	 * lista.
+	 *
+	 * <p>
+	 * <b>El umbral tiene histéresis a propósito</b>: se contrae al pasar de 60px y
+	 * no se despliega hasta bajar de 20. Con un único umbral, quedarse justo en el
+	 * límite hace que el hero parpadee entre los dos estados a cada píxel de scroll,
+	 * y ese temblor es mucho peor que cualquiera de los dos estados.
+	 */
+	private void ajustarHeroAlScroll() {
+
+		if (scroll == null) {
+			return;
+		}
+
+		int desplazamiento = scroll.getVerticalScrollBar().getValue();
+		boolean contraer = heroContraido ? desplazamiento > 20 : desplazamiento > 60;
+
+		if (contraer == heroContraido) {
+			return;
+		}
+
+		heroContraido = contraer;
+
+		heroCompleto.setVisible(!contraer);
+		heroCompacto.setVisible(contraer);
+
+		if (contraer) {
+			actualizarHeroCompacto();
+		}
+
+		revalidate();
+		repaint();
+	}
+
+	private void actualizarHeroCompacto() {
+
+		resumenCompacto.setText(Theme.estacion().nombre().toUpperCase());
+		tituloCompacto.setText(Formato.plural(catalogo.size(), "estancia", "estancias") + " para elegir");
+	}
 
 	private JPanel hero() {
 
@@ -278,12 +385,25 @@ public class ShowHousingsFrame extends JFrame {
 		return panel;
 	}
 
+	/**
+	 * La columna derecha del hero: solo las tres cifras.
+	 *
+	 * <p>
+	 * El selector de estación estaba aquí y ha subido a la cabecera. Dos motivos, y
+	 * el segundo es el importante: recupera alto para la lista, y sobre todo deja de
+	 * ser alcanzable <b>solo</b> desde esta pantalla — antes, estando en el detalle
+	 * o en un formulario no había forma de cambiar de estación.
+	 */
 	private JPanel controles() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.MD + "[]"));
 		panel.setOpaque(false);
 
-		panel.add(new SeasonSelector());
+		// El buscador ocupa exactamente el hueco que dejó el selector de estación al
+		// subir a la cabecera, así que se recupera su banda de ~85px sin que el hero
+		// crezca ni un píxel. Ponerlo bajo el titular, en la columna izquierda, fue el
+		// primer intento y salía más caro: el hero pasaba de 183 a 231px.
+		panel.add(filtros.extraerBuscador(), "w 340!, h 38!, alignx right");
 		panel.add(cifras());
 
 		return panel;
@@ -356,6 +476,11 @@ public class ShowHousingsFrame extends JFrame {
 		// lista de filas de doscientos píxeles se percibe como que el scroll no funciona.
 		scroll.getVerticalScrollBar().setUnitIncrement(24);
 
+		// Escuchar el desplazamiento es lo que permite contraer el hero. Se registra una
+		// sola vez, aqui en la construccion: hacerlo en setVisible sobre un frame
+		// singleton acumularia una escucha por visita (bug B2).
+		scroll.getVerticalScrollBar().addAdjustmentListener(e -> ajustarHeroAlScroll());
+
 		// Mínimo cero: cuando la ventana se queda corta, el espacio se lo tiene que
 		// quitar la lista —que para eso tiene scroll— y no la cabecera, el hero o los
 		// filtros. Sin esto, el reparto castiga a quien no ha declarado su mínimo, que
@@ -390,6 +515,7 @@ public class ShowHousingsFrame extends JFrame {
 
 		List<Housing> resultado = filtros.aplicar(catalogo);
 		filtros.setResultado(resultado.size());
+		filtros.setRecuentosPorComodidad(catalogo);
 
 		lista.removeAll();
 
@@ -554,20 +680,38 @@ public class ShowHousingsFrame extends JFrame {
 	// Colofón
 	// ------------------------------------------------------------------
 
-	private JPanel colofon() {
+	/**
+	 * La lista, con el botón de publicar flotando encima en la esquina.
+	 *
+	 * <p>
+	 * <b>Antes había una banda de colofón de 80px</b> con la firma "por CocoBrain" y
+	 * este botón. Ochenta píxeles fijos de los que la lista solo tiene unos
+	 * seiscientos, y para un botón que ya estaba diseñado como flotante: no
+	 * necesitaba banda propia. La firma de CocoBrain sigue en el icono, el splash y
+	 * el diálogo "Acerca de", que son tres de sus cuatro sitios previstos.
+	 *
+	 * <p>
+	 * <b>El orden en que se añaden importa y es al revés de lo intuitivo.</b> Swing
+	 * pinta los hijos del último índice al primero, así que en una superposición el
+	 * que se añade <em>primero</em> queda <em>encima</em>. El botón va antes que la
+	 * lista o quedaría debajo de ella.
+	 */
+	private JPanel listaConBotonFlotante() {
 
-		JPanel panel = new JPanel(new MigLayout(Space.insets(Space.XS, Space.HUGE, Space.XS, Space.HUGE),
-				"[]" + Space.MD + "[]push[]", "[]"));
-		panel.setOpaque(false);
-
-		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "w 48!, h 48!");
-		panel.add(Labels.caps("por CocoBrain"));
+		JPanel capa = new JPanel(new MigLayout("fill, " + Space.insets(0), "[grow,fill]", "[grow,fill]"));
+		capa.setOpaque(false);
 
 		accionAdmin = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]", "[]"));
 		accionAdmin.setOpaque(false);
-		panel.add(accionAdmin);
 
-		return panel;
+		// El botón va con "pos" —posición absoluta, fuera de la rejilla— y la lista con
+		// "grow". Es importante que solo uno de los dos ocupe celda: si los dos van en
+		// posición absoluta, ningún componente aporta tamaño a la rejilla y MigLayout le
+		// da altura cero al contenedor entero.
+		capa.add(accionAdmin, "pos null null (container.x2-" + Space.XXXL + ") (container.y2-" + Space.XL + ")");
+		capa.add(zonaDeLista(), "grow");
+
+		return capa;
 	}
 
 	/**
@@ -587,8 +731,14 @@ public class ShowHousingsFrame extends JFrame {
 
 		if (usuario != null && usuario.getRole() == RoleType.ADMIN) {
 
-			accionAdmin.add(Labels.caps("Registrar alojamiento"), "aligny center");
-			accionAdmin.add(new BotonMas(() -> navigator.ir(UploadHousingFrame.class)), "w 44!, h 44!");
+			// Solo el botón, sin el rótulo "Registrar alojamiento" que lo acompañaba.
+			// Cuando esto vivía en una banda propia el texto tenía sentido; flotando sobre
+			// la lista se superponía al contenido de la ficha de abajo y se leía como un
+			// error de maquetación. La explicación pasa al tooltip, que es donde va la
+			// ayuda de un botón que ya se entiende por su icono y su posición.
+			BotonMas boton = new BotonMas(() -> navigator.ir(UploadHousingFrame.class));
+			boton.setToolTipText("Registrar un alojamiento nuevo");
+			accionAdmin.add(boton, "w 52!, h 52!");
 		}
 
 		accionAdmin.revalidate();

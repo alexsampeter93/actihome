@@ -33,6 +33,7 @@ import fp.project.actihome.ui.brand.AboutDialog;
 import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.SeasonGlyph;
+import fp.project.actihome.ui.components.SeasonSelector;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Space;
@@ -143,7 +144,7 @@ public class HeaderPanel extends JPanel {
 	private void initUI() {
 
 		setLayout(new MigLayout(Space.insets(Space.LG, Space.XXXL, Space.LG, Space.XXXL),
-				"[]11[]push[]" + Space.XXL + "[]", "[]"));
+				"[]11[]push[]" + Space.XXL + "[]" + Space.XXL + "[]", "[]"));
 		setOpaque(false);
 		setPreferredSize(new Dimension(0, ALTO));
 		setMinimumSize(new Dimension(0, ALTO));
@@ -155,6 +156,10 @@ public class HeaderPanel extends JPanel {
 		navegacion.setOpaque(false);
 		construirNavegacion();
 		add(navegacion);
+
+		// El selector de estación vive aquí y no en el hero del catálogo. Ver la nota
+		// en SeasonSelector: ahí solo era alcanzable desde una pantalla de diecisiete.
+		add(new SeasonSelector(true), "aligny center");
 
 		zonaUsuario = new JPanel(new MigLayout(Space.insets(0), "[]9[]", "[]"));
 		zonaUsuario.setOpaque(false);

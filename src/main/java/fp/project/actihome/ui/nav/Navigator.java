@@ -226,10 +226,15 @@ public class Navigator {
 
 		ventana.setSize(acotarAPantalla(ventana, ancho, alto));
 
-		// Centrada sobre donde estaba la anterior, y no en su esquina: si la ventana
-		// nueva es más grande, conservar la esquina la desplazaría hacia abajo y a la
-		// derecha en cada salto hasta salirse de la pantalla.
-		ventana.setLocation(previa.x + (previa.width - ancho) / 2, previa.y + (previa.height - alto) / 2);
+		// **Se conserva la esquina, no el centro.** Antes se recentraba sobre el centro
+		// de la ventana anterior, y eso producía el "salto" que se veía al cambiar de
+		// pantalla: en cuanto el tamaño cambiaba aunque fuera unos píxeles, la posición
+		// cambiaba también y la ventana aparecía desplazada respecto a donde estaba la
+		// anterior. Manteniendo la esquina superior izquierda, dos pantallas del mismo
+		// tamaño se superponen exactamente y no hay movimiento; una más grande crece
+		// hacia la derecha y hacia abajo, que se percibe como que la ventana se abre,
+		// no como que se mueve.
+		ventana.setLocation(previa.x, previa.y);
 
 		encajarEnPantalla(ventana);
 	}
