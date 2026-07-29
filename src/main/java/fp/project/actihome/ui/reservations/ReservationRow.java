@@ -118,7 +118,7 @@ public class ReservationRow extends JPanel {
 		}
 
 		if (reservation.isCheckedIn()) {
-			return Labels.caps("✓ Check-in realizado");
+			return Labels.caps("Check-in realizado");
 		}
 
 		return Labels.capsAccent("Check-in pendiente");

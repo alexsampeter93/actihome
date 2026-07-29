@@ -192,7 +192,7 @@ public class StyleGuidePanel extends JPanel {
 		botones.add(Buttons.primary("Reservar", null));
 		botones.add(Buttons.secondary("Cancelar", null));
 		botones.add(Buttons.link("Ver estancia →", null));
-		botones.add(Buttons.linkAccent("Intercambiar ⇄", null));
+		botones.add(Buttons.linkAccent("Intercambiar →←", null));
 		panel.add(botones);
 
 		panel.add(Hairline.horizontal(), "span 2, growx, gapy " + Space.LG);

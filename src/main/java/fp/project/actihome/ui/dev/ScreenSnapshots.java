@@ -39,6 +39,11 @@ import fp.project.actihome.ui.ReviewDetailsFrame;
 import fp.project.actihome.ui.ShowHousingsFrame;
 import fp.project.actihome.ui.ShowMyReservationsFrame;
 import fp.project.actihome.ui.ShowReviewsFrame;
+import fp.project.actihome.ui.TradeHousingsFrame;
+import fp.project.actihome.ui.ChangePasswordFrame;
+import fp.project.actihome.ui.UpdateHousingFrame;
+import fp.project.actihome.ui.UpdateProfileFrame;
+import fp.project.actihome.ui.UploadHousingFrame;
 import fp.project.actihome.ui.UpdateReviewFrame;
 import fp.project.actihome.ui.components.Segmented;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
@@ -118,6 +123,9 @@ public final class ScreenSnapshots {
 
 			} else if ("fase5".equals(prefijo)) {
 				capturarFase5(context);
+
+			} else if ("fase6".equals(prefijo)) {
+				capturarFase6(context);
 
 			} else {
 
@@ -261,6 +269,54 @@ public final class ScreenSnapshots {
 		guardar(publicar, "fase5-publicar-resena");
 	}
 
+	/**
+	 * Captura las cinco pantallas de la Fase 6: alta y edición de alojamiento,
+	 * intercambio, perfil y contraseña.
+	 *
+	 * <p>
+	 * La sesión se abre como <b>Lucia</b>, propietaria real de los alojamientos de
+	 * ejemplo desde la Fase 3d. Hace falta que sea la titular: editar e
+	 * intercambiar son operaciones de propietario, y con un usuario cualquiera las
+	 * pantallas saldrían con el aviso de "no eres el titular" en vez de con su
+	 * contenido.
+	 *
+	 * <p>
+	 * El intercambio se captura <b>con el candidato ya buscado</b>, no con el panel
+	 * derecho vacío: el paso de buscar es justamente lo que esta pantalla añade
+	 * frente a la anterior, y una captura del estado inicial no lo enseñaría.
+	 */
+	private static void capturarFase6(ConfigurableApplicationContext context) throws IOException {
+
+		Theme.cambiarA(Season.VERANO);
+
+		HousingService housingService = context.getBean(HousingService.class);
+
+		iniciarSesionComo(context, "Lucia");
+
+		Housing propio = housingService.showHousings().stream().filter(h -> h.getHousingCode().equals(10001L))
+				.findFirst().orElseThrow(IllegalStateException::new);
+
+		UploadHousingFrame alta = context.getBean(UploadHousingFrame.class);
+		guardar(alta, "fase6-alta-alojamiento");
+
+		UpdateHousingFrame edicion = context.getBean(UpdateHousingFrame.class);
+		edicion.setHousingId(propio.getId());
+		guardar(edicion, "fase6-editar-alojamiento");
+
+		TradeHousingsFrame intercambio = context.getBean(TradeHousingsFrame.class);
+		intercambio.setHousingId(propio.getId());
+		guardar(intercambio, "fase6-intercambio-vacio");
+		// La búsqueda va DESPUÉS de mostrar: al mostrarse, la pantalla se recarga y
+		// limpia el código, así que hacerla antes no dejaría rastro en la captura.
+		guardar(intercambio, "fase6-intercambio", () -> intercambio.buscarPorCodigo("10004"));
+
+		UpdateProfileFrame perfil = context.getBean(UpdateProfileFrame.class);
+		guardar(perfil, "fase6-perfil");
+
+		ChangePasswordFrame contrasena = context.getBean(ChangePasswordFrame.class);
+		guardar(contrasena, "fase6-contrasena");
+	}
+
 	/** Tres reservas del mismo cliente, una en cada estado visual. */
 	private static List<Reservation> crearReservasDeEjemplo(ConfigurableApplicationContext context, User cliente,
 			HousingService housingService) {
@@ -290,9 +346,24 @@ public final class ScreenSnapshots {
 	}
 
 	private static void guardar(JFrame ventana, String nombre) throws IOException {
+		guardar(ventana, nombre, null);
+	}
+
+	/**
+	 * Guarda una captura, con la posibilidad de tocar la pantalla <b>después</b> de
+	 * mostrarla y antes de pintarla.
+	 *
+	 * <p>
+	 * Hace falta porque los frames recargan sus datos dentro de {@code setVisible},
+	 * y {@link #dibujar} tiene que llamar a {@code setVisible} para que exista el
+	 * componente nativo. Cualquier estado que se prepare <em>antes</em> —una
+	 * búsqueda hecha, un filtro aplicado— se pierde en esa recarga. Este parámetro
+	 * es el hueco para volver a ponerlo cuando ya no hay nada que lo borre.
+	 */
+	private static void guardar(JFrame ventana, String nombre, Runnable despuesDeMostrar) throws IOException {
 
 		File salida = new File(DESTINO, nombre + ".png");
-		ImageIO.write(dibujar(ventana), "png", salida);
+		ImageIO.write(dibujar(ventana, despuesDeMostrar), "png", salida);
 
 		System.out.println("Captura generada: " + salida.getPath());
 	}
@@ -392,11 +463,15 @@ public final class ScreenSnapshots {
 	 * refleje el estado real: una pantalla que nunca se ha mostrado tiene la lista
 	 * vacía.
 	 */
-	private static BufferedImage dibujar(JFrame ventana) {
+	private static BufferedImage dibujar(JFrame ventana, Runnable despuesDeMostrar) {
 
 		ventana.setSize(new Dimension(ANCHO, ALTO));
 		ventana.setLocation(-20000, -20000);
 		ventana.setVisible(true);
+
+		if (despuesDeMostrar != null) {
+			despuesDeMostrar.run();
+		}
 
 		disponer(ventana.getContentPane());
 

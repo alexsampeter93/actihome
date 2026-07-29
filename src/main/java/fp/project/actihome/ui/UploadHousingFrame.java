@@ -1,197 +1,181 @@
 package fp.project.actihome.ui;
 
-import java.awt.GridLayout;
-import java.math.BigDecimal;
-import java.text.NumberFormat;
-import java.util.EnumMap;
-import java.util.Map;
+import java.awt.Dimension;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
 
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import fp.project.actihome.model.entities.Amenity;
-import fp.project.actihome.model.services.HousingData;
+import net.miginfocom.swing.MigLayout;
+
+import fp.project.actihome.model.exceptions.DuplicateInstanceException;
+import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.exceptions.LessThanOneRoomException;
+import fp.project.actihome.model.exceptions.NegativePrizeException;
+import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.services.HousingService;
+import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Labels;
+import fp.project.actihome.ui.components.MascotSlot;
+import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.housings.HousingForm;
+import fp.project.actihome.ui.housings.HousingForm.DatosInvalidos;
+import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
+import fp.project.actihome.ui.theme.Layout;
+import fp.project.actihome.ui.theme.Space;
 
 /**
- * Alta de alojamiento (rol ADMIN).
+ * Dar de alta un alojamiento (rol ADMIN).
  *
  * <p>
- * Sigue con la maquetación antigua: esta pantalla se rediseña en la Fase 6. Lo
- * que cambia en la Fase 3a son los <b>datos</b> que recoge —nombre, tipo como
- * categoría cerrada y comodidades—, porque sin ellos un alojamiento creado desde
- * la aplicación saldría en el catálogo sin título y sin ningún chip, y no
- * aparecería en ningún filtro.
+ * Los campos viven en {@link HousingForm}, compartido con
+ * {@link UpdateHousingFrame}. Aquí solo está lo propio del alta: el encabezado,
+ * la llamada al servicio y los mensajes de error.
+ *
+ * <p>
+ * <b>Mensajes por excepción</b> (bug B11). El servicio distingue cinco motivos
+ * de fallo y la versión anterior los capturaba todos con {@code catch (Exception)}
+ * para decir siempre "Error en los datos". El caso que más importa es
+ * {@link DuplicateInstanceException}: no es un error de escritura, es que ese
+ * código de alojamiento ya existe, y lo único que hay que cambiar es ese campo.
  */
 @Component
 @Profile("!test")
+@Lazy
 public class UploadHousingFrame extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 
-	/**
-	 * Categorías de alojamiento del diseño.
-	 *
-	 * <p>
-	 * Antes el tipo era un campo de texto libre, y por eso los datos de ejemplo
-	 * tenían tipos como "Casa en la playa" o "Casa con piscina": cada uno un valor
-	 * distinto. El catálogo filtra por tipo con chips fijos, y un filtro por chips
-	 * solo funciona si el conjunto de valores posibles es cerrado. Con texto libre,
-	 * un alojamiento nuevo simplemente no aparecería bajo ningún chip.
-	 */
-	static final String[] TIPOS = { "Casa", "Apartamento", "Villa", "Cabaña" };
+	private final transient HousingService housingService;
+	private final transient SessionManager sessionManager;
+	private final transient Navigator navigator;
+	private final HeaderPanel headerPanel;
 
-	private final HousingService housingService;
-	private ApplicationContext context;
-	private SessionManager sessionManager;
+	private HousingForm formulario;
+	private JLabel error;
 
-	private JFormattedTextField housingCodeField;
-	private JTextField nameField;
-	private JComboBox<String> typeField;
-	private JFormattedTextField numberOfRoomsField;
-	private JFormattedTextField pricePerNightField;
-	private JTextArea descriptionArea;
-	private JCheckBox breakfastBox;
-	private JCheckBox lunchBox;
-	private JCheckBox dinnerBox;
-	private JTextField locationField;
-	private final Map<Amenity, JCheckBox> amenityBoxes = new EnumMap<>(Amenity.class);
-
-	public UploadHousingFrame(HousingService housingService, ApplicationContext context,
-			SessionManager sessionManager) {
+	public UploadHousingFrame(HousingService housingService, SessionManager sessionManager, Navigator navigator,
+			HeaderPanel headerPanel) {
 
 		this.housingService = housingService;
-		this.context = context;
 		this.sessionManager = sessionManager;
+		this.navigator = navigator;
+		this.headerPanel = headerPanel;
+
 		initUI();
+	}
+
+	@Override
+	public void setVisible(boolean visible) {
+
+		if (visible) {
+			headerPanel.refresh();
+			formulario.limpiar();
+			error.setText(" ");
+		}
+
+		super.setVisible(visible);
 	}
 
 	private void initUI() {
 
-		setTitle("Actihome");
-		setSize(500, 640);
+		setTitle("ActiHome");
+		setSize(1120, 800);
+		setMinimumSize(new Dimension(940, 660));
 		setLocationRelativeTo(null);
 
-		// GridLayout(0, 2): cero filas significa "las que hagan falta". Antes estaba
-		// fijado a 10 y añadir un campo más habría descuadrado la rejilla en silencio.
-		JPanel jpanel = new JPanel(new GridLayout(0, 2, 2, 2));
-		jpanel.setBorder(BorderFactory.createTitledBorder("Registrar alojamiento"));
+		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));
 
-		NumberFormat roomsAndCodeformat = NumberFormat.getIntegerInstance();
-		roomsAndCodeformat.setGroupingUsed(false);
+		JPanel exterior = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.XXL, Space.GIANT, Space.XXL, Space.GIANT), "[grow,fill]",
+				"[]" + Space.LG + "[]" + Space.XS + "[]" + Space.MD + "[]"));
+		exterior.setOpaque(false);
 
-		NumberFormat pricePerNightFormat = NumberFormat.getNumberInstance();
-		pricePerNightFormat.setMaximumFractionDigits(2);
-		pricePerNightFormat.setMinimumFractionDigits(2);
+		exterior.add(cabecera(), Layout.ancho(Layout.CONTENIDO) + ", alignx center");
 
-		jpanel.add(new JLabel("Código de alojamiento"));
-		housingCodeField = new JFormattedTextField(roomsAndCodeformat);
-		jpanel.add(housingCodeField);
+		formulario = new HousingForm(true);
+		exterior.add(formulario, Layout.ancho(Layout.CONTENIDO) + ", alignx center");
 
-		jpanel.add(new JLabel("Nombre"));
-		nameField = new JTextField();
-		jpanel.add(nameField);
+		error = Labels.error(" ");
+		exterior.add(error, Layout.ancho(Layout.CONTENIDO) + ", alignx center");
 
-		jpanel.add(new JLabel("Tipo"));
-		typeField = new JComboBox<>(TIPOS);
-		jpanel.add(typeField);
+		exterior.add(acciones(), Layout.ancho(Layout.CONTENIDO) + ", alignx center");
 
-		jpanel.add(new JLabel("Nº de habitaciones"));
-		numberOfRoomsField = new JFormattedTextField(roomsAndCodeformat);
-		jpanel.add(numberOfRoomsField);
+		// El formulario de alojamiento es el más largo de la aplicación. En una pantalla
+		// holgada cabe entero; el scroll está por si no.
+		JScrollPane scroll = new JScrollPane(exterior);
+		scroll.setOpaque(false);
+		scroll.getViewport().setOpaque(false);
+		scroll.setBorder(null);
+		scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		scroll.getVerticalScrollBar().setUnitIncrement(24);
+		scroll.setMinimumSize(new Dimension(0, 0));
 
-		jpanel.add(new JLabel("Precio por noche"));
-		pricePerNightField = new JFormattedTextField(pricePerNightFormat);
-		jpanel.add(pricePerNightField);
+		raiz.add(headerPanel, "growx");
+		raiz.add(scroll, "grow");
 
-		jpanel.add(new JLabel("Descripción"));
-		descriptionArea = new JTextArea(5, 20);
-		JScrollPane scrollPane = new JScrollPane(descriptionArea);
-		jpanel.add(scrollPane);
-		descriptionArea.setEditable(true);
-
-		jpanel.add(new JLabel("Ubicación"));
-		locationField = new JTextField();
-		jpanel.add(locationField);
-
-		jpanel.add(new JLabel("Desayuno"));
-		breakfastBox = new JCheckBox();
-		jpanel.add(breakfastBox);
-
-		jpanel.add(new JLabel("Comida"));
-		lunchBox = new JCheckBox();
-		jpanel.add(lunchBox);
-
-		jpanel.add(new JLabel("Cena"));
-		dinnerBox = new JCheckBox();
-		jpanel.add(dinnerBox);
-
-		// El desayuno ya tiene su casilla arriba, en la pensión: es el mismo campo, y
-		// dos casillas para un solo dato solo sirven para que se contradigan.
-		for (Amenity amenity : Amenity.values()) {
-
-			if (amenity == Amenity.BREAKFAST) {
-				continue;
-			}
-
-			jpanel.add(new JLabel(amenity.etiqueta()));
-			JCheckBox box = new JCheckBox();
-			amenityBoxes.put(amenity, box);
-			jpanel.add(box);
-		}
-
-		JButton uploadButton = new JButton("Registrar");
-		uploadButton.addActionListener(e -> upload());
-		jpanel.add(uploadButton);
-
-		add(jpanel);
-
+		setContentPane(raiz);
 	}
 
-	private void upload() {
+	private JPanel cabecera() {
 
-		Long housingCode = ((Number) housingCodeField.getValue()).longValue();
-		int numberOfRooms = ((Number) numberOfRoomsField.getValue()).intValue();
-		BigDecimal pricePerNight = BigDecimal.valueOf(((Number) pricePerNightField.getValue()).doubleValue());
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[grow,fill]push[]", ""));
+		panel.setOpaque(false);
 
-		HousingData datos = HousingData
-				.basico(housingCode, nameField.getText(), (String) typeField.getSelectedItem(), numberOfRooms,
-						pricePerNight, locationField.getText())
-				.description(descriptionArea.getText())
-				.breakfast(breakfastBox.isSelected())
-				.lunch(lunchBox.isSelected())
-				.dinner(dinnerBox.isSelected());
+		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		titulos.setOpaque(false);
+		titulos.add(Labels.capsAccent("Nuevo alojamiento"));
+		titulos.add(Labels.title("Publica tu estancia"), "gaptop " + Space.XXS);
 
-		amenityBoxes.forEach((amenity, box) -> datos.amenity(amenity, box.isSelected()));
+		panel.add(titulos);
+		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "top, w 56!, h 56!");
+
+		return panel;
+	}
+
+	private JPanel acciones() {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
+		fila.setOpaque(false);
+
+		fila.add(Buttons.primary("Publicar alojamiento", e -> publicar()), "height 44!");
+		fila.add(Buttons.link("Cancelar", e -> navigator.ir(ShowHousingsFrame.class)));
+
+		return fila;
+	}
+
+	private void publicar() {
 
 		try {
+			housingService.uploadHousing(formulario.datos(), sessionManager.getLoggedInUser().getId());
 
-			housingService.uploadHousing(datos, sessionManager.getLoggedInUser().getId());
+			navigator.ir(ShowHousingsFrame.class);
 
-			JOptionPane.showMessageDialog(this, "Alojamiento registrado con éxito", "Éxito",
-					JOptionPane.INFORMATION_MESSAGE);
+		} catch (DatosInvalidos ex) {
+			// El formulario ya sabe qué campo falla y trae el mensaje escrito.
+			error.setText(ex.getMessage());
 
-			dispose();
-			ShowHousingsFrame showHousingsFrame = context.getBean(ShowHousingsFrame.class);
-			showHousingsFrame.setVisible(true);
+		} catch (DuplicateInstanceException ex) {
+			error.setText("Ya existe un alojamiento con ese código. Usa otro.");
 
-		} catch (Exception ex) {
-			JOptionPane.showMessageDialog(this, "Error en los datos", "Error", JOptionPane.ERROR_MESSAGE);
+		} catch (LessThanOneRoomException ex) {
+			error.setText("El alojamiento debe tener al menos una habitación.");
+
+		} catch (NegativePrizeException ex) {
+			error.setText("El precio por noche no puede ser negativo.");
+
+		} catch (NotAuthorizedUserException ex) {
+			error.setText("Solo los administradores pueden publicar alojamientos.");
+
+		} catch (InstanceNotFoundException ex) {
+			error.setText("Tu sesión ya no es válida. Vuelve a entrar.");
 		}
 	}
 }

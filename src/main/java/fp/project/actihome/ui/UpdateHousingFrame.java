@@ -1,107 +1,97 @@
 package fp.project.actihome.ui;
 
-import java.awt.GridLayout;
-import java.math.BigDecimal;
-import java.text.NumberFormat;
-import java.util.EnumMap;
-import java.util.Map;
+import java.awt.Dimension;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JFormattedTextField;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
+import javax.swing.ScrollPaneConstants;
 
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import fp.project.actihome.model.entities.Amenity;
+import net.miginfocom.swing.MigLayout;
+
 import fp.project.actihome.model.entities.Housing;
-import fp.project.actihome.model.services.HousingData;
+import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.exceptions.LessThanOneRoomException;
+import fp.project.actihome.model.exceptions.NegativePrizeException;
+import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
+import fp.project.actihome.model.exceptions.NotTheOwnerException;
 import fp.project.actihome.model.services.HousingService;
+import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Labels;
+import fp.project.actihome.ui.components.MascotSlot;
+import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.housings.HousingForm;
+import fp.project.actihome.ui.housings.HousingForm.DatosInvalidos;
+import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
+import fp.project.actihome.ui.theme.Layout;
+import fp.project.actihome.ui.theme.Space;
 
 /**
- * Edición de alojamiento (rol ADMIN propietario).
+ * Editar un alojamiento propio.
  *
  * <p>
- * <b>Aquí se corrige el bug B9, que corrompía datos.</b> El formulario mostraba
- * tres campos (habitaciones, precio y descripción) pero llamaba al servicio con
- * {@code updateHousing(..., true, true, true)}: los tres booleanos de la pensión
- * escritos a mano. Resultado: cualquiera que corrigiese una errata en la
- * descripción activaba de paso desayuno, comida y cena, sin verlo y sin poder
- * deshacerlo desde la aplicación.
+ * Gemela de {@link UploadHousingFrame} y con los mismos campos —viven los dos en
+ * {@link HousingForm}— salvo el código, que aquí no se pide porque es el
+ * identificador público del alojamiento y {@code updateHousing} no lo modifica.
  *
  * <p>
- * La causa de fondo no era el descuido, sino la firma: diez argumentos
- * posicionales invitan a rellenar los que no interesan con cualquier cosa. La
- * corrección es doble. Por un lado, el servicio recibe ahora un
- * {@link HousingData} donde cada valor lleva su nombre. Por otro —y esto es lo
- * importante— el formulario <b>carga primero el alojamiento y precarga todos sus
- * campos</b>, así que lo que se envía es lo que hay más lo que el usuario haya
- * cambiado. No hay ningún valor inventado en el camino.
- *
- * <p>
- * La maquetación sigue siendo la antigua: esta pantalla se rediseña en la Fase
- * 6. Se ha arreglado ahora porque la Fase 3a cambia la firma del servicio y
- * dejarla escribiendo valores falsos habría sido dejar el bug a sabiendas.
+ * <b>Aquí nació el bug B9</b>, el peor que ha tenido este proyecto: el
+ * formulario no editaba las comidas pero llamaba al servicio pasando
+ * {@code true} en las tres, así que cambiar solo el precio activaba desayuno,
+ * comida y cena. Ya está corregido desde la Fase 3a por partida doble —el
+ * servicio recibe un {@code HousingData} con cada valor nombrado y el formulario
+ * precarga los valores reales—, y esta reescritura mantiene las dos defensas:
+ * los datos se recargan <b>desde el servicio</b> en cada apertura, y
+ * {@code HousingForm.datos()} devuelve siempre el objeto completo.
  */
 @Component
 @Profile("!test")
+@Lazy
 public class UpdateHousingFrame extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 
-	private final HousingService housingService;
-	private ApplicationContext context;
-	private SessionManager sessionManager;
+	private final transient HousingService housingService;
+	private final transient SessionManager sessionManager;
+	private final transient Navigator navigator;
+	private final HeaderPanel headerPanel;
+
 	private Long housingId;
+	private transient Housing housing;
 
-	private JTextField nameField;
-	private JComboBox<String> typeField;
-	private JFormattedTextField numberOfRoomsField;
-	private JFormattedTextField pricePerNightField;
-	private JTextArea descriptionArea;
-	private JTextField locationField;
-	private JCheckBox breakfastBox;
-	private JCheckBox lunchBox;
-	private JCheckBox dinnerBox;
-	private final Map<Amenity, JCheckBox> amenityBoxes = new EnumMap<>(Amenity.class);
+	private HousingForm formulario;
+	private JLabel subtitulo;
+	private JLabel error;
 
-	public UpdateHousingFrame(HousingService housingService, ApplicationContext context,
-			SessionManager sessionManager) {
+	public UpdateHousingFrame(HousingService housingService, SessionManager sessionManager, Navigator navigator,
+			HeaderPanel headerPanel) {
 
 		this.housingService = housingService;
-		this.context = context;
 		this.sessionManager = sessionManager;
+		this.navigator = navigator;
+		this.headerPanel = headerPanel;
+
 		initUI();
 	}
 
-	public void setHousingId(Long id) {
-		this.housingId = id;
+	/** Prepara qué alojamiento se edita. La llama el {@link Navigator}. */
+	public void setHousingId(Long housingId) {
+		this.housingId = housingId;
 	}
 
-	/**
-	 * Construir va en el constructor; refrescar va aquí.
-	 *
-	 * <p>
-	 * El frame es un singleton de Spring, así que la segunda vez que se abre es la
-	 * misma instancia con los valores del alojamiento anterior todavía escritos. Por
-	 * eso los campos se recargan al mostrarse, y no al construirse.
-	 */
 	@Override
 	public void setVisible(boolean visible) {
 
 		if (visible) {
-			cargarDatosActuales();
+			headerPanel.refresh();
+			recargar();
 		}
 
 		super.setVisible(visible);
@@ -109,138 +99,123 @@ public class UpdateHousingFrame extends JFrame {
 
 	private void initUI() {
 
-		setTitle("Actihome");
-		setSize(500, 620);
+		setTitle("ActiHome");
+		setSize(1120, 800);
+		setMinimumSize(new Dimension(940, 660));
 		setLocationRelativeTo(null);
 
-		JPanel jpanel = new JPanel(new GridLayout(0, 2, 2, 2));
-		jpanel.setBorder(BorderFactory.createTitledBorder("Actualizar alojamiento"));
+		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));
 
-		NumberFormat roomsFormat = NumberFormat.getIntegerInstance();
-		roomsFormat.setGroupingUsed(false);
+		JPanel exterior = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.XXL, Space.GIANT, Space.XXL, Space.GIANT), "[grow,fill]",
+				"[]" + Space.LG + "[]" + Space.XS + "[]" + Space.MD + "[]"));
+		exterior.setOpaque(false);
 
-		NumberFormat pricePerNightFormat = NumberFormat.getNumberInstance();
-		pricePerNightFormat.setMaximumFractionDigits(2);
-		pricePerNightFormat.setMinimumFractionDigits(2);
+		exterior.add(cabecera(), Layout.ancho(Layout.CONTENIDO) + ", alignx center");
 
-		jpanel.add(new JLabel("Nombre"));
-		nameField = new JTextField();
-		jpanel.add(nameField);
+		formulario = new HousingForm(false);
+		exterior.add(formulario, Layout.ancho(Layout.CONTENIDO) + ", alignx center");
 
-		jpanel.add(new JLabel("Tipo"));
-		typeField = new JComboBox<>(UploadHousingFrame.TIPOS);
-		jpanel.add(typeField);
+		error = Labels.error(" ");
+		exterior.add(error, Layout.ancho(Layout.CONTENIDO) + ", alignx center");
 
-		jpanel.add(new JLabel("Nº de habitaciones"));
-		numberOfRoomsField = new JFormattedTextField(roomsFormat);
-		jpanel.add(numberOfRoomsField);
+		exterior.add(acciones(), Layout.ancho(Layout.CONTENIDO) + ", alignx center");
 
-		jpanel.add(new JLabel("Precio por noche"));
-		pricePerNightField = new JFormattedTextField(pricePerNightFormat);
-		jpanel.add(pricePerNightField);
+		JScrollPane scroll = new JScrollPane(exterior);
+		scroll.setOpaque(false);
+		scroll.getViewport().setOpaque(false);
+		scroll.setBorder(null);
+		scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		scroll.getVerticalScrollBar().setUnitIncrement(24);
+		scroll.setMinimumSize(new Dimension(0, 0));
 
-		jpanel.add(new JLabel("Descripción"));
-		descriptionArea = new JTextArea(5, 20);
-		JScrollPane scrollPane = new JScrollPane(descriptionArea);
-		jpanel.add(scrollPane);
-		descriptionArea.setEditable(true);
+		raiz.add(headerPanel, "growx");
+		raiz.add(scroll, "grow");
 
-		jpanel.add(new JLabel("Ubicación"));
-		locationField = new JTextField();
-		jpanel.add(locationField);
-
-		jpanel.add(new JLabel("Desayuno"));
-		breakfastBox = new JCheckBox();
-		jpanel.add(breakfastBox);
-
-		jpanel.add(new JLabel("Comida"));
-		lunchBox = new JCheckBox();
-		jpanel.add(lunchBox);
-
-		jpanel.add(new JLabel("Cena"));
-		dinnerBox = new JCheckBox();
-		jpanel.add(dinnerBox);
-
-		for (Amenity amenity : Amenity.values()) {
-
-			if (amenity == Amenity.BREAKFAST) {
-				continue;
-			}
-
-			jpanel.add(new JLabel(amenity.etiqueta()));
-			JCheckBox box = new JCheckBox();
-			amenityBoxes.put(amenity, box);
-			jpanel.add(box);
-		}
-
-		JButton updateButton = new JButton("Confirmar");
-		updateButton.addActionListener(e -> update());
-		jpanel.add(updateButton);
-
-		add(jpanel);
-
+		setContentPane(raiz);
 	}
 
-	/** Rellena el formulario con lo que hay guardado hoy. */
-	private void cargarDatosActuales() {
+	private JPanel cabecera() {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[grow,fill]push[]", ""));
+		panel.setOpaque(false);
+
+		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		titulos.setOpaque(false);
+		titulos.add(Labels.capsAccent("Editar alojamiento"));
+
+		subtitulo = Labels.title(" ");
+		titulos.add(subtitulo, "gaptop " + Space.XXS);
+
+		panel.add(titulos);
+		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "top, w 56!, h 56!");
+
+		return panel;
+	}
+
+	private JPanel acciones() {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
+		fila.setOpaque(false);
+
+		fila.add(Buttons.primary("Guardar cambios", e -> guardar()), "height 44!");
+		fila.add(Buttons.link("Cancelar", e -> volverAlDetalle()));
+
+		return fila;
+	}
+
+	/**
+	 * Recarga el alojamiento desde el servicio, no desde el objeto que traía el
+	 * catálogo: si acaba de cambiar de dueño en un intercambio, el que hay en
+	 * memoria ya está desactualizado.
+	 */
+	private void recargar() {
 
 		if (housingId == null) {
 			return;
 		}
 
 		try {
+			housing = housingService.findHousing(housingId);
 
-			Housing housing = housingService.findHousing(housingId);
-
-			nameField.setText(housing.getName());
-			typeField.setSelectedItem(housing.getType());
-			numberOfRoomsField.setValue(housing.getNumberOfRooms());
-			pricePerNightField.setValue(housing.getPricePerNight());
-			descriptionArea.setText(housing.getDescription());
-			locationField.setText(housing.getLocation());
-
-			breakfastBox.setSelected(housing.isBreakfast());
-			lunchBox.setSelected(housing.isLunch());
-			dinnerBox.setSelected(housing.isDinner());
-
-			amenityBoxes.forEach((amenity, box) -> box.setSelected(amenity.presenteEn(housing)));
-
-		} catch (Exception ex) {
-			JOptionPane.showMessageDialog(this, "No se ha podido cargar el alojamiento", "Error",
-					JOptionPane.ERROR_MESSAGE);
+		} catch (InstanceNotFoundException ex) {
+			navigator.ir(ShowHousingsFrame.class);
+			return;
 		}
+
+		subtitulo.setText(housing.getName());
+		formulario.precargar(housing);
+		error.setText(" ");
 	}
 
-	private void update() {
-
-		int numberOfRooms = ((Number) numberOfRoomsField.getValue()).intValue();
-		BigDecimal pricePerNight = BigDecimal.valueOf(((Number) pricePerNightField.getValue()).doubleValue());
-
-		HousingData datos = HousingData
-				.basico(null, nameField.getText(), (String) typeField.getSelectedItem(), numberOfRooms, pricePerNight,
-						locationField.getText())
-				.description(descriptionArea.getText())
-				.breakfast(breakfastBox.isSelected())
-				.lunch(lunchBox.isSelected())
-				.dinner(dinnerBox.isSelected());
-
-		amenityBoxes.forEach((amenity, box) -> datos.amenity(amenity, box.isSelected()));
+	private void guardar() {
 
 		try {
+			housingService.updateHousing(housingId, sessionManager.getLoggedInUser().getId(),
+					formulario.datosCon(housing.getHousingCode()));
 
-			housingService.updateHousing(housingId, sessionManager.getLoggedInUser().getId(), datos);
+			volverAlDetalle();
 
-			JOptionPane.showMessageDialog(this, "Alojamiento actualizado con éxito", "Éxito",
-					JOptionPane.INFORMATION_MESSAGE);
+		} catch (DatosInvalidos ex) {
+			error.setText(ex.getMessage());
 
-			dispose();
-			HousingDetailsFrame housingDetailsFrame = context.getBean(HousingDetailsFrame.class);
-			housingDetailsFrame.loadDetails(housingService.findHousing(housingId));
-			housingDetailsFrame.setVisible(true);
+		} catch (LessThanOneRoomException ex) {
+			error.setText("El alojamiento debe tener al menos una habitación.");
 
-		} catch (Exception ex) {
-			JOptionPane.showMessageDialog(this, "Error en los datos", "Error", JOptionPane.ERROR_MESSAGE);
+		} catch (NegativePrizeException ex) {
+			error.setText("El precio por noche no puede ser negativo.");
+
+		} catch (NotTheOwnerException ex) {
+			error.setText("Solo puedes editar los alojamientos de los que eres titular.");
+
+		} catch (NotAuthorizedUserException ex) {
+			error.setText("Solo los administradores pueden editar alojamientos.");
+
+		} catch (InstanceNotFoundException ex) {
+			error.setText("El alojamiento ya no existe.");
 		}
 	}
 
+	private void volverAlDetalle() {
+		navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(housing));
+	}
 }

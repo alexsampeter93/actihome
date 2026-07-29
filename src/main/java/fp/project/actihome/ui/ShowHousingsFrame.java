@@ -434,8 +434,12 @@ public class ShowHousingsFrame extends JFrame {
 		// detalle. Se decide aquí y no dentro de la fila: la fila pinta lo que le den,
 		// no consulta la sesión. Un componente visual que sabe quién ha iniciado sesión
 		// es un componente que ya no se puede reutilizar ni probar por separado.
+		// El id va en la navegación y no se omite: sin él, la pantalla de intercambio
+		// no sabe qué alojamiento estás ofreciendo y abre vacía. Se coló al escribir
+		// esta fila en la Fase 3c, cuando la pantalla de destino todavía era la vieja y
+		// no se notaba.
 		Runnable intercambiar = puedeIntercambiar(housing)
-				? () -> navigator.ir(TradeHousingsFrame.class)
+				? () -> navigator.ir(TradeHousingsFrame.class, frame -> frame.setHousingId(housing.getId()))
 				: null;
 
 		return new HousingRow(housing, contarResenas(housing), abrir(housing), intercambiar);

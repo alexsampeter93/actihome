@@ -237,7 +237,7 @@ public class HousingRow extends JPanel {
 		fila.add(Labels.muted("por noche"), "aligny bottom, gapbottom 4");
 
 		if (alIntercambiar != null) {
-			fila.add(enlace("Intercambiar ⇄", true, alIntercambiar), "aligny bottom, gapbottom 4");
+			fila.add(enlace("Intercambiar →←", true, alIntercambiar), "aligny bottom, gapbottom 4");
 		}
 
 		return fila;

@@ -415,7 +415,7 @@ public class HousingDetailsFrame extends JFrame {
 
 		} else if (usuario != null && usuario.getRole() == RoleType.ADMIN && esPropietario) {
 			izquierda.add(Buttons.secondary("Actualizar alojamiento", e -> actualizar()), "height 44!");
-			izquierda.add(Buttons.linkAccent("Intercambiar ⇄", e -> intercambiar()), "gapleft " + Space.XL);
+			izquierda.add(Buttons.linkAccent("Intercambiar →←", e -> intercambiar()), "gapleft " + Space.XL);
 		}
 
 		fila.add(izquierda);
