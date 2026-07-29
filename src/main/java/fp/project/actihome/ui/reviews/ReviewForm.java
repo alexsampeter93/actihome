@@ -41,7 +41,7 @@ public class ReviewForm extends JPanel {
 		setOpaque(false);
 
 		titulo = Field.text("Título");
-		cuerpo = Field.textArea("Tu reseña", 110);
+		cuerpo = Field.textArea("Tu reseña", 84);
 
 		ubicacion = new StarRating("Ubicación", 0);
 		servicio = new StarRating("Servicio", 0);

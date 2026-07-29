@@ -356,7 +356,7 @@ public class TradeHousingsFrame extends JFrame {
 		Card card = new Card(new MigLayout("wrap 1, " + Space.insets(Space.MD), "[grow,fill]", ""));
 
 		card.add(new ImagePlaceholder(housing.getType(), housing.isAvailable() ? "Disponible" : "Reservada",
-				housing.isAvailable(), housing.getImage()), "h 100!, growx, gapbottom " + Space.SM);
+				housing.isAvailable(), housing.getImage()), "h 84!, growx, gapbottom " + Space.SM);
 
 		card.add(Labels.capsAccent("Nº " + housing.getHousingCode()));
 
@@ -382,7 +382,7 @@ public class TradeHousingsFrame extends JFrame {
 
 		Card card = new Card(new MigLayout("wrap 1, " + Space.insets(Space.MD), "[grow,fill]", ""));
 
-		card.add(new ImagePlaceholder(), "h 100!, growx, gapbottom " + Space.SM);
+		card.add(new ImagePlaceholder(), "h 84!, growx, gapbottom " + Space.SM);
 		card.add(Labels.muted("Escribe abajo el código del alojamiento que quieres"), "gaptop " + Space.XXS);
 		card.add(Labels.muted("y pulsa Buscar para verlo aquí antes de confirmar."));
 
