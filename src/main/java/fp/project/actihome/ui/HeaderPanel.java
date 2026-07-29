@@ -27,6 +27,7 @@ import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
+import fp.project.actihome.ui.brand.AboutDialog;
 import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.SeasonGlyph;
@@ -234,6 +235,9 @@ public class HeaderPanel extends JPanel {
 		JMenuItem contrasena = new JMenuItem("Cambiar contraseña");
 		contrasena.addActionListener(e -> navigator.ir(ChangePasswordFrame.class));
 
+		JMenuItem acerca = new JMenuItem("Acerca de ActiHome");
+		acerca.addActionListener(e -> AboutDialog.mostrar(SwingUtilities.getWindowAncestor(this)));
+
 		JMenuItem salir = new JMenuItem("Cerrar sesión");
 		salir.addActionListener(e -> {
 			sessionManager.logout();
@@ -243,6 +247,7 @@ public class HeaderPanel extends JPanel {
 		menu.add(perfil);
 		menu.add(contrasena);
 		menu.addSeparator();
+		menu.add(acerca);
 		menu.add(salir);
 
 		return menu;

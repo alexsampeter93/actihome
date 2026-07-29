@@ -1,10 +1,19 @@
 package fp.project.actihome.ui.components;
 
 import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.LayoutManager;
 
-import javax.swing.JPanel;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
+import javax.swing.JPanel;
+import javax.swing.Timer;
+
+import fp.project.actihome.ui.theme.Particulas;
 import fp.project.actihome.ui.theme.Theme;
 
 /**
@@ -34,6 +43,14 @@ public class Page extends JPanel {
 
 	private static final long serialVersionUID = 1L;
 
+	/** 40 ms ≈ 25 fotogramas por segundo. Para algo que flota despacio, sobra. */
+	private static final int MILIS_POR_FOTOGRAMA = 40;
+
+	private final transient List<Particulas.Pieza> piezas = new ArrayList<>();
+	private final transient Random azar = new Random();
+
+	private transient Timer animacion;
+
 	public Page(LayoutManager layout) {
 
 		super(layout);
@@ -43,10 +60,79 @@ public class Page extends JPanel {
 		setOpaque(true);
 	}
 
+	/**
+	 * Arranca la animación cuando la pantalla entra de verdad en la ventana.
+	 *
+	 * <p>
+	 * <b>Por qué aquí y no en el constructor.</b> Los frames son singleton de
+	 * Spring: se construyen una vez y viven toda la sesión, pero solo uno está
+	 * visible. Un temporizador arrancado en el constructor seguiría latiendo en las
+	 * dieciséis pantallas ocultas, repintando ventanas que nadie ve.
+	 * {@code addNotify} y {@code removeNotify} son los dos únicos puntos que Swing
+	 * garantiza al entrar y salir de la jerarquía visible, así que son el sitio
+	 * correcto para cualquier recurso que deba vivir solo mientras se ve.
+	 */
+	@Override
+	public void addNotify() {
+
+		super.addNotify();
+
+		if (animacion == null) {
+			animacion = new Timer(MILIS_POR_FOTOGRAMA, e -> avanzar());
+			animacion.start();
+		}
+	}
+
+	@Override
+	public void removeNotify() {
+
+		if (animacion != null) {
+			animacion.stop();
+			animacion = null;
+		}
+
+		piezas.clear();
+		super.removeNotify();
+	}
+
+	/**
+	 * Mueve las partículas y pide repintar <b>solo</b> lo que se ha movido.
+	 *
+	 * <p>
+	 * Un {@code repaint()} a secas marcaría sucia la pantalla entera veinticinco
+	 * veces por segundo, y con ella todas las filas del catálogo. Repintar la caja
+	 * de cada pieza deja el área sucia en unos pocos cientos de píxeles.
+	 */
+	private void avanzar() {
+
+		if (!isShowing() || getWidth() <= 0) {
+			return;
+		}
+
+		while (piezas.size() < Particulas.CUANTAS) {
+			piezas.add(new Particulas.Pieza(azar, getWidth(), getHeight()));
+		}
+
+		for (Particulas.Pieza pieza : piezas) {
+
+			Rectangle sucio = pieza.avanzar(getWidth(), getHeight());
+			repaint(sucio.x, sucio.y, sucio.width, sucio.height);
+		}
+	}
+
 	@Override
 	protected void paintComponent(Graphics g) {
 
 		g.setColor(Theme.bg());
 		g.fillRect(0, 0, getWidth(), getHeight());
+
+		Graphics2D g2 = (Graphics2D) g.create();
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+		for (Particulas.Pieza pieza : piezas) {
+			pieza.pintar(g2);
+		}
+
+		g2.dispose();
 	}
 }

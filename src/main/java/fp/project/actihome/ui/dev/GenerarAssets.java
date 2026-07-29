@@ -8,6 +8,8 @@ import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -90,6 +92,153 @@ public final class GenerarAssets {
 
 		olaz(origenes, new File(destino, "olaz"));
 		iconos(origenes, new File(destino, "brand"));
+		lockup(origenes, new File(destino, "brand"));
+	}
+
+	/**
+	 * El lockup "CocoBrain presenta", <b>sin su fondo</b>.
+	 *
+	 * <p>
+	 * El original es una ilustración sobre un rectángulo crema. En el splash ese
+	 * rectángulo tapaba el fondo decorativo de la aplicación, así que se recorta
+	 * para que el logotipo se apoye directamente sobre el dibujo.
+	 *
+	 * <p>
+	 * <b>Por qué no vale un simple "todo lo claro, fuera".</b> Dentro del logotipo
+	 * hay zonas tan claras como el fondo —las manos blancas del personaje y el
+	 * rosa del cerebro— y un umbral por luminosidad las borraría también. La
+	 * solución es {@link #recortarFondo}, que no mira el color de cada píxel
+	 * aislado sino <b>si está conectado con el borde de la imagen</b>: el crema de
+	 * alrededor sí lo está; una mano blanca en mitad del dibujo, no.
+	 */
+	private static void lockup(File origenes, File destino) throws IOException {
+
+		BufferedImage original = ImageIO.read(new File(origenes, "Presentacion.png"));
+		BufferedImage sinFondo = recortar(recortarFondo(original));
+		BufferedImage reducido = escalarACaja(sinFondo, 900);
+
+		File salida = new File(destino, "cocobrain-presenta.png");
+		ImageIO.write(reducido, "png", salida);
+
+		System.out.printf("cocobrain-presenta  %dx%d -> %dx%d  %d KB%n", original.getWidth(), original.getHeight(),
+				reducido.getWidth(), reducido.getHeight(), salida.length() / 1024);
+	}
+
+	/**
+	 * Hace transparente el fondo de una ilustración, respetando las zonas claras
+	 * que estén dentro del dibujo.
+	 *
+	 * <p>
+	 * Dos pasos. Primero un <b>relleno por inundación</b> desde los cuatro bordes:
+	 * se propaga por los píxeles cuyo color se parece al del borde, y así se marca
+	 * exactamente la región de fondo, que es la única conectada con el exterior.
+	 * Después, para que el recorte no quede dentado, cada píxel marcado recibe un
+	 * alfa proporcional a lo <em>distinto</em> que sea del color de fondo: el crema
+	 * puro desaparece del todo y la sombra suave que el logotipo proyecta sobre él
+	 * queda semitransparente, que es lo que hace que se funda con el dibujo de
+	 * detrás en lugar de recortarse con tijera.
+	 */
+	private static BufferedImage recortarFondo(BufferedImage origen) {
+
+		int ancho = origen.getWidth();
+		int alto = origen.getHeight();
+
+		Color fondo = colorMedioDelBorde(origen);
+
+		// Hasta esta distancia el píxel se considera fondo puro; a partir de la
+		// segunda, dibujo. Entre las dos se reparte el degradado del borde.
+		double dentro = 26;
+		double fuera = 78;
+
+		boolean[] esFondo = new boolean[ancho * alto];
+		Deque<int[]> pendientes = new ArrayDeque<>();
+
+		for (int x = 0; x < ancho; x++) {
+			encolar(pendientes, esFondo, origen, fondo, fuera, x, 0, ancho);
+			encolar(pendientes, esFondo, origen, fondo, fuera, x, alto - 1, ancho);
+		}
+
+		for (int y = 0; y < alto; y++) {
+			encolar(pendientes, esFondo, origen, fondo, fuera, 0, y, ancho);
+			encolar(pendientes, esFondo, origen, fondo, fuera, ancho - 1, y, ancho);
+		}
+
+		while (!pendientes.isEmpty()) {
+
+			int[] p = pendientes.pop();
+
+			for (int[] vecino : new int[][] { { p[0] + 1, p[1] }, { p[0] - 1, p[1] }, { p[0], p[1] + 1 },
+					{ p[0], p[1] - 1 } }) {
+
+				if (vecino[0] >= 0 && vecino[0] < ancho && vecino[1] >= 0 && vecino[1] < alto) {
+					encolar(pendientes, esFondo, origen, fondo, fuera, vecino[0], vecino[1], ancho);
+				}
+			}
+		}
+
+		BufferedImage salida = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_ARGB);
+
+		for (int y = 0; y < alto; y++) {
+			for (int x = 0; x < ancho; x++) {
+
+				int rgb = origen.getRGB(x, y);
+
+				if (!esFondo[y * ancho + x]) {
+					salida.setRGB(x, y, rgb | 0xFF000000);
+					continue;
+				}
+
+				double d = distancia(rgb, fondo);
+				double alfa = Math.max(0, Math.min(1, (d - dentro) / (fuera - dentro)));
+
+				salida.setRGB(x, y, (rgb & 0x00FFFFFF) | ((int) Math.round(alfa * 255) << 24));
+			}
+		}
+
+		return salida;
+	}
+
+	private static void encolar(Deque<int[]> pendientes, boolean[] esFondo, BufferedImage img, Color fondo,
+			double umbral, int x, int y, int ancho) {
+
+		int i = y * ancho + x;
+
+		if (esFondo[i] || distancia(img.getRGB(x, y), fondo) > umbral) {
+			return;
+		}
+
+		esFondo[i] = true;
+		pendientes.push(new int[] { x, y });
+	}
+
+	/** El color del fondo, promediado en el marco exterior de la imagen. */
+	private static Color colorMedioDelBorde(BufferedImage img) {
+
+		long r = 0;
+		long g = 0;
+		long b = 0;
+		long n = 0;
+
+		for (int x = 0; x < img.getWidth(); x++) {
+			for (int y : new int[] { 0, img.getHeight() - 1 }) {
+				int c = img.getRGB(x, y);
+				r += (c >> 16) & 0xFF;
+				g += (c >> 8) & 0xFF;
+				b += c & 0xFF;
+				n++;
+			}
+		}
+
+		return new Color((int) (r / n), (int) (g / n), (int) (b / n));
+	}
+
+	private static double distancia(int rgb, Color referencia) {
+
+		int dr = ((rgb >> 16) & 0xFF) - referencia.getRed();
+		int dg = ((rgb >> 8) & 0xFF) - referencia.getGreen();
+		int db = (rgb & 0xFF) - referencia.getBlue();
+
+		return Math.sqrt((double) dr * dr + (double) dg * dg + (double) db * db);
 	}
 
 	private static void olaz(File origenes, File destino) throws IOException {
