@@ -82,6 +82,7 @@ public class HeaderPanel extends JPanel {
 	private final transient Navigator navigator;
 
 	private final List<Destino> destinos = new ArrayList<>();
+	private JPanel navegacion;
 	private JPanel zonaUsuario;
 	private Class<?> pantallaActual;
 
@@ -106,8 +107,27 @@ public class HeaderPanel extends JPanel {
 		repaint();
 	}
 
-	/** Recarga lo que depende del usuario de la sesión. */
+	/**
+	 * Recarga lo que depende del usuario de la sesión.
+	 *
+	 * <p>
+	 * Reconstruye también los <b>destinos de navegación</b>, no solo el avatar y
+	 * el nombre. Se descubrió por qué hace falta al ver una captura de esta misma
+	 * fase: como los frames son singleton, la primera vez que alguien abre una
+	 * pantalla queda fijado <em>para siempre</em> qué {@code HeaderPanel} usa esa
+	 * pantalla —se inyecta una vez, en el constructor—. Si esa primera vez fue con
+	 * un CUSTOMER conectado, "Mis reservas" quedaba en la barra aunque después se
+	 * cerrara sesión y entrara un ADMIN, porque {@code initUI()} solo decidía los
+	 * destinos una vez y nadie los volvía a mirar. Ahora {@code esCliente()} se
+	 * vuelve a evaluar en cada visita, igual que ya hacía la zona de usuario.
+	 */
 	public void refresh() {
+
+		navegacion.removeAll();
+		destinos.clear();
+		construirNavegacion();
+		navegacion.revalidate();
+		navegacion.repaint();
 
 		zonaUsuario.removeAll();
 		construirZonaUsuario();
@@ -126,21 +146,24 @@ public class HeaderPanel extends JPanel {
 		add(new SeasonGlyph(16), "w 16!, h 16!");
 		add(wordmark());
 
-		JPanel navegacion = new JPanel(new MigLayout(Space.insets(0), "", "[]"));
+		navegacion = new JPanel(new MigLayout(Space.insets(0), "", "[]"));
 		navegacion.setOpaque(false);
-
-		anadirDestino(navegacion, "Catálogo", ShowHousingsFrame.class);
-
-		if (esCliente()) {
-			anadirDestino(navegacion, "Mis reservas", ShowMyReservationsFrame.class);
-		}
-
+		construirNavegacion();
 		add(navegacion);
 
 		zonaUsuario = new JPanel(new MigLayout(Space.insets(0), "[]9[]", "[]"));
 		zonaUsuario.setOpaque(false);
 		construirZonaUsuario();
 		add(zonaUsuario);
+	}
+
+	private void construirNavegacion() {
+
+		anadirDestino(navegacion, "Catálogo", ShowHousingsFrame.class);
+
+		if (esCliente()) {
+			anadirDestino(navegacion, "Mis reservas", ShowMyReservationsFrame.class);
+		}
 	}
 
 	private boolean esCliente() {

@@ -1,10 +1,7 @@
 package fp.project.actihome.ui.catalog;
 
 import java.awt.Cursor;
-import java.awt.Dimension;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.font.TextAttribute;
@@ -20,6 +17,7 @@ import fp.project.actihome.model.entities.Amenity;
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.ImagePlaceholder;
+import fp.project.actihome.ui.components.InlineScore;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Space;
@@ -154,14 +152,10 @@ public class HousingRow extends JPanel {
 	private JPanel valoracion(int resenas) {
 
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0),
-				"[]" + Space.SM + "[]" + Space.MD + "[]" + Space.MD + "[]" + Space.MD + "[]", ""));
+				"[]" + Space.MD + "[]" + Space.MD + "[]" + Space.MD + "[]", ""));
 		fila.setOpaque(false);
 
-		JLabel nota = Labels.body(Formato.nota(housing.getScore()));
-		nota.setFont(Typography.serifMedium(19f));
-		fila.add(nota);
-
-		fila.add(new BarraFina(housing.getScore()), "w 64!, h 3!, aligny center");
+		fila.add(new InlineScore(housing.getScore(), 19f, 64));
 
 		fila.add(Labels.muted(resenas == 0 ? "sin reseñas" : Formato.plural(resenas, "reseña", "reseñas")));
 		fila.add(Labels.muted(Formato.plural(housing.getNumberOfRooms(), "habitación", "habitaciones")));
@@ -284,39 +278,6 @@ public class HousingRow extends JPanel {
 
 			g.setColor(Theme.mut());
 			g.fillRect(0, getHeight() / 2, getWidth(), 1);
-		}
-	}
-
-	/** Barra de puntuación reducida a su mínima expresión, para la línea de meta. */
-	private static class BarraFina extends JComponent {
-
-		private static final long serialVersionUID = 1L;
-
-		private final transient Double nota;
-
-		BarraFina(Double nota) {
-			this.nota = nota;
-			setPreferredSize(new Dimension(64, 3));
-		}
-
-		@Override
-		protected void paintComponent(Graphics g) {
-
-			Graphics2D g2 = (Graphics2D) g.create();
-			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-			int ancho = getWidth();
-			int alto = getHeight();
-
-			g2.setColor(Theme.HAIRLINE);
-			g2.fillRect(0, 0, ancho, alto);
-
-			if (nota != null) {
-				g2.setColor(Theme.acc());
-				g2.fillRect(0, 0, (int) Math.round(ancho * Math.max(0, Math.min(5.0, nota)) / 5.0), alto);
-			}
-
-			g2.dispose();
 		}
 	}
 }

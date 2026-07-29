@@ -96,7 +96,7 @@ public class ReservationServiceImpl implements ReservationService {
 	}
 
 	@Override
-	public Reservation doCkeckIn(Long customerId, Long reservationId, Long reservationCode)
+	public Reservation doCheckIn(Long customerId, Long reservationId, Long reservationCode)
 			throws CodeDoesNotMatchException, InstanceNotFoundException, NotMyReservationException,
 			CannotCheckInException, AlreadyCheckedInException {
 

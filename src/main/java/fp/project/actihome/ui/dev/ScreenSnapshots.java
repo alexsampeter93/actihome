@@ -9,7 +9,8 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
-
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -18,11 +19,21 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.context.ConfigurableApplicationContext;
 
+import java.math.BigDecimal;
+
 import fp.project.actihome.ActihomeApplication;
+import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.Reservation;
+import fp.project.actihome.model.entities.ReservationDao;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
+import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.UserService;
+import fp.project.actihome.ui.DoCheckInFrame;
+import fp.project.actihome.ui.HousingDetailsFrame;
+import fp.project.actihome.ui.ReserveHousingFrame;
 import fp.project.actihome.ui.ShowHousingsFrame;
+import fp.project.actihome.ui.ShowMyReservationsFrame;
 import fp.project.actihome.ui.components.Segmented;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
@@ -96,27 +107,115 @@ public final class ScreenSnapshots {
 
 			comprobarQueLaBaseEsDesechable(context);
 
-			abrirSesion(context, rol);
+			if ("fase4".equals(prefijo)) {
+				capturarFase4(context);
 
-			ShowHousingsFrame catalogo = context.getBean(ShowHousingsFrame.class);
+			} else {
 
-			for (Season estacion : Season.values()) {
+				abrirSesion(context, "alex", rol);
 
-				Theme.cambiarA(estacion);
-				guardar(catalogo, prefijo + "-" + estacion.name().toLowerCase());
+				ShowHousingsFrame catalogo = context.getBean(ShowHousingsFrame.class);
+
+				for (Season estacion : Season.values()) {
+
+					Theme.cambiarA(estacion);
+					guardar(catalogo, prefijo + "-" + estacion.name().toLowerCase());
+				}
+
+				// Y la otra vista, para poder compararlas. Se cambia por código en lugar de
+				// simular un clic: el conmutador expone setActivo justamente para esto.
+				Theme.cambiarA(Season.VERANO);
+				buscarConmutador(catalogo).setActivo(1);
+				guardar(catalogo, prefijo + "-cuadricula");
 			}
-
-			// Y la otra vista, para poder compararlas. Se cambia por código en lugar de
-			// simular un clic: el conmutador expone setActivo justamente para esto.
-			Theme.cambiarA(Season.VERANO);
-			buscarConmutador(catalogo).setActivo(1);
-			guardar(catalogo, prefijo + "-cuadricula");
 		}
 
 		// Swing deja hilos vivos (el de eventos, el de temporizadores) que impedirían
 		// que el proceso termine solo. En una herramienta de línea de comandos eso se
 		// traduce en una consola colgada.
 		System.exit(0);
+	}
+
+	/**
+	 * Captura las cuatro pantallas de la Fase 4: detalle (como cliente y como
+	 * propietario), reservar, mis reservas y check-in.
+	 *
+	 * <p>
+	 * Para "mis reservas" hacen falta sus tres estados a la vez —pendiente,
+	 * realizado y completada— y el servicio no permite crear ninguno directamente:
+	 * {@code reserveHousing} exige que la entrada no sea anterior a hoy, así que
+	 * nunca se puede pedir una reserva ya completada por ese camino. Aquí no hace
+	 * falta respetar esa regla: se están fabricando datos de attrezzo para una
+	 * captura, no ejercitando el flujo de negocio, así que las tres reservas se
+	 * escriben directamente con el DAO.
+	 */
+	private static void capturarFase4(ConfigurableApplicationContext context) throws IOException {
+
+		Theme.cambiarA(Season.VERANO);
+
+		HousingService housingService = context.getBean(HousingService.class);
+		Housing paraDetalle = housingService.showHousings().stream()
+				.filter(h -> h.getHousingCode().equals(10001L)).findFirst().orElseThrow(IllegalStateException::new);
+		Housing paraReservar = housingService.showHousings().stream()
+				.filter(h -> h.getHousingCode().equals(10002L)).findFirst().orElseThrow(IllegalStateException::new);
+
+		// Detalle visto por un CUSTOMER: aparece "Reservar".
+		User cliente = abrirSesion(context, "cliente", RoleType.CUSTOMER);
+		HousingDetailsFrame detalle = context.getBean(HousingDetailsFrame.class);
+		detalle.loadDetails(paraDetalle);
+		guardar(detalle, "fase4-detalle-cliente");
+
+		ReserveHousingFrame reservar = context.getBean(ReserveHousingFrame.class);
+		reservar.setHousingId(paraReservar.getId());
+		guardar(reservar, "fase4-reservar");
+
+		List<Reservation> reservas = crearReservasDeEjemplo(context, cliente, housingService);
+
+		ShowMyReservationsFrame misReservas = context.getBean(ShowMyReservationsFrame.class);
+		guardar(misReservas, "fase4-mis-reservas");
+
+		DoCheckInFrame checkIn = context.getBean(DoCheckInFrame.class);
+		checkIn.setReservation(reservas.get(0));
+		guardar(checkIn, "fase4-checkin");
+
+		// Detalle visto por el ADMIN propietario: aparecen "Actualizar" e
+		// "Intercambiar" en vez de "Reservar". Se inicia sesión como la propia
+		// "Lucia" sembrada en data.sql —dueña real de paraDetalle (10001)— en lugar de
+		// crear un usuario nuevo, que no sería propietario de nada. Esto solo funciona
+		// desde la Fase 3d, que sustituyó la contraseña en texto plano de los usuarios
+		// de ejemplo por un hash BCrypt real.
+		iniciarSesionComo(context, "Lucia");
+		HousingDetailsFrame detalleAdmin = context.getBean(HousingDetailsFrame.class);
+		detalleAdmin.loadDetails(paraDetalle);
+		guardar(detalleAdmin, "fase4-detalle-propietario");
+	}
+
+	/** Tres reservas del mismo cliente, una en cada estado visual. */
+	private static List<Reservation> crearReservasDeEjemplo(ConfigurableApplicationContext context, User cliente,
+			HousingService housingService) {
+
+		ReservationDao reservationDao = context.getBean(ReservationDao.class);
+		List<Housing> housings = housingService.showHousings();
+
+		List<Reservation> creadas = new ArrayList<>();
+
+		creadas.add(reservationDao.save(reservaDeEjemplo(1001L, LocalDateTime.now().plusDays(5),
+				LocalDateTime.now().plusDays(8), false, cliente, housings.get(0))));
+
+		creadas.add(reservationDao.save(reservaDeEjemplo(1002L, LocalDateTime.now().minusDays(1),
+				LocalDateTime.now().plusDays(3), true, cliente, housings.get(1))));
+
+		creadas.add(reservationDao.save(reservaDeEjemplo(1003L, LocalDateTime.now().minusDays(20),
+				LocalDateTime.now().minusDays(15), true, cliente, housings.get(3))));
+
+		return creadas;
+	}
+
+	private static Reservation reservaDeEjemplo(Long codigo, LocalDateTime checkIn, LocalDateTime checkOut,
+			boolean checkedIn, User cliente, Housing housing) {
+
+		return new Reservation(codigo, checkIn, checkOut, "Tarjeta de crédito", LocalDateTime.now().minusDays(30),
+				housing.getPricePerNight().multiply(BigDecimal.valueOf(3)), checkedIn, cliente, housing);
 	}
 
 	private static void guardar(JFrame ventana, String nombre) throws IOException {
@@ -176,14 +275,17 @@ public final class ScreenSnapshots {
 	 * Se pasa por {@code signUp} en lugar de insertar la fila a mano para que la
 	 * contraseña quede cifrada con BCrypt igual que en la aplicación real. La base es
 	 * en memoria, así que este usuario desaparece al terminar.
+	 *
+	 * @return el usuario creado, para poder usarlo al fabricar datos de attrezzo
+	 *         (reservas, por ejemplo) sin volver a consultar la base
 	 */
-	private static void abrirSesion(ConfigurableApplicationContext context, RoleType rol) {
+	private static User abrirSesion(ConfigurableApplicationContext context, String username, RoleType rol) {
 
 		UserService userService = context.getBean(UserService.class);
 		SessionManager sessionManager = context.getBean(SessionManager.class);
 
-		User usuario = new User("alex", "1234", "Alejandro", "Sampedro", "Coruña", 666777892,
-				"alex@actihome.example", LocalDateTime.now().minusYears(32), rol);
+		User usuario = new User(username, "1234", "Alejandro", "Sampedro", "Coruña", 666777892,
+				username + "@actihome.example", LocalDateTime.now().minusYears(32), rol);
 
 		try {
 			userService.signUp(usuario);
@@ -192,6 +294,21 @@ public final class ScreenSnapshots {
 		}
 
 		sessionManager.login(usuario);
+
+		return usuario;
+	}
+
+	/** Inicia sesión como un usuario ya sembrado en {@code data.sql}, con su contraseña real. */
+	private static void iniciarSesionComo(ConfigurableApplicationContext context, String username) {
+
+		UserService userService = context.getBean(UserService.class);
+		SessionManager sessionManager = context.getBean(SessionManager.class);
+
+		try {
+			sessionManager.login(userService.login(username, "1234"));
+		} catch (Exception ex) {
+			throw new IllegalStateException("No se pudo iniciar sesión como " + username, ex);
+		}
 	}
 
 	/**

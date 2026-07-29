@@ -23,7 +23,7 @@ public interface ReservationService {
 
 	ArrayList<Reservation> showMyReservations(Long customerId) throws InstanceNotFoundException;
 
-	Reservation doCkeckIn(Long customerId, Long reservationId, Long reservationCode)
+	Reservation doCheckIn(Long customerId, Long reservationId, Long reservationCode)
 			throws CodeDoesNotMatchException, InstanceNotFoundException, NotMyReservationException, CannotCheckInException,
 			AlreadyCheckedInException; 
 

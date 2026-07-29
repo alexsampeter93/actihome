@@ -1,63 +1,73 @@
 package fp.project.actihome.ui;
 
-import java.awt.BorderLayout;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
+import java.awt.Dimension;
+import java.util.List;
 
-import javax.swing.BorderFactory;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.ScrollPaneConstants;
 
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import net.miginfocom.swing.MigLayout;
+
 import fp.project.actihome.model.entities.Reservation;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.services.ReservationService;
+import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Hairline;
+import fp.project.actihome.ui.components.Labels;
+import fp.project.actihome.ui.components.MascotSlot;
+import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.nav.Navigator;
+import fp.project.actihome.ui.reservations.ReservationRow;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
+import fp.project.actihome.ui.theme.Space;
 
+/**
+ * Mis reservas: el historial de un CUSTOMER, más reciente primero.
+ *
+ * <p>
+ * Cabecera de alto fijo, lista con scroll ocupando el resto — la misma regla
+ * de escritorio que el catálogo. Aquí no hay filtros ni buscador porque no
+ * hacen falta: las reservas de una persona son pocas, y una lista corta no
+ * necesita herramientas para recorrerla.
+ */
 @Component
 @Profile("!test")
 @Lazy
 public class ShowMyReservationsFrame extends JFrame {
 
-	private final ReservationService reservationService;
-	private ApplicationContext context;
-	private SessionManager sessionManager;
-	private Long housingId;
-	private HeaderPanel headerPanel;
+	private static final long serialVersionUID = 1L;
 
-	private DefaultTableModel reservationsModel;
-	private JTable reservationsTable;
+	private final transient ReservationService reservationService;
+	private final transient SessionManager sessionManager;
+	private final transient Navigator navigator;
+	private final HeaderPanel headerPanel;
 
-	public ShowMyReservationsFrame(ReservationService reservationService, ApplicationContext context,
-			SessionManager sessionManager, HeaderPanel headerPanel) {
+	private JPanel lista;
+
+	public ShowMyReservationsFrame(ReservationService reservationService, SessionManager sessionManager,
+			Navigator navigator, HeaderPanel headerPanel) {
 
 		this.reservationService = reservationService;
-		this.context = context;
 		this.sessionManager = sessionManager;
+		this.navigator = navigator;
 		this.headerPanel = headerPanel;
+
 		initUI();
 	}
 
 	@Override
 	public void setVisible(boolean visible) {
-		if (visible) {
-			try {
-				loadReservations();
-			} catch (InstanceNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
 
+		if (visible) {
 			headerPanel.refresh();
+			cargarReservas();
 		}
 
 		super.setVisible(visible);
@@ -65,92 +75,119 @@ public class ShowMyReservationsFrame extends JFrame {
 
 	private void initUI() {
 
-		setTitle("Actihome");
-		setSize(500, 500);
+		setTitle("ActiHome");
+		setSize(1000, 780);
+		setMinimumSize(new Dimension(820, 620));
 		setLocationRelativeTo(null);
 
-		JPanel jpanel = new JPanel(new BorderLayout());
-		jpanel.setBorder(BorderFactory.createTitledBorder("Mis reservas"));
+		headerPanel.marcarActual(ShowMyReservationsFrame.class);
 
-		String[] columns = { "ID", "Código de reserva", "Fecha check-In", "Fecha check-Out", "Método de pago",
-				"Fecha de reserva", "Precio total", "Check-in" };
+		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[]0[grow,fill]"));
 
-		reservationsModel = new DefaultTableModel(columns, 0) {
-			/**
-			 * 
-			 */
-			private static final long serialVersionUID = 1L;
+		raiz.add(headerPanel, "growx");
+		raiz.add(titular(), "growx");
+		raiz.add(zonaDeLista(), "grow");
 
-			@Override
-			public boolean isCellEditable(int row, int column) {
-				return false;
-			}
-		};
-
-		reservationsTable = new JTable(reservationsModel);
-		reservationsTable.getColumnModel().getColumn(0).setMinWidth(0);
-		reservationsTable.getColumnModel().getColumn(0).setMaxWidth(0);
-		reservationsTable.getColumnModel().getColumn(0).setPreferredWidth(0);
-		reservationsTable.setRowHeight(40);
-		reservationsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		reservationsTable.addMouseListener(new MouseAdapter() {
-
-			@Override
-			public void mouseClicked(MouseEvent e) {
-
-				if (e.getClickCount() == 2) {
-					doCheckIn();
-				}
-			}
-		});
-
-		JScrollPane scrollPane = new JScrollPane(reservationsTable);
-
-		jpanel.add(scrollPane, BorderLayout.CENTER);
-
-		add(headerPanel, BorderLayout.NORTH);
-		add(jpanel);
-
+		setContentPane(raiz);
 	}
 
-	private void loadReservations() throws InstanceNotFoundException {
+	private JPanel titular() {
 
-		reservationsModel.setRowCount(0);
+		JPanel panel = new JPanel(
+				new MigLayout(Space.insets(Space.XL, Space.HUGE, Space.LG, Space.HUGE), "[grow,fill]", "[]"));
+		panel.setOpaque(false);
 
-		ArrayList<Reservation> reservationsList = reservationService
-				.showMyReservations(sessionManager.getLoggedInUser().getId());
+		panel.add(Labels.title("Mis reservas"));
 
-		for (Reservation reservation : reservationsList) {
-
-			String checkedIn = "";
-			if (reservation.isCheckedIn()) {
-				checkedIn = "Hecho";
-			} else {
-				checkedIn = "Pendiente";
-			}
-
-			reservationsModel.addRow(new Object[] { reservation.getId(), reservation.getReservationCode(),
-					reservation.getCheckIn(), reservation.getCheckOut(), reservation.getPaymentMethod(),
-					reservation.getReservationDate(), reservation.getTotalPrice(), checkedIn });
-
-		}
+		return panel;
 	}
 
-	private void doCheckIn() {
+	private JScrollPane zonaDeLista() {
 
-		int selectedRow = reservationsTable.getSelectedRow();
+		lista = new JPanel(
+				new MigLayout("wrap 1, " + Space.insets(0, Space.HUGE, Space.XXL, Space.HUGE), "[grow,fill]", "[]"));
+		lista.setOpaque(false);
 
-		if (selectedRow == -1) {
+		JScrollPane scroll = new JScrollPane(lista);
+		scroll.setOpaque(false);
+		scroll.getViewport().setOpaque(false);
+		scroll.setBorder(null);
+		scroll.setViewportBorder(null);
+		scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+		scroll.getVerticalScrollBar().setUnitIncrement(24);
 
+		// Mínimo cero: si la ventana se queda corta, el espacio se lo quita la lista
+		// —que tiene scroll para eso— y no la cabecera. Ver la nota extensa sobre este
+		// mismo problema en ShowHousingsFrame.
+		scroll.setMinimumSize(new Dimension(0, 0));
+
+		return scroll;
+	}
+
+	private void cargarReservas() {
+
+		lista.removeAll();
+
+		List<Reservation> reservas;
+
+		try {
+			reservas = reservationService.showMyReservations(sessionManager.getLoggedInUser().getId());
+
+		} catch (InstanceNotFoundException ex) {
+			// No debería ocurrir: el id viene de la sesión activa. Si el usuario ha sido
+			// eliminado a mitad de sesión —algo que hoy no tiene ni siquiera un botón que
+			// lo provoque— lo razonable es volver al login y no enseñar una lista muerta.
+			navigator.ir(LoginFrame.class);
 			return;
 		}
 
-		Long reservationId = (Long) reservationsTable.getValueAt(selectedRow, 0);
+		if (reservas.isEmpty()) {
+			lista.add(estadoVacio(), "growx");
 
-		dispose();
-		DoCheckInFrame doCheckInFrame = context.getBean(DoCheckInFrame.class);
-		doCheckInFrame.setReservationId(reservationId);
-		doCheckInFrame.setVisible(true);
+		} else {
+			boolean primera = true;
 
+			for (Reservation reserva : reservas) {
+
+				if (!primera) {
+					lista.add(Hairline.horizontal(), "growx, h 1!");
+				}
+
+				lista.add(fila(reserva), "growx");
+				primera = false;
+			}
+		}
+
+		lista.revalidate();
+		lista.repaint();
+	}
+
+	private ReservationRow fila(Reservation reserva) {
+
+		return new ReservationRow(reserva,
+				() -> navigator.ir(DoCheckInFrame.class, frame -> frame.setReservation(reserva)));
+	}
+
+	private JPanel estadoVacio() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.HUGE, 0, Space.HUGE, 0), "[grow,fill]",
+				"[]" + Space.LG + "[]" + Space.XS + "[]" + Space.LG + "[]"));
+		panel.setOpaque(false);
+
+		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO)));
+		panel.add(centrar(Labels.title("Todavía no tienes reservas")));
+		panel.add(centrar(Labels.muted("Cuando reserves un alojamiento, aparecerá aquí.")));
+		panel.add(centrar(Buttons.link("Ir al catálogo →", e -> navigator.ir(ShowHousingsFrame.class))));
+
+		return panel;
+	}
+
+	private JPanel centrar(JComponent componente) {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "push[]push", ""));
+		fila.setOpaque(false);
+		fila.add(componente);
+		return fila;
 	}
 }

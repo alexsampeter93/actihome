@@ -43,6 +43,7 @@ public final class Typography {
 	// sueltas.
 	public static final float HERO = 46f;
 	public static final float SCREEN_TITLE = 32f;
+	public static final float DETAIL_TITLE = 36f;
 	public static final float CARD_TITLE_LG = 32f;
 	public static final float CARD_TITLE = 21f;
 	public static final float PRICE_LG = 34f;

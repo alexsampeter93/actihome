@@ -276,7 +276,7 @@ public class ReservationServiceTests {
 				"1234567890123456", entrada(), salida());
 
 		reservation.setCheckIn(LocalDateTime.now().minusHours(1));
-		Reservation checkedInReservation = reservationService.doCkeckIn(customer.getId(), reservation.getId(),
+		Reservation checkedInReservation = reservationService.doCheckIn(customer.getId(), reservation.getId(),
 				reservation.getReservationCode());
 
 		assertTrue(checkedInReservation.isCheckedIn());
@@ -295,7 +295,7 @@ public class ReservationServiceTests {
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
 				"1234567890123456", entrada(), salida());
 
-		assertThrows(CannotCheckInException.class, () -> reservationService.doCkeckIn(customer.getId(),
+		assertThrows(CannotCheckInException.class, () -> reservationService.doCheckIn(customer.getId(),
 				reservation.getId(), reservation.getReservationCode()));
 	}
 
@@ -314,7 +314,7 @@ public class ReservationServiceTests {
 		reservation.setCheckedIn(true);
 		reservation.setCheckIn(LocalDateTime.now().minusHours(1));
 
-		assertThrows(AlreadyCheckedInException.class, () -> reservationService.doCkeckIn(customer.getId(),
+		assertThrows(AlreadyCheckedInException.class, () -> reservationService.doCheckIn(customer.getId(),
 				reservation.getId(), reservation.getReservationCode()));
 	}
 
@@ -333,7 +333,7 @@ public class ReservationServiceTests {
 		reservation.setCheckedIn(true);
 
 		assertThrows(CodeDoesNotMatchException.class,
-				() -> reservationService.doCkeckIn(customer.getId(), reservation.getId(), new Random().nextLong()));
+				() -> reservationService.doCheckIn(customer.getId(), reservation.getId(), new Random().nextLong()));
 	}
 
 	@Test
@@ -351,7 +351,7 @@ public class ReservationServiceTests {
 				"1234567890123456", entrada(), salida());
 		reservation.setCheckedIn(true);
 
-		assertThrows(NotMyReservationException.class, () -> reservationService.doCkeckIn(customer2.getId(),
+		assertThrows(NotMyReservationException.class, () -> reservationService.doCheckIn(customer2.getId(),
 				reservation.getId(), reservation.getReservationCode()));
 	}
 
@@ -368,7 +368,7 @@ public class ReservationServiceTests {
 				"1234567890123456", entrada(), salida());
 		reservation.setCheckedIn(true);
 
-		assertThrows(InstanceNotFoundException.class, () -> reservationService.doCkeckIn(customer.getId(),
+		assertThrows(InstanceNotFoundException.class, () -> reservationService.doCheckIn(customer.getId(),
 				Long.valueOf(285), reservation.getReservationCode()));
 
 	}

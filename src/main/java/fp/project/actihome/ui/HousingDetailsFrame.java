@@ -1,69 +1,122 @@
 package fp.project.actihome.ui;
 
-import java.awt.BorderLayout;
-import java.awt.GridLayout;
-import java.text.NumberFormat;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.List;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import fp.project.actihome.model.entities.Housing;
-import fp.project.actihome.model.entities.User.RoleType;
-import fp.project.actihome.model.services.HousingService;
-import fp.project.actihome.ui.sessionManagement.SessionManager;
+import net.miginfocom.swing.MigLayout;
 
+import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.User;
+import fp.project.actihome.model.entities.User.RoleType;
+import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.services.HousingService;
+import fp.project.actihome.model.services.ReviewService;
+import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.ImagePlaceholder;
+import fp.project.actihome.ui.components.InlineScore;
+import fp.project.actihome.ui.components.Labels;
+import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.components.WrappingText;
+import fp.project.actihome.ui.nav.Navigator;
+import fp.project.actihome.ui.sessionManagement.SessionManager;
+import fp.project.actihome.ui.theme.Formato;
+import fp.project.actihome.ui.theme.Layout;
+import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Theme;
+import fp.project.actihome.ui.theme.Typography;
+
+/**
+ * Detalle de un alojamiento.
+ *
+ * <p>
+ * Dos columnas: la foto a la izquierda, los datos y las acciones a la derecha.
+ * Es la pantalla que decide si alguien reserva, así que el orden de la columna
+ * derecha va de lo que sitúa a lo que convence: referencia, título,
+ * puntuación, descripción, datos clave, precio y por último la acción.
+ *
+ * <p>
+ * <b>Reescrita entera</b>, no retocada: la versión anterior tenía dos bugs de
+ * los que están en la tabla de deuda del proyecto. <b>B1</b>, que mostraba el
+ * valor del desayuno en la etiqueta de la cena —copiar y pegar tres bloques
+ * casi iguales invita a olvidarse de cambiar uno—, no puede reaparecer porque
+ * {@link #resumenPension()} comprueba cada comida una sola vez, en su propio
+ * método. <b>B2</b>, que acumulaba <i>listeners</i> en cada visita porque
+ * {@code refreshActions()} llamaba a {@code addActionListener} dentro de
+ * {@code setVisible}, tampoco puede reaparecer: los botones se construyen una
+ * sola vez por reconstrucción, con su acción ya puesta; lo único que decide el
+ * rol es cuáles se añaden.
+ *
+ * <p>
+ * <b>Por qué no hay galería de miniaturas</b>, aunque el handoff dibuja una. No
+ * es una simplificación de maquetación: el modelo {@code Housing} solo tiene un
+ * campo {@code image}, no una lista. No hay ningún alojamiento con más de una
+ * foto que enseñar, así que dibujar tres miniaturas vacías con un "+6" encima
+ * sería mentir sobre cuántas fotos existen. El día que se admitan varias fotos
+ * por alojamiento —una ampliación de modelo real, no de esta pantalla— la
+ * galería tiene sentido; hasta entonces, una fotografía grande es lo honesto.
+ */
 @Component
 @Profile("!test")
 @Lazy
 public class HousingDetailsFrame extends JFrame {
 
-	private ApplicationContext context;
-	private SessionManager sessionManager;
-	private Housing housing;
-	private HeaderPanel headerPanel;
+	private static final long serialVersionUID = 1L;
 
-	private JLabel housingCodeLabel;
-	private JLabel typeLabel;
-	private JLabel scoreLabel;
-	private JLabel numberOfRoomsLabel;
-	private JLabel pricePerNightLabel;
-	private JLabel descriptionArea;
-	private JLabel breakfastLabel;
-	private JLabel lunchLabel;
-	private JLabel dinnerLabel;
-	private JLabel availableLabel;
-	private JLabel locationLabel;
-	private JButton updateButton;
-	private JButton reserveButton;
-	private JButton tradeButton;
+	private final transient HousingService housingService;
+	private final transient ReviewService reviewService;
+	private final transient SessionManager sessionManager;
+	private final transient Navigator navigator;
+	private final HeaderPanel headerPanel;
 
-	public HousingDetailsFrame(ApplicationContext context, SessionManager sessionManager,
-			HeaderPanel headerPanel) {
+	private Long housingId;
+	private transient Housing housing;
 
-		
-		this.context = context;
+	private JPanel contenido;
+
+	public HousingDetailsFrame(HousingService housingService, ReviewService reviewService,
+			SessionManager sessionManager, Navigator navigator, HeaderPanel headerPanel) {
+
+		this.housingService = housingService;
+		this.reviewService = reviewService;
 		this.sessionManager = sessionManager;
+		this.navigator = navigator;
 		this.headerPanel = headerPanel;
-		;
+
 		initUI();
+	}
+
+	/**
+	 * Prepara qué alojamiento mostrar. La llama el {@link Navigator} antes de
+	 * enseñar la ventana.
+	 *
+	 * <p>
+	 * Solo guarda el identificador. Los datos se recargan siempre desde el
+	 * servicio en {@link #setVisible}: si vienes de editar el alojamiento o de que
+	 * otra persona lo haya intercambiado, el objeto que trae el catálogo en
+	 * memoria puede estar desactualizado.
+	 */
+	public void loadDetails(Housing housing) {
+		this.housingId = housing.getId();
 	}
 
 	@Override
 	public void setVisible(boolean visible) {
+
 		if (visible) {
-			loadDetails(housing);
 			headerPanel.refresh();
-			refreshActions();
+			recargar();
 		}
 
 		super.setVisible(visible);
@@ -71,188 +124,319 @@ public class HousingDetailsFrame extends JFrame {
 
 	private void initUI() {
 
-		setTitle("Actihome");
-		setSize(500, 500);
+		setTitle("ActiHome");
+		setSize(1180, 820);
+		setMinimumSize(new Dimension(1000, 700));
 		setLocationRelativeTo(null);
 
-		JPanel jpanel = new JPanel(new BorderLayout());
-		jpanel.setBorder(BorderFactory.createTitledBorder("Datos del alojamiento"));
+		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));
 
-		JPanel dataPanel = new JPanel(new GridLayout(0, 2, 10, 10));
+		contenido = new JPanel();
+		contenido.setOpaque(false);
 
-		JPanel buttonPanel = new JPanel(new BorderLayout());
+		raiz.add(headerPanel, "growx");
+		raiz.add(contenido, "grow");
 
-		NumberFormat roomsAndCodeformat = NumberFormat.getIntegerInstance();
-		roomsAndCodeformat.setGroupingUsed(false);
-
-		NumberFormat pricePerNightFormat = NumberFormat.getNumberInstance();
-		pricePerNightFormat.setMaximumFractionDigits(2);
-		pricePerNightFormat.setMinimumFractionDigits(2);
-
-		dataPanel.add(new JLabel("Código de alojamiento"));
-		housingCodeLabel = new JLabel();
-		dataPanel.add(housingCodeLabel);
-
-		dataPanel.add(new JLabel("Tipo"));
-		typeLabel = new JLabel();
-		dataPanel.add(typeLabel);
-
-		dataPanel.add(new JLabel("Calificación"));
-		scoreLabel = new JLabel();
-		dataPanel.add(scoreLabel);
-
-		dataPanel.add(new JLabel("Nº de habitaciones"));
-		numberOfRoomsLabel = new JLabel();
-		dataPanel.add(numberOfRoomsLabel);
-
-		dataPanel.add(new JLabel("Precio por noche"));
-		pricePerNightLabel = new JLabel();
-		dataPanel.add(pricePerNightLabel);
-
-		dataPanel.add(new JLabel("Descripción"));
-		descriptionArea = new JLabel();
-		dataPanel.add(descriptionArea);
-
-		dataPanel.add(new JLabel("Desayuno incluído?"));
-		breakfastLabel = new JLabel();
-		dataPanel.add(breakfastLabel);
-
-		dataPanel.add(new JLabel("Comida incluída?"));
-		lunchLabel = new JLabel();
-		dataPanel.add(lunchLabel);
-
-		dataPanel.add(new JLabel("Cena incluída?"));
-		dinnerLabel = new JLabel();
-		dataPanel.add(dinnerLabel);
-
-		dataPanel.add(new JLabel("Disponible para reserva?"));
-		availableLabel = new JLabel();
-		dataPanel.add(availableLabel);
-
-		dataPanel.add(new JLabel("Ubicación"));
-		locationLabel = new JLabel();
-		dataPanel.add(locationLabel);
-
-		JButton reviewsButton = new JButton("Ver reseñas");
-		reviewsButton.addActionListener(e -> showReviews());
-		buttonPanel.add(reviewsButton, BorderLayout.WEST);
-
-		updateButton = new JButton("Actualizar alojamiento");
-		updateButton.addActionListener(e -> update());
-		updateButton.setVisible(false);
-		buttonPanel.add(updateButton, BorderLayout.CENTER);
-
-		reserveButton = new JButton("Reservar");
-		buttonPanel.add(reserveButton, BorderLayout.EAST);
-		reserveButton.setVisible(false);
-
-		tradeButton = new JButton("Intercambiar");
-		buttonPanel.add(tradeButton, BorderLayout.NORTH);
-		tradeButton.setVisible(false);
-
-		jpanel.add(dataPanel, BorderLayout.CENTER);
-		jpanel.add(buttonPanel, BorderLayout.SOUTH);
-		add(headerPanel, BorderLayout.NORTH);
-		add(jpanel);
-
+		setContentPane(raiz);
 	}
 
-	public void loadDetails(Housing housing) {
+	/** Recarga el alojamiento desde el servicio y reconstruye la pantalla. */
+	private void recargar() {
 
-		this.housing = housing;
-
-		housingCodeLabel.setText(String.valueOf(housing.getHousingCode()));
-		typeLabel.setText(housing.getType());
-
-		if (housing.getScore() == null) {
-			scoreLabel.setText("Sin calificación");
-		} else {
-			scoreLabel.setText(String.valueOf(housing.getScore()));
+		if (housingId == null) {
+			return;
 		}
+
+		try {
+			housing = housingService.findHousing(housingId);
+
+		} catch (InstanceNotFoundException ex) {
+			// No debería ocurrir: no hay forma de borrar un alojamiento desde la
+			// aplicación. Si pasara —una base de datos tocada a mano, por ejemplo— lo
+			// razonable es volver al catálogo en vez de enseñar una pantalla vacía.
+			navigator.ir(ShowHousingsFrame.class);
+			return;
+		}
+
+		reconstruir();
+	}
+
+	/**
+	 * Reconstruye todo el contenido variable de la pantalla.
+	 *
+	 * <p>
+	 * Se rehace entero en cada visita en lugar de actualizar campo a campo. Con
+	 * una decena de piezas de información y tres roles distintos de botonera,
+	 * mantener referencias a cada etiqueta para actualizarla a mano sería más
+	 * código y más frágil que reconstruir: es la misma decisión que ya toma
+	 * {@code ShowHousingsFrame} al reaplicar sus filtros.
+	 */
+	private void reconstruir() {
+
+		contenido.removeAll();
+		contenido.setLayout(new MigLayout("wrap 1, fill, " + Space.insets(Space.XL, Space.HUGE, Space.XL, Space.HUGE),
+				"[grow,fill]", "[]" + Space.LG + "[grow,fill]"));
+
+		contenido.add(migaDePan(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
+		contenido.add(cuerpo(), "grow, " + Layout.anchoCentrado(Layout.CONTENIDO));
+
+		contenido.revalidate();
+		contenido.repaint();
+	}
+
+	// ------------------------------------------------------------------
+	// Miga de pan
+	// ------------------------------------------------------------------
+
+	private JPanel migaDePan() {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XXS + "[]" + Space.XXS + "[]", ""));
+		fila.setOpaque(false);
+
+		JLabel catalogo = Labels.body("Catálogo");
+		catalogo.setFont(Typography.sans(Typography.BODY_SM));
+		catalogo.setForeground(Theme.mut());
+		catalogo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		catalogo.addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				navigator.ir(ShowHousingsFrame.class);
+			}
+		});
+
+		JLabel separador = Labels.muted("›");
+
+		JLabel nombre = Labels.body(housing.getName());
+		nombre.setFont(Typography.sansSemiBold(Typography.BODY_SM));
+
+		fila.add(catalogo);
+		fila.add(separador);
+		fila.add(nombre);
+
+		return fila;
+	}
+
+	// ------------------------------------------------------------------
+	// Cuerpo: foto + información
+	// ------------------------------------------------------------------
+
+	private JPanel cuerpo() {
+
+		JPanel panel = new JPanel(
+				new MigLayout(Space.insets(0), "[grow,fill]" + Space.XXXL + "[grow,fill]", "[grow,fill]"));
+		panel.setOpaque(false);
+
+		panel.add(foto(), "grow");
+		panel.add(informacion(), "aligny top");
+
+		return panel;
+	}
+
+	private ImagePlaceholder foto() {
+
+		ImagePlaceholder placeholder = new ImagePlaceholder(housing.getType(),
+				housing.isAvailable() ? "Disponible" : "Reservada", housing.isAvailable());
+		placeholder.setMinimumSize(new Dimension(0, 320));
+		return placeholder;
+	}
+
+	private JPanel informacion() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
+				"[]" + Space.SM + "[]" + Space.MD + "[]" + Space.LG + "[]" + Space.XXL + "[]" + Space.XXL + "[]"
+						+ Space.SM + "[]push[]"));
+		panel.setOpaque(false);
+
+		panel.add(referencia());
+		panel.add(titulo());
+		panel.add(valoracion());
+
+		// "wmin 0" es imprescindible aquí: un JTextArea sin ese freno reporta como
+		// ancho mínimo el de su texto sin partir en líneas, que para una descripción
+		// de tres frases es enorme. Sin este freno, MigLayout respeta esa demanda y dejaba
+		// la columna del texto invadir la de la foto —el mismo problema, ya documentado en
+		// Layout.ancho(), que en su día se llevó por delante el panel oscuro del login—.
+		panel.add(descripcion(), "growx, wmin 0");
+
+		panel.add(miniGrid());
+		panel.add(precio());
+		panel.add(acciones());
+
+		return panel;
+	}
+
+	/** "Nº 10001 —— Sierra Nevada, Granada", igual que en el catálogo. */
+	private JPanel referencia() {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]", ""));
+		fila.setOpaque(false);
+
+		fila.add(Labels.capsAccent("Nº " + housing.getHousingCode()));
+		fila.add(Labels.caps(housing.getLocation()));
+
+		return fila;
+	}
+
+	private JLabel titulo() {
+
+		JLabel etiqueta = Labels.cardTitle(housing.getName());
+		etiqueta.setFont(Typography.serifMedium(Typography.DETAIL_TITLE));
+		return etiqueta;
+	}
+
+	private JPanel valoracion() {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.MD + "[]", ""));
+		fila.setOpaque(false);
+
+		fila.add(new InlineScore(housing.getScore(), 24f, 90));
+		fila.add(enlaceAResenas());
+
+		return fila;
+	}
+
+	private JLabel enlaceAResenas() {
+
+		int cuantas = contarResenas();
+		String texto = cuantas == 0 ? "Sé el primero en opinar" : Formato.plural(cuantas, "reseña", "reseñas");
+
+		JLabel enlace = Labels.muted(texto);
+		enlace.setFont(Typography.sansSemiBold(Typography.BODY_SM));
+		enlace.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		enlace.addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				verResenas();
+			}
+		});
+
+		return enlace;
+	}
+
+	private int contarResenas() {
+
+		try {
+			return reviewService.showHousingReviews(housing.getId()).size();
+
+		} catch (Exception ex) {
+			return 0;
+		}
+	}
+
+	private WrappingText descripcion() {
+		return new WrappingText(housing.getDescription());
+	}
+
+	/** Rejilla 2×2: habitaciones, disponibilidad, pensión y titular. */
+	private JPanel miniGrid() {
+
+		JPanel panel = new JPanel(
+				new MigLayout("wrap 2, gapy " + Space.LG, "[grow,fill]" + Space.XXL + "[grow,fill]", ""));
+		panel.setOpaque(false);
+
+		panel.add(celda("Habitaciones", Formato.plural(housing.getNumberOfRooms(), "habitación", "habitaciones")));
+		panel.add(celda("Disponible", housing.isAvailable() ? "Sí" : "No, reservado"));
+		panel.add(celda("Pensión", resumenPension()));
+		panel.add(celda("Titular", housing.getOwner().getUsername()));
+
+		return panel;
+	}
+
+	private JPanel celda(String etiqueta, String valor) {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]"));
+		panel.setOpaque(false);
+
+		panel.add(Labels.caps(etiqueta));
+		panel.add(Labels.body(valor));
+
+		return panel;
+	}
+
+	/**
+	 * "Desayuno, Cena" o "Sin comidas incluidas". Corrige de raíz el bug B1: la
+	 * versión anterior comprobaba {@code isBreakfast()} para rellenar también la
+	 * etiqueta de la cena. Aquí cada comida se lee de su propio método, una sola
+	 * vez, así que no hay condición que copiar mal.
+	 */
+	private String resumenPension() {
+
+		List<String> incluidas = new ArrayList<>();
 
 		if (housing.isBreakfast()) {
-			breakfastLabel.setText("Sí");
-		} else {
-			breakfastLabel.setText("No");
+			incluidas.add("Desayuno");
 		}
-
 		if (housing.isLunch()) {
-			lunchLabel.setText("Sí");
-		} else {
-			lunchLabel.setText("No");
+			incluidas.add("Comida");
+		}
+		if (housing.isDinner()) {
+			incluidas.add("Cena");
 		}
 
-		if (housing.isBreakfast()) {
-			dinnerLabel.setText("Sí");
-		} else {
-			dinnerLabel.setText("No");
-		}
-
-		if (housing.isAvailable()) {
-			availableLabel.setText("Sí");
-		} else {
-			availableLabel.setText("No");
-		}
-
-		numberOfRoomsLabel.setText(String.valueOf(housing.getNumberOfRooms()));
-		pricePerNightLabel.setText(String.valueOf(housing.getPricePerNight()));
-		descriptionArea.setText(housing.getDescription());
-		locationLabel.setText(housing.getLocation());
-
-		if (sessionManager.getLoggedInUser().getId().equals(housing.getOwner().getId())) {
-			updateButton.setVisible(true);
-		} else {
-			updateButton.setVisible(false);
-		}
+		return incluidas.isEmpty() ? "Sin comidas incluidas" : String.join(", ", incluidas);
 	}
 
-	private void update() {
+	private JPanel precio() {
 
-		dispose();
-		UpdateHousingFrame updateHousingFrame = context.getBean(UpdateHousingFrame.class);
-		updateHousingFrame.setHousingId(housing.getId());
-		updateHousingFrame.setVisible(true);
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XS + "[]", ""));
+		fila.setOpaque(false);
+
+		JLabel precioLabel = Labels.price(Formato.precioCorto(housing.getPricePerNight()));
+		precioLabel.setFont(Typography.serif(Typography.PRICE_LG));
+		fila.add(precioLabel, "aligny bottom");
+
+		fila.add(Labels.muted("por noche"), "aligny bottom, gapbottom 5");
+
+		return fila;
 	}
 
-	private void showReviews() {
+	/**
+	 * La botonera, construida una sola vez por reconstrucción y con la
+	 * visibilidad decidida por el rol de quien mira. No hay ningún
+	 * {@code addActionListener} fuera de aquí: cada botón se crea con su acción ya
+	 * puesta, así que no hay manera de que una segunda visita le añada una
+	 * escucha de más (bug B2).
+	 */
+	private JPanel acciones() {
 
-		dispose();
-		ShowReviewsFrame showReviewsFrame = context.getBean(ShowReviewsFrame.class);
-		showReviewsFrame.setHousingId(housing.getId());
-		showReviewsFrame.setVisible(true);
-	}
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]push[]", "[]"));
+		fila.setOpaque(false);
 
-	private void reserve() {
+		JPanel izquierda = new JPanel(new MigLayout(Space.insets(0), "", "[]"));
+		izquierda.setOpaque(false);
 
-		dispose();
-		ReserveHousingFrame reserveHousingFrame = context.getBean(ReserveHousingFrame.class);
-		reserveHousingFrame.setHousingId(housing.getId());
-		reserveHousingFrame.setVisible(true);
+		User usuario = sessionManager.getLoggedInUser();
+		boolean esPropietario = usuario != null && usuario.getId().equals(housing.getOwner().getId());
 
-	}
+		if (usuario != null && usuario.getRole() == RoleType.CUSTOMER) {
+			izquierda.add(Buttons.primary("Reservar", e -> reservar()), "height 44!");
 
-	private void refreshActions() {
-
-		if (sessionManager.getLoggedInUser().getRole() == RoleType.CUSTOMER) {
-			reserveButton.addActionListener(e -> reserve());
-			reserveButton.setVisible(true);
-			tradeButton.setVisible(false);
+		} else if (usuario != null && usuario.getRole() == RoleType.ADMIN && esPropietario) {
+			izquierda.add(Buttons.secondary("Actualizar alojamiento", e -> actualizar()), "height 44!");
+			izquierda.add(Buttons.linkAccent("Intercambiar ⇄", e -> intercambiar()), "gapleft " + Space.XL);
 		}
 
-		if (sessionManager.getLoggedInUser().getRole() == RoleType.ADMIN
-				&& sessionManager.getLoggedInUser().getId().equals(housing.getOwner().getId())) {
+		fila.add(izquierda);
+		fila.add(Buttons.link("Ver reseñas →", e -> verResenas()));
 
-			tradeButton.addActionListener(e -> trade());
-			tradeButton.setVisible(true);
-			reserveButton.setVisible(false);
-		}
+		return fila;
 	}
 
-	private void trade() {
+	private void reservar() {
+		navigator.ir(ReserveHousingFrame.class, frame -> frame.setHousingId(housingId));
+	}
 
-		dispose();
-		TradeHousingsFrame tradeHousingsFrame = context.getBean(TradeHousingsFrame.class);
-		tradeHousingsFrame.setHousingId(housing.getId());
-		tradeHousingsFrame.setVisible(true);
+	private void actualizar() {
+		navigator.ir(UpdateHousingFrame.class, frame -> frame.setHousingId(housingId));
+	}
+
+	private void intercambiar() {
+		navigator.ir(TradeHousingsFrame.class, frame -> frame.setHousingId(housingId));
+	}
+
+	private void verResenas() {
+		navigator.ir(ShowReviewsFrame.class, frame -> frame.setHousingId(housingId));
 	}
 }
