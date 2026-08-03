@@ -25,6 +25,18 @@ public interface ReservationService {
 
 	Reservation doCheckIn(Long customerId, Long reservationId, Long reservationCode)
 			throws CodeDoesNotMatchException, InstanceNotFoundException, NotMyReservationException, CannotCheckInException,
-			AlreadyCheckedInException; 
+			AlreadyCheckedInException;
+
+	/**
+	 * Todas las reservas de un alojamiento, pasadas y futuras.
+	 *
+	 * <p>
+	 * Para pintar el calendario de disponibilidad al reservar: qué días están ya
+	 * ocupados. No hace falta que quien pregunta sea el propietario ni esté
+	 * autenticado como nada en particular —es la misma información que ya se ve,
+	 * agregada, en la etiqueta "Reservada" del catálogo—, así que no lleva
+	 * comprobación de permisos.
+	 */
+	ArrayList<Reservation> showHousingReservations(Long housingId);
 
 }

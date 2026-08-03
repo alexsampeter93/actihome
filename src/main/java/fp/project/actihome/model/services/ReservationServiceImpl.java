@@ -128,4 +128,9 @@ public class ReservationServiceImpl implements ReservationService {
 		reservation.get().setCheckedIn(true);
 		return reservation.get();
 	}
+
+	@Override
+	public ArrayList<Reservation> showHousingReservations(Long housingId) {
+		return reservationDao.findByHousingId(housingId);
+	}
 }

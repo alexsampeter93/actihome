@@ -408,6 +408,34 @@ public class ReservationServiceTests {
 				reservation.getId(), reservation.getReservationCode()));
 	}
 
+	/**
+	 * {@code showHousingReservations} es lo que pinta los días ocupados en el
+	 * calendario de {@code ReserveHousingFrame} (Fase 7.5.2): sin autorización de
+	 * por medio, porque es la misma información que ya se ve, agregada, en la
+	 * etiqueta "Reservada" del catálogo.
+	 */
+	@Test
+	public void testShowHousingReservations()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+
+		User customer = signUpUser("Author", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housingConReservas = createHousing(Long.valueOf(50), owner.getId());
+		Housing housingSinReservas = createHousing(Long.valueOf(51), owner.getId());
+
+		Reservation reservation = reservationService.reserveHousing(customer.getId(), housingConReservas.getId(),
+				"1234567890123456", entrada(), salida());
+
+		ArrayList<Reservation> reservasDelPrimero = reservationService.showHousingReservations(housingConReservas.getId());
+		ArrayList<Reservation> reservasDelSegundo = reservationService.showHousingReservations(housingSinReservas.getId());
+
+		assertEquals(1, reservasDelPrimero.size());
+		assertEquals(reservation, reservasDelPrimero.get(0));
+		assertTrue(reservasDelSegundo.isEmpty());
+	}
+
 	@Test
 	public void testDoCheckInNonExistentReservation()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,

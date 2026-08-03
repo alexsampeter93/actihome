@@ -31,4 +31,7 @@ public interface ReservationDao extends PagingAndSortingRepository<Reservation, 
 	/** Los alojamientos con una estancia en curso justo ahora. */
 	@Query("select distinct r.housing.id from Reservation r where r.checkIn < ?1 and r.checkOut > ?1")
 	List<Long> findHousingIdsWithActiveStay(LocalDateTime ahora);
+
+	/** Todas las reservas de un alojamiento, para pintar los días ocupados en el calendario. */
+	ArrayList<Reservation> findByHousingId(Long housingId);
 }

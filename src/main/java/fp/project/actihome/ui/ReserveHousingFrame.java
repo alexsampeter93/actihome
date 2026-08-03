@@ -1,22 +1,16 @@
 package fp.project.actihome.ui;
 
 import java.awt.Cursor;
-import java.awt.Dimension;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.JTextField;
-import javax.swing.SpinnerDateModel;
 import javax.swing.SwingUtilities;
 
 import org.springframework.context.annotation.Lazy;
@@ -35,6 +29,7 @@ import fp.project.actihome.model.exceptions.WrongCreditCardNumberException;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.ReservationService;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.CalendarioRango;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Labels;
@@ -54,11 +49,14 @@ import fp.project.actihome.ui.theme.Typography;
  * Reservar un alojamiento.
  *
  * <p>
- * Tres campos —check-in, check-out, tarjeta— y un resumen que se recalcula
- * mientras se eligen las fechas: precio por noche × noches = total. Ver el
- * total moverse al cambiar la fecha es lo que convierte una resta mental en
- * información inmediata; pedir que se pulse "calcular" sería fricción sin
- * ningún beneficio, porque el cálculo no tiene coste.
+ * Un calendario para elegir entrada y salida ({@link fp.project.actihome.ui.components.CalendarioRango},
+ * Fase 7.5.2 — sustituye a los dos {@code JSpinner} de fecha que había antes,
+ * que dejaban elegir cualquier día sin decir cuáles ya estaban ocupados), la
+ * tarjeta, y un resumen que se recalcula mientras se eligen las fechas: precio
+ * por noche × noches = total. Ver el total moverse al cambiar la fecha es lo
+ * que convierte una resta mental en información inmediata; pedir que se pulse
+ * "calcular" sería fricción sin ningún beneficio, porque el cálculo no tiene
+ * coste.
  *
  * <p>
  * <b>Los mensajes de error son uno por excepción</b>, no un "Error en los
@@ -86,8 +84,7 @@ public class ReserveHousingFrame extends JFrame {
 
 	private JLabel tituloAlojamiento;
 	private JLabel subtituloUbicacion;
-	private JSpinner checkInSpinner;
-	private JSpinner checkOutSpinner;
+	private CalendarioRango calendario;
 	private Field tarjeta;
 	private JLabel resumen;
 	private JLabel error;
@@ -128,6 +125,7 @@ public class ReserveHousingFrame extends JFrame {
 			housing = housingService.findHousing(housingId);
 			tituloAlojamiento.setText(housing.getName());
 			subtituloUbicacion.setText(housing.getLocation());
+			calendario.setOcupacion(reservationService.showHousingReservations(housingId));
 
 		} catch (InstanceNotFoundException ex) {
 			navigator.ir(ShowHousingsFrame.class);
@@ -138,17 +136,12 @@ public class ReserveHousingFrame extends JFrame {
 
 		LocalDate manana = LocalDate.now().plusDays(1);
 
-		checkInSpinner.setValue(aFecha(manana));
-		checkOutSpinner.setValue(aFecha(manana.plusDays(1)));
+		calendario.seleccionar(manana, manana.plusDays(1));
 		tarjeta.setText("");
 		error.setText(" ");
 
 		actualizarResumen();
 		SwingUtilities.invokeLater(() -> tarjeta.getInput().requestFocus());
-	}
-
-	private static Date aFecha(LocalDate fecha) {
-		return Date.from(fecha.atStartOfDay(ZoneId.systemDefault()).toInstant());
 	}
 
 	private void initUI() {
@@ -174,17 +167,11 @@ public class ReserveHousingFrame extends JFrame {
 	private JPanel formulario() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.XXL + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.XL + "[]"
-						+ Space.SM + "[]" + Space.XL + "[]"));
+				"[]" + Space.XXL + "[]" + Space.LG + "[]" + Space.XL + "[]" + Space.SM + "[]" + Space.XL + "[]"));
 		panel.setOpaque(false);
 
 		panel.add(cabecera());
-
-		checkInSpinner = crearFechaSpinner();
-		checkOutSpinner = crearFechaSpinner();
-
-		panel.add(campoFecha("Fecha de entrada", checkInSpinner));
-		panel.add(campoFecha("Fecha de salida", checkOutSpinner));
+		panel.add(campoFechas());
 
 		tarjeta = Field.text("Tarjeta de crédito");
 		panel.add(tarjeta);
@@ -222,23 +209,15 @@ public class ReserveHousingFrame extends JFrame {
 		return panel;
 	}
 
-	private JSpinner crearFechaSpinner() {
-
-		JSpinner spinner = new JSpinner(new SpinnerDateModel());
-		spinner.setEditor(new JSpinner.DateEditor(spinner, "dd/MM/yyyy"));
-		spinner.setFont(Typography.sans(Typography.BODY));
-		spinner.addChangeListener(e -> actualizarResumen());
-
-		return spinner;
-	}
-
-	private JPanel campoFecha(String etiqueta, JSpinner spinner) {
+	private JPanel campoFechas() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		panel.setOpaque(false);
 
-		panel.add(Labels.caps(etiqueta));
-		panel.add(spinner, "gaptop " + Space.XXS + ", height 38!");
+		panel.add(Labels.caps("Entrada y salida"));
+
+		calendario = new CalendarioRango(this::actualizarResumen);
+		panel.add(calendario, "gaptop " + Space.XS);
 
 		return panel;
 	}
@@ -276,22 +255,29 @@ public class ReserveHousingFrame extends JFrame {
 	}
 
 	/**
-	 * Recalcula "precio × noches = total" con las fechas actuales del formulario.
+	 * Recalcula "precio × noches = total" con la selección actual del calendario.
 	 *
 	 * <p>
-	 * Se llama en cada cambio de cualquiera de los dos calendarios. No valida
-	 * nada —esa es responsabilidad del servicio al confirmar—, solo informa: si el
-	 * rango no llega a una noche, lo dice en vez de enseñar un total de 0,00 €, que
-	 * parecería un error de cálculo en lugar de una fecha por corregir.
+	 * Se llama en cada cambio de la selección. No valida nada —esa es
+	 * responsabilidad del servicio al confirmar—, solo informa: mientras falte la
+	 * fecha de salida, o si por lo que sea el rango no llega a una noche, lo dice
+	 * en vez de enseñar un total de 0,00 €, que parecería un error de cálculo en
+	 * lugar de una fecha por elegir.
 	 */
 	private void actualizarResumen() {
 
-		if (housing == null || checkInSpinner == null || checkOutSpinner == null) {
+		if (housing == null || calendario == null) {
 			return;
 		}
 
-		LocalDate entrada = aLocalDate(checkInSpinner);
-		LocalDate salida = aLocalDate(checkOutSpinner);
+		LocalDate entrada = calendario.getInicio();
+		LocalDate salida = calendario.getFin();
+
+		if (entrada == null || salida == null) {
+			resumen.setText("Elige la entrada y la salida en el calendario.");
+			return;
+		}
+
 		long noches = ChronoUnit.DAYS.between(entrada, salida);
 
 		if (noches <= 0) {
@@ -305,14 +291,18 @@ public class ReserveHousingFrame extends JFrame {
 				+ " = " + Formato.precio(total));
 	}
 
-	private static LocalDate aLocalDate(JSpinner spinner) {
-		return ((Date) spinner.getValue()).toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-	}
-
 	private void reservar() {
 
-		LocalDateTime checkIn = aLocalDate(checkInSpinner).atStartOfDay();
-		LocalDateTime checkOut = aLocalDate(checkOutSpinner).atStartOfDay();
+		LocalDate entrada = calendario.getInicio();
+		LocalDate salida = calendario.getFin();
+
+		if (entrada == null || salida == null) {
+			error.setText("Elige la entrada y la salida en el calendario.");
+			return;
+		}
+
+		LocalDateTime checkIn = entrada.atStartOfDay();
+		LocalDateTime checkOut = salida.atStartOfDay();
 		String numeroTarjeta = tarjeta.getText().trim();
 
 		try {
