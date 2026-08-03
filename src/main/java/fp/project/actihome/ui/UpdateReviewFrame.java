@@ -21,6 +21,7 @@ import fp.project.actihome.model.exceptions.NotTheAuthorException;
 import fp.project.actihome.model.exceptions.ScoreOutOfBoundsException;
 import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
@@ -123,6 +124,8 @@ public class UpdateReviewFrame extends JFrame {
 		raiz.add(scroll, "grow");
 
 		setContentPane(raiz);
+
+		Foco.alPulsarEscape(this, this::volverAlDetalle);
 	}
 
 	private JPanel cabecera() {

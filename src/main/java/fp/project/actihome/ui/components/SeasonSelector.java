@@ -5,6 +5,7 @@ import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -190,6 +191,10 @@ public class SeasonSelector extends JPanel {
 			addMouseListener(interaccion);
 			etiqueta.addMouseListener(interaccion);
 
+			// Sin esto no había forma de cambiar de estación con el teclado. Ver la nota
+			// de clase en Foco.
+			Foco.activable(this, () -> Theme.cambiarA(estacion));
+
 			actualizarColores();
 		}
 
@@ -253,6 +258,7 @@ public class SeasonSelector extends JPanel {
 
 			actualizarColores();
 			super.paint(g);
+			Foco.pintarAnillo((Graphics2D) g, this);
 		}
 	}
 }

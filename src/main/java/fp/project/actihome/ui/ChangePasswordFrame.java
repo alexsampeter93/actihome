@@ -16,6 +16,7 @@ import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.exceptions.WrongPasswordException;
 import fp.project.actihome.model.services.UserService;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
@@ -100,6 +101,8 @@ public class ChangePasswordFrame extends JFrame {
 		raiz.add(Rescate.envolver(exterior), "grow");
 
 		setContentPane(raiz);
+
+		Foco.alPulsarEscape(this, () -> navigator.ir(ShowHousingsFrame.class));
 	}
 
 	private JPanel formulario() {

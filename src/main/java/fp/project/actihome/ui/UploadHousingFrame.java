@@ -17,6 +17,7 @@ import fp.project.actihome.model.exceptions.NegativePrizeException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
@@ -110,6 +111,8 @@ public class UploadHousingFrame extends JFrame {
 		raiz.add(Rescate.envolver(exterior), "grow");
 
 		setContentPane(raiz);
+
+		Foco.alPulsarEscape(this, () -> navigator.ir(ShowHousingsFrame.class));
 	}
 
 	private JPanel cabecera() {

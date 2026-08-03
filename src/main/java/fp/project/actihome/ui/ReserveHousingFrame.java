@@ -36,6 +36,7 @@ import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.ReservationService;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Field;
+import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
@@ -166,6 +167,8 @@ public class ReserveHousingFrame extends JFrame {
 		raiz.add(Rescate.envolver(exterior), "grow");
 
 		setContentPane(raiz);
+
+		Foco.alPulsarEscape(this, this::volver);
 	}
 
 	private JPanel formulario() {
@@ -261,11 +264,15 @@ public class ReserveHousingFrame extends JFrame {
 
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(housing));
+				volver();
 			}
 		});
 
 		return enlace;
+	}
+
+	private void volver() {
+		navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(housing));
 	}
 
 	/**

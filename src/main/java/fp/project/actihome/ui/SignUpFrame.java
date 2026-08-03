@@ -28,6 +28,7 @@ import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.DuplicateInstanceException;
 import fp.project.actihome.model.services.UserService;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Labels;
@@ -144,6 +145,8 @@ public class SignUpFrame extends JFrame {
 		raiz.add(Rescate.envolver(cuerpo), "grow");
 
 		setContentPane(raiz);
+
+		Foco.alPulsarEscape(this, () -> navigator.ir(LoginFrame.class));
 	}
 
 	private JPanel cabecera() {

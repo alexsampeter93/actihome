@@ -54,12 +54,14 @@ public class OptionLinks extends JPanel {
 	private static final long serialVersionUID = 1L;
 
 	private int activo;
+	private final transient Consumer<Integer> alCambiar;
 
 	public OptionLinks(int inicial, Consumer<Integer> alCambiar, String... opciones) {
 
 		super(new MigLayout(Space.insets(0), "", "[]"));
 
 		this.activo = inicial;
+		this.alCambiar = alCambiar;
 		setOpaque(false);
 
 		for (int i = 0; i < opciones.length; i++) {
@@ -71,14 +73,13 @@ public class OptionLinks extends JPanel {
 
 				@Override
 				public void mouseClicked(MouseEvent e) {
-
-					if (indice != activo) {
-						activo = indice;
-						repaint();
-						alCambiar.accept(indice);
-					}
+					seleccionar(indice);
 				}
 			});
+
+			// Sin esto no había forma de elegir el orden con el teclado. Ver la nota de
+			// clase en Foco.
+			Foco.activable(opcion, () -> seleccionar(indice));
 
 			add(opcion, "gapleft " + (i == 0 ? 0 : Space.MD));
 		}
@@ -86,6 +87,15 @@ public class OptionLinks extends JPanel {
 
 	public int getActivo() {
 		return activo;
+	}
+
+	private void seleccionar(int indice) {
+
+		if (indice != activo) {
+			activo = indice;
+			repaint();
+			alCambiar.accept(indice);
+		}
 	}
 
 	private class Opcion extends JPanel {
@@ -160,6 +170,7 @@ public class OptionLinks extends JPanel {
 
 			actualizarColores();
 			super.paint(g);
+			Foco.pintarAnillo((java.awt.Graphics2D) g, this);
 		}
 	}
 }

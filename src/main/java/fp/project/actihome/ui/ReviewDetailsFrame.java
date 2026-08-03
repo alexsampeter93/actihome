@@ -19,6 +19,7 @@ import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.Page;
@@ -115,6 +116,9 @@ public class ReviewDetailsFrame extends JFrame {
 		raiz.add(contenido, "grow");
 
 		setContentPane(raiz);
+
+		Foco.alPulsarEscape(this,
+				() -> navigator.ir(ShowReviewsFrame.class, frame -> frame.setHousingId(review.getHousing().getId())));
 	}
 
 	private void recargar() {

@@ -24,6 +24,7 @@ import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.InlineScore;
 import fp.project.actihome.ui.components.Labels;
@@ -138,6 +139,8 @@ public class HousingDetailsFrame extends JFrame {
 		raiz.add(Rescate.envolver(contenido), "grow");
 
 		setContentPane(raiz);
+
+		Foco.alPulsarEscape(this, () -> navigator.ir(ShowHousingsFrame.class));
 	}
 
 	/** Recarga el alojamiento desde el servicio y reconstruye la pantalla. */

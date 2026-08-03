@@ -26,6 +26,7 @@ import fp.project.actihome.model.exceptions.NotMyReservationException;
 import fp.project.actihome.model.services.ReservationService;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Field;
+import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
@@ -147,6 +148,8 @@ public class DoCheckInFrame extends JFrame {
 		raiz.add(exterior, "grow");
 
 		setContentPane(raiz);
+
+		Foco.alPulsarEscape(this, () -> navigator.ir(ShowMyReservationsFrame.class));
 	}
 
 	private JPanel formulario() {

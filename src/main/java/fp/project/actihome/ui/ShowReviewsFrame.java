@@ -25,6 +25,7 @@ import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
@@ -117,6 +118,10 @@ public class ShowReviewsFrame extends JFrame {
 		raiz.add(zonaDeLista(), "grow");
 
 		setContentPane(raiz);
+
+		// Al detalle del alojamiento, no al catálogo: es el paso inmediatamente
+		// anterior en la miga de pan, y Escape es "un paso atrás", no "ir al inicio".
+		Foco.alPulsarEscape(this, () -> navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(housing)));
 	}
 
 	/**

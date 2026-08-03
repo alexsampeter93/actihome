@@ -30,6 +30,7 @@ import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.services.UserService;
 import fp.project.actihome.ui.brand.AboutDialog;
 import fp.project.actihome.ui.components.Avatar;
+import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.SeasonGlyph;
 import fp.project.actihome.ui.components.SeasonSelector;
@@ -421,11 +422,7 @@ public class HeaderPanel extends JPanel {
 
 				@Override
 				public void mouseClicked(MouseEvent e) {
-
-					// Navegar a donde ya estás cierra y reabre la ventana para nada.
-					if (pantalla != pantallaActual) {
-						navigator.ir(pantalla.asSubclass(javax.swing.JFrame.class));
-					}
+					navegar();
 				}
 
 				@Override
@@ -444,7 +441,21 @@ public class HeaderPanel extends JPanel {
 			addMouseListener(interaccion);
 			etiqueta.addMouseListener(interaccion);
 
+			// Sin esto no había forma de navegar por la cabecera con el teclado: ni Tab
+			// llegaba hasta aquí, ni Espacio o Intro activaban nada. Es la pieza de
+			// accesibilidad que faltaba en los cuatro controles que dibujan su propio
+			// texto en vez de heredar de un botón (ver la nota de clase en Foco).
+			Foco.activable(this, this::navegar);
+
 			actualizarColores();
+		}
+
+		private void navegar() {
+
+			// Navegar a donde ya estás cierra y reabre la ventana para nada.
+			if (pantalla != pantallaActual) {
+				navigator.ir(pantalla.asSubclass(javax.swing.JFrame.class));
+			}
 		}
 
 		private void actualizarColores() {
@@ -478,6 +489,7 @@ public class HeaderPanel extends JPanel {
 
 			actualizarColores();
 			super.paint(g);
+			Foco.pintarAnillo((Graphics2D) g, this);
 		}
 	}
 }

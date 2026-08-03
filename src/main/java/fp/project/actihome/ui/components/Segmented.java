@@ -75,6 +75,10 @@ public class Segmented extends JPanel {
 				}
 			});
 
+			// Sin esto no había forma de cambiar de vista con el teclado. Ver la nota de
+			// clase en Foco.
+			Foco.activable(segmento, () -> setActivo(indice));
+
 			segmentos.add(segmento);
 			add(segmento, "h " + ALTO + "!");
 		}
@@ -169,6 +173,8 @@ public class Segmented extends JPanel {
 			g2.drawString(texto, (getWidth() - ancho) / 2, base);
 
 			g2.dispose();
+
+			Foco.pintarAnillo((Graphics2D) g, this);
 		}
 	}
 }
