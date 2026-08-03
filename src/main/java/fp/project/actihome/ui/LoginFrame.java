@@ -209,7 +209,7 @@ public class LoginFrame extends JFrame {
 
 		fraseEstacional = Labels.editorialOnHeader(Theme.estacion().frase());
 		panel.add(fraseEstacional, Layout.ancho(Layout.TEXTO));
-		panel.add(Labels.capsOnHeader("por CocoBrain"), Layout.ancho(Layout.TEXTO));
+		panel.add(Labels.capsOnHeader("By CocoBrain"), Layout.ancho(Layout.TEXTO));
 
 		return panel;
 	}

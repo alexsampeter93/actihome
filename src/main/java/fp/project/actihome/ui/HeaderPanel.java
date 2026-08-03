@@ -1,7 +1,6 @@
 package fp.project.actihome.ui;
 
 import java.awt.Color;
-import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -12,7 +11,6 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
@@ -375,24 +373,51 @@ public class HeaderPanel extends JPanel {
 		super.paintComponent(g);
 	}
 
-	/** Un enlace de navegación de la barra. */
-	private class Destino extends JComponent {
+	/**
+	 * Un enlace de navegación de la barra.
+	 *
+	 * <p>
+	 * <b>Igual que {@code SeasonSelector.Pestana}, ya no dibuja su texto a mano.</b>
+	 * La primera versión usaba {@code drawString} con hints fijados a mano y
+	 * repintaba la fila entera para evitar discrepancias de redondeo entre monitores
+	 * a distinto escalado — y el usuario siguió viendo temblor. La causa de fondo no
+	 * eran los hints: era que este es de los pocos textos de la aplicación que
+	 * <b>no</b> pasa por el motor de pintado estándar de Swing. Ahora sí: un
+	 * {@code JLabel} para el texto, una barra fina aparte para el subrayado de la
+	 * pantalla actual, y el color se cambia con {@code setForeground}.
+	 */
+	private class Destino extends JPanel {
 
 		private static final long serialVersionUID = 1L;
 
 		private final transient Class<?> pantalla;
-		private final String texto;
+		private final JLabel etiqueta;
+		private final JPanel subrayado;
 		private boolean encima;
 
 		Destino(String texto, Class<?> pantalla) {
 
-			this.texto = texto.toUpperCase();
+			super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]"));
 			this.pantalla = pantalla;
 
-			setFont(Typography.label(12f));
+			setOpaque(false);
 			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-			addMouseListener(new MouseAdapter() {
+			etiqueta = new JLabel(texto.toUpperCase());
+			etiqueta.setFont(Typography.label(12f));
+
+			subrayado = new JPanel();
+			subrayado.setOpaque(true);
+
+			// Ver la nota gemela en SeasonSelector.Pestana: un JPanel recién creado
+			// informa un mínimo de 10x10, muy por encima del alto real que fuerza el "h
+			// 2!" de abajo.
+			subrayado.setMinimumSize(new Dimension(0, 2));
+
+			add(etiqueta);
+			add(subrayado, "growx, h 2!");
+
+			MouseAdapter interaccion = new MouseAdapter() {
 
 				@Override
 				public void mouseClicked(MouseEvent e) {
@@ -406,57 +431,23 @@ public class HeaderPanel extends JPanel {
 				@Override
 				public void mouseEntered(MouseEvent e) {
 					encima = true;
-					repintarFila();
+					actualizarColores();
 				}
 
 				@Override
 				public void mouseExited(MouseEvent e) {
 					encima = false;
-					repintarFila();
+					actualizarColores();
 				}
-			});
+			};
+
+			addMouseListener(interaccion);
+			etiqueta.addMouseListener(interaccion);
+
+			actualizarColores();
 		}
 
-		/**
-		 * Repinta la fila entera de destinos, no solo este.
-		 *
-		 * <p>
-		 * <b>El motivo no es cosmético.</b> {@code repaint()} sin más solo marca sucios
-		 * los límites de <em>este</em> componente, con el redondeo que le toque en ese
-		 * instante. En un sistema con escalado por monitor —el caso del usuario, un
-		 * portátil y un monitor de 27" combinados—, ese redondeo puede no coincidir
-		 * exactamente con el que se usó en el último repintado completo de la ventana,
-		 * y el texto se redibuja uno o dos puntos desplazado: se percibe como que la
-		 * letra "tiembla" al pasar el ratón, aunque {@code getBounds()} no cambie nada
-		 * —comprobado con {@code DiagnosticoHover}, que no encontró ni un componente
-		 * movido—. Repintando el contenedor que agrupa todos los destinos, el
-		 * rectángulo sucio es siempre el mismo que el del último reparto de layout, así
-		 * que no hay redondeos distintos que puedan discrepar entre sí.
-		 */
-		private void repintarFila() {
-
-			Container fila = getParent();
-			(fila != null ? fila : this).repaint();
-		}
-
-		@Override
-		public Dimension getPreferredSize() {
-
-			return new Dimension(getFontMetrics(getFont()).stringWidth(texto) + 2,
-					getFontMetrics(getFont()).getHeight() + 6);
-		}
-
-		/** Ver la nota de {@code SeasonSelector.Pestana}: sin mínimo, se aplasta. */
-		@Override
-		public Dimension getMinimumSize() {
-			return getPreferredSize();
-		}
-
-		@Override
-		protected void paintComponent(Graphics g) {
-
-			Graphics2D g2 = (Graphics2D) g.create();
-			Typography.hintsDeTextoEstable(g2);
+		private void actualizarColores() {
 
 			boolean actual = pantalla == pantallaActual;
 
@@ -464,17 +455,23 @@ public class HeaderPanel extends JPanel {
 			// inactivo se consigue bajando la opacidad, no cambiando de color, para que
 			// los cuatro temas se comporten igual sin añadir tokens nuevos.
 			Color base = Theme.bg();
-			g2.setColor(actual || encima ? base : new Color(base.getRed(), base.getGreen(), base.getBlue(), 150));
+			etiqueta.setForeground(actual || encima ? base : new Color(base.getRed(), base.getGreen(), base.getBlue(), 150));
 
-			g2.setFont(getFont());
-			g2.drawString(texto, 0, g2.getFontMetrics().getAscent());
+			subrayado.setBackground(actual ? Theme.acc() : getBackground());
+			subrayado.setOpaque(actual);
+		}
 
-			if (actual) {
-				g2.setColor(Theme.acc());
-				g2.fillRect(0, getHeight() - 2, getWidth() - 2, 2);
-			}
+		/**
+		 * Se resuelve el estado en cada repintado. Ver la nota gemela en
+		 * {@code SeasonSelector.Pestana.paint()}: es lo que hace que marcar el destino
+		 * actual ({@code marcarActual}) o navegar entre pantallas se refleje sin
+		 * necesidad de una suscripción explícita a nada.
+		 */
+		@Override
+		public void paint(Graphics g) {
 
-			g2.dispose();
+			actualizarColores();
+			super.paint(g);
 		}
 	}
 }

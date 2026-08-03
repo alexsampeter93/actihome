@@ -124,7 +124,16 @@ public class Navigator {
 			ventana.setIconImages(iconos);
 		}
 
-		fijarMinimoSegunElContenido(ventana);
+		// La misma configuración gráfica para las dos llamadas, y calculada de la
+		// fuente de verdad ("anterior", si sigue viva; si no, la propia ventana). Ver
+		// la nota en heredarGeometria: pedírsela a "ventana" da el monitor primario
+		// mientras su par nativo no exista, que es justo lo que produce el salto en
+		// sistemas con más de un monitor.
+		GraphicsConfiguration configuracion = anterior != null && anterior.isDisplayable()
+				? anterior.getGraphicsConfiguration()
+				: ventana.getGraphicsConfiguration();
+
+		fijarMinimoSegunElContenido(ventana, configuracion);
 		heredarGeometria(anterior, ventana);
 
 		visible = ventana;
@@ -226,10 +235,13 @@ public class Navigator {
 
 			// Primera ventana de la sesión: su tamaño de diseño, acotado a la pantalla.
 			// Aquí sí tiene sentido preguntarle al contenido, porque no hay nada de lo que
-			// heredar todavía.
+			// heredar todavía. Y no hay "anterior" a la que preguntar por el monitor, así
+			// que aquí sí vale la configuración gráfica de la propia ventana —de
+			// arranque, es la única que existe—.
 			Dimension necesaria = loQueNecesitaElContenido(ventana);
+			GraphicsConfiguration configuracion = ventana.getGraphicsConfiguration();
 
-			ventana.setSize(acotarAPantalla(ventana, Math.max(ventana.getWidth(), necesaria.width),
+			ventana.setSize(acotarAPantalla(configuracion, Math.max(ventana.getWidth(), necesaria.width),
 					Math.max(ventana.getHeight(), necesaria.height)));
 
 			ventana.setLocationRelativeTo(null);
@@ -245,10 +257,23 @@ public class Navigator {
 
 		Rectangle previa = anterior.getBounds();
 
+		// **La configuración gráfica se pide a "anterior", no a "ventana", y es la
+		// otra mitad del arreglo del salto.** "ventana" puede ser una pantalla que se
+		// construye ahora mismo, o una que estuvo visible antes y se cerró con
+		// {@code dispose()} — en los dos casos su par nativo no existe todavía, y
+		// {@code getGraphicsConfiguration()} devuelve la del monitor <b>primario</b>
+		// por defecto, sea cual sea el monitor real donde está la aplicación. Con dos
+		// monitores a escalados distintos —el caso del usuario, portátil más un
+		// monitor de 27"—, acotar y encajar con esa configuración equivocada empuja la
+		// ventana de vuelta al monitor primario en cuanto se navega a una pantalla que
+		// no estuviera ya mostrada. "anterior" sigue viva en este punto —se cierra
+		// después, no antes— así que su configuración es siempre la real.
+		GraphicsConfiguration configuracion = anterior.getGraphicsConfiguration();
+
 		// Sin Math.max contra "lo que necesita el destino": ese era el origen del
-		// salto. El tamaño se hereda tal cual, solo acotado a la pantalla actual por
-		// si el usuario ha cambiado de monitor.
-		ventana.setSize(acotarAPantalla(ventana, previa.width, previa.height));
+		// salto de tamaño. El tamaño se hereda tal cual, solo acotado a la pantalla
+		// actual por si el usuario ha cambiado de monitor.
+		ventana.setSize(acotarAPantalla(configuracion, previa.width, previa.height));
 
 		// **Se conserva la esquina, no el centro.** Antes se recentraba sobre el centro
 		// de la ventana anterior, y eso producía un salto adicional: en cuanto el
@@ -258,7 +283,7 @@ public class Navigator {
 		// exactamente y no hay movimiento.
 		ventana.setLocation(previa.x, previa.y);
 
-		encajarEnPantalla(ventana);
+		encajarEnPantalla(configuracion, ventana);
 	}
 
 	/**
@@ -295,7 +320,7 @@ public class Navigator {
 	 * Un mínimo mayor que la pantalla deja una ventana que no se puede colocar ni
 	 * cerrar cómodamente.
 	 */
-	private void fijarMinimoSegunElContenido(JFrame ventana) {
+	private void fijarMinimoSegunElContenido(JFrame ventana, GraphicsConfiguration configuracion) {
 
 		Dimension contenido = ventana.getContentPane().getMinimumSize();
 		Insets bordes = ventana.getInsets();
@@ -303,7 +328,7 @@ public class Navigator {
 		int ancho = contenido.width + bordes.left + bordes.right;
 		int alto = contenido.height + bordes.top + bordes.bottom;
 
-		ventana.setMinimumSize(acotarAPantalla(ventana, Math.max(ancho, Layout.MINIMO_DE_VENTANA.width),
+		ventana.setMinimumSize(acotarAPantalla(configuracion, Math.max(ancho, Layout.MINIMO_DE_VENTANA.width),
 				Math.max(alto, Layout.MINIMO_DE_VENTANA.height)));
 	}
 
@@ -350,9 +375,7 @@ public class Navigator {
 	 * como una que se queda corta. Con el tope, la lista simplemente usa su barra de
 	 * desplazamiento, que es para lo que está.
 	 */
-	private Dimension acotarAPantalla(JFrame ventana, int ancho, int alto) {
-
-		GraphicsConfiguration configuracion = ventana.getGraphicsConfiguration();
+	private Dimension acotarAPantalla(GraphicsConfiguration configuracion, int ancho, int alto) {
 
 		if (configuracion == null) {
 			return new Dimension(ancho, alto);
@@ -368,14 +391,11 @@ public class Navigator {
 	}
 
 	/** Empuja la ventana dentro del área utilizable si se ha salido. */
-	private void encajarEnPantalla(JFrame ventana) {
-
-		GraphicsConfiguration configuracion = ventana.getGraphicsConfiguration();
+	private void encajarEnPantalla(GraphicsConfiguration configuracion, JFrame ventana) {
 
 		// Una ventana que todavía no se ha mostrado nunca puede no tener configuración
-		// gráfica asignada. Aquí llegamos justo antes del primer setVisible, así que el
-		// caso es real y no teórico: sin esta guarda, navegar a una pantalla recién
-		// construida reventaría con un NullPointerException.
+		// gráfica asignada. Sin esta guarda, navegar a una pantalla recién construida
+		// reventaría con un NullPointerException.
 		if (configuracion == null) {
 			return;
 		}

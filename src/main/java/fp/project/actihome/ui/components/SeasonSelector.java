@@ -5,7 +5,6 @@ import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -103,27 +102,70 @@ public class SeasonSelector extends JPanel {
 		return fila;
 	}
 
-	/** Una de las cuatro pestañas. */
-	private static class Pestana extends JComponent {
+	/**
+	 * Una de las cuatro pestañas.
+	 *
+	 * <p>
+	 * <b>Segunda versión, y la primera dibujaba el texto a mano con
+	 * {@code drawString}.</b> Eso es justo lo que producía el temblor que reportó
+	 * el usuario: "las vocales de primavera, invierno, verano se mueven cuando
+	 * interactúas con ellas". Se probó primero a fijar los hints de antialiasing y a
+	 * repintar la fila entera en vez del ítem suelto, y no bastó — el temblor seguía.
+	 *
+	 * <p>
+	 * La razón de fondo es que <b>ningún otro texto de la aplicación tiembla</b>:
+	 * "By CocoBrain", el nombre de usuario, cualquier {@code JLabel} normal, se
+	 * repinta sin problema decenas de veces por segundo con las partículas de fondo
+	 * animándose por encima. La diferencia no estaba en los hints, estaba en que
+	 * esos textos pasan por el motor de pintado <b>estándar</b> de Swing
+	 * ({@code BasicLabelUI}), que ya resuelve de forma consistente cada detalle que
+	 * aquí se intentaba fijar a mano, y este no. En vez de perseguir el hint exacto
+	 * que faltaba, se deja de pintar texto a mano: la pestaña es ahora un
+	 * {@code JLabel} de verdad más una barra fina para el subrayado. El color en
+	 * hover/activo se cambia con {@code setForeground}, que es la vía normal.
+	 */
+	private static class Pestana extends JPanel {
 
 		private static final long serialVersionUID = 1L;
 
 		private static final int GROSOR_SUBRAYADO = 2;
-		private static final int AIRE_BAJO_TEXTO = 7;
 
 		private final transient Season estacion;
 		private final boolean sobreCabecera;
+		private final javax.swing.JLabel etiqueta;
+		private final JPanel subrayado;
 		private boolean encima;
 
 		Pestana(Season estacion, boolean sobreCabecera) {
 
+			super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]"));
 			this.estacion = estacion;
 			this.sobreCabecera = sobreCabecera;
-			setFont(Typography.label(sobreCabecera ? 10f : 12f));
+
+			setOpaque(false);
 			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 			setToolTipText(estacion.etiqueta());
 
-			addMouseListener(new MouseAdapter() {
+			etiqueta = new javax.swing.JLabel(estacion.nombre().toUpperCase());
+			etiqueta.setFont(Typography.label(sobreCabecera ? 10f : 12f));
+
+			// El relleno sí se dibuja a mano, pero es un color plano sin texto: no hay
+			// glifos que puedan salir distintos entre un repintado y otro.
+			subrayado = new JPanel();
+			subrayado.setOpaque(true);
+
+			// Sin esto, un JPanel recién creado informa un mínimo de 10x10 -el de
+			// FlowLayout vacío-, muy por encima de los 2px reales que le fuerza el "h
+			// GROSOR_SUBRAYADO!" de abajo. MigLayout respeta igualmente el alto exacto
+			// porque el "!" no negocia, así que no se veía nada roto, pero MedirResponsive
+			// sí lo señalaba: un mínimo que miente sobre el tamaño real es la misma trampa
+			// que ya está documentada en el proyecto, aunque aquí no llegue a doler.
+			subrayado.setMinimumSize(new Dimension(0, GROSOR_SUBRAYADO));
+
+			add(etiqueta, "alignx center");
+			add(subrayado, "growx, h " + GROSOR_SUBRAYADO + "!");
+
+			MouseAdapter interaccion = new MouseAdapter() {
 
 				@Override
 				public void mouseClicked(MouseEvent e) {
@@ -133,80 +175,41 @@ public class SeasonSelector extends JPanel {
 				@Override
 				public void mouseEntered(MouseEvent e) {
 					encima = true;
-					repintarFila();
+					actualizarColores();
 				}
 
 				@Override
 				public void mouseExited(MouseEvent e) {
 					encima = false;
-					repintarFila();
+					actualizarColores();
 				}
-			});
-		}
+			};
 
-		/**
-		 * Repinta la fila de las cuatro pestañas, no solo esta.
-		 *
-		 * <p>
-		 * Ver la nota gemela en {@code HeaderPanel.Destino.repintarFila()}: repintar
-		 * solo el componente bajo el ratón deja el redondeo del rectángulo sucio a
-		 * merced de en qué escalado de monitor esté en ese instante la ventana, y
-		 * puede no coincidir con el del último reparto completo. Repintando el
-		 * contenedor de las cuatro pestañas a la vez, el rectángulo es siempre el
-		 * mismo.
-		 */
-		private void repintarFila() {
+			// En las dos capas: el ratón puede entrar directamente sobre la etiqueta de
+			// texto sin pasar por el panel contenedor primero.
+			addMouseListener(interaccion);
+			etiqueta.addMouseListener(interaccion);
 
-			Container fila = getParent();
-			(fila != null ? fila : this).repaint();
+			actualizarColores();
 		}
 
 		private boolean esActiva() {
 			return Theme.estacion() == estacion;
 		}
 
-		@Override
-		public Dimension getPreferredSize() {
-
-			int ancho = getFontMetrics(getFont()).stringWidth(texto());
-			int alto = getFontMetrics(getFont()).getHeight() + AIRE_BAJO_TEXTO + GROSOR_SUBRAYADO;
-
-			return new Dimension(ancho + 2, alto);
-		}
-
 		/**
-		 * El mínimo es el preferido: este componente no se puede encoger.
+		 * Recalcula el color del texto y la visibilidad del subrayado.
 		 *
 		 * <p>
-		 * <b>Y omitirlo cuesta caro.</b> Un {@code JComponent} que solo declara el
-		 * tamaño preferido informa de un mínimo de <b>cero</b>, porque la
-		 * implementación por defecto devuelve el tamaño actual —que antes del primer
-		 * reparto es 0×0—. Mientras sobra sitio no se nota nada; en cuanto la ventana
-		 * se queda corta, el gestor de layout reparte quitándole espacio a quien dice
-		 * poder cederlo, y estas pestañas se aplastaban a dos píxeles: quedaba
-		 * únicamente el subrayado de la estación activa, flotando sin texto.
-		 *
-		 * <p>
-		 * Es un fallo que no da error y que solo aparece a partir de cierto tamaño de
-		 * ventana. La regla, para todo componente propio: <b>si defines el preferido,
-		 * define también el mínimo.</b>
+		 * {@code setForeground} en un {@code JLabel} real dispara el repintado estándar
+		 * de Swing, con los mismos hints que usa cualquier otra etiqueta de la
+		 * aplicación — no hay ningún {@code Graphics2D} propio de por medio que pueda
+		 * discrepar de un repintado a otro.
 		 */
-		@Override
-		public Dimension getMinimumSize() {
-			return getPreferredSize();
-		}
-
-		private String texto() {
-			return estacion.nombre().toUpperCase();
-		}
-
-		@Override
-		protected void paintComponent(Graphics g) {
-
-			Graphics2D g2 = (Graphics2D) g.create();
-			Typography.hintsDeTextoEstable(g2);
+		private void actualizarColores() {
 
 			boolean activa = esActiva();
+
 			// Sobre la cabecera oscura no valen ni acc() ni mut(): el primero puede ser el
 			// amarillo de verano, que contra el marrón oscuro pierde fuerza, y el segundo
 			// está pensado para fondo claro y ahí queda casi ilegible. Se usa el blanco y
@@ -219,18 +222,29 @@ public class SeasonSelector extends JPanel {
 				tinta = activa ? Theme.acc() : encima ? Theme.txt() : Theme.mut();
 			}
 
-			g2.setFont(getFont());
-			g2.setColor(tinta);
+			etiqueta.setForeground(tinta);
+			subrayado.setBackground(activa ? Theme.acc() : getBackground());
+			subrayado.setOpaque(activa);
+			subrayado.repaint();
+		}
 
-			int base = g2.getFontMetrics().getAscent();
-			g2.drawString(texto(), 0, base);
+		/**
+		 * Se resuelve el color en cada repintado, no solo al hacer clic.
+		 *
+		 * <p>
+		 * {@code Theme.cambiarA} no repinta directamente: dispara
+		 * {@code FlatLaf.updateUI()}, que recorre las ventanas vivas y las obliga a
+		 * repintarse, y es <em>esa</em> cascada la que tiene que enterarse de cuál de
+		 * las cuatro pestañas es ahora la activa. Igual que antes hacía
+		 * {@code esActiva()} dentro de {@code paintComponent}, aquí se vuelve a
+		 * calcular el estado justo antes de delegar en el pintado estándar de Swing —
+		 * la diferencia es que ya no hay ningún {@code drawString} de por medio.
+		 */
+		@Override
+		public void paint(Graphics g) {
 
-			if (activa) {
-				g2.setColor(Theme.acc());
-				g2.fillRect(0, getHeight() - GROSOR_SUBRAYADO, getWidth(), GROSOR_SUBRAYADO);
-			}
-
-			g2.dispose();
+			actualizarColores();
+			super.paint(g);
 		}
 	}
 }

@@ -24,9 +24,9 @@ import fp.project.actihome.ui.theme.Theme;
  *
  * <p>
  * Los otros tres son el icono de la aplicación, el splash de arranque y la
- * versalita "por CocoBrain" del colofón del catálogo. Con este se cierra la
- * presencia de la marca prevista en el sistema de diseño: cuatro apariciones
- * discretas, ninguna quitándole sitio a ActiHome.
+ * versalita "By CocoBrain" bajo el wordmark de la cabecera. Con este se cierra
+ * la presencia de la marca prevista en el sistema de diseño: cuatro
+ * apariciones discretas, ninguna quitándole sitio a ActiHome.
  *
  * <p>
  * <b>Es un diálogo modal y no una pantalla más</b>, y la diferencia importa: no
@@ -91,7 +91,7 @@ public final class AboutDialog {
 
 		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		titulos.setOpaque(false);
-		titulos.add(Labels.capsAccent("por CocoBrain"));
+		titulos.add(Labels.capsAccent("By CocoBrain"));
 		titulos.add(Labels.title("ActiHome"), "gaptop " + Space.XXS);
 		titulos.add(Labels.muted(VERSION), "gaptop " + Space.XXS);
 

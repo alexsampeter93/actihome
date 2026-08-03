@@ -96,7 +96,7 @@ public class StyleGuidePanel extends JPanel {
 		marca.setForeground(Theme.bg());
 		panel.add(marca);
 
-		panel.add(Labels.capsOnHeader("Guía de estilo · por CocoBrain"));
+		panel.add(Labels.capsOnHeader("Guía de estilo · By CocoBrain"));
 
 		return panel;
 	}
