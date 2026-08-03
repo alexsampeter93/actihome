@@ -105,7 +105,6 @@ public class ShowReviewsFrame extends JFrame {
 
 		setTitle("ActiHome");
 		setSize(1040, 800);
-		setMinimumSize(new Dimension(860, 640));
 		setLocationRelativeTo(null);
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[]0[grow,fill]"));

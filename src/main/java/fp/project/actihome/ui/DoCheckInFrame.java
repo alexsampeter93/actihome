@@ -134,7 +134,6 @@ public class DoCheckInFrame extends JFrame {
 
 		setTitle("ActiHome");
 		setSize(720, 680);
-		setMinimumSize(new Dimension(640, 620));
 		setLocationRelativeTo(null);
 
 		headerPanel.marcarActual(ShowMyReservationsFrame.class);

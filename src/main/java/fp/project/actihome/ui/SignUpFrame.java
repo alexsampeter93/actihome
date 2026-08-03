@@ -33,6 +33,7 @@ import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
@@ -103,7 +104,6 @@ public class SignUpFrame extends JFrame {
 		// campos en dos columnas, la fila de rol y el pie. Con 680 el pie se quedaba
 		// fuera de la ventana, que es justo lo que la regla de escritorio prohíbe.
 		setSize(980, 870);
-		setMinimumSize(new Dimension(900, 840));
 		setLocationRelativeTo(null);
 
 		// Tres filas: cabecera, campos y pie. El "push" antes del pie lo empuja abajo,
@@ -117,12 +117,21 @@ public class SignUpFrame extends JFrame {
 		// tope, los ocho campos se estiraban hasta más de mil píxeles cada uno: un
 		// campo de texto tan largo para escribir un nombre se percibe como un error de
 		// maquetación, y el ojo pierde la línea al recorrerlo.
-		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(Space.XXXL, Space.GIANT, Space.XXL,
-				Space.GIANT), "[grow,fill]", "[]" + Space.XL + "[]push[]"));
+		JPanel raiz = new Page(new MigLayout("fill, " + Space.insets(0), "[grow,fill]", "[grow,fill]"));
 
-		raiz.add(cabecera(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
-		raiz.add(campos(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
-		raiz.add(pie(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
+		JPanel cuerpo = new JPanel(new MigLayout("wrap 1, fill, " + Space.insets(Space.XXXL, Space.GIANT, Space.XXL,
+				Space.GIANT), "[grow,fill]", "[]" + Space.XL + "[]push[]"));
+		cuerpo.setOpaque(false);
+
+		cuerpo.add(cabecera(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
+		cuerpo.add(campos(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
+		cuerpo.add(pie(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
+
+		// El registro es el formulario más alto de la aplicación: ocho campos en dos
+		// columnas, la fila de rol y el pie. En una ventana holgada cabe entero y esta
+		// barra no llega a aparecer; en un portátil con el escalado al 150 % es lo que
+		// impide que el botón "Crear cuenta" quede por debajo del borde inferior.
+		raiz.add(Rescate.envolver(cuerpo), "grow");
 
 		setContentPane(raiz);
 	}

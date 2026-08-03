@@ -17,6 +17,7 @@ import net.miginfocom.swing.MigLayout;
 import fp.project.actihome.model.entities.Amenity;
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.ui.components.Chip;
+import fp.project.actihome.ui.components.FilaFluida;
 import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.OptionLinks;
@@ -70,6 +71,18 @@ public class CatalogFilters extends JPanel {
 
 	private static final int ORDEN_PUNTUACION = 0;
 	private static final int ORDEN_PRECIO_ASC = 1;
+
+	/**
+	 * El margen lateral de las bandas, como rango en vez de como número.
+	 *
+	 * <p>
+	 * La sintaxis {@code "20:44:44"} es mínimo:preferido:máximo. El aire de 44 puntos
+	 * es el que pide el diseño y el que se ve mientras haya sitio; cuando la ventana
+	 * viene estrecha —un portátil con el escalado al 150 % recibe 1280 puntos
+	 * lógicos— el margen cede hasta 20 antes de que nada del contenido se salga. El
+	 * aire se negocia; un filtro dibujado fuera de la ventana, no.
+	 */
+	private static final String MARGEN_LATERAL = Space.LG + ":" + Space.HUGE + ":" + Space.HUGE;
 
 	/** Índice de la vista de cuadrícula en el conmutador. */
 	public static final int VISTA_CUADRICULA = 1;
@@ -141,8 +154,8 @@ public class CatalogFilters extends JPanel {
 	 */
 	private JPanel bandaDeClasificado() {
 
-		JPanel banda = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.XS, Space.HUGE, Space.XS, Space.HUGE),
-				"[grow,fill]", "[]" + Space.XS + "[]"));
+		JPanel banda = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.XS, 0, Space.XS, 0),
+				MARGEN_LATERAL + "[grow,fill]" + MARGEN_LATERAL, "[]" + Space.XS + "[]"));
 		banda.setOpaque(false);
 
 		banda.add(filaDeTipo(), "growx");
@@ -209,13 +222,13 @@ public class CatalogFilters extends JPanel {
 	 */
 	private JPanel bandaDeComodidades() {
 
-		JPanel banda = new JPanel(new MigLayout("hidemode 3, " + Space.insets(Space.XXS, Space.HUGE, Space.SM, Space.HUGE),
-				"[]" + Space.SM + "[]push", "[]"));
+		JPanel banda = new JPanel(new MigLayout("hidemode 3, " + Space.insets(Space.XXS, 0, Space.SM, 0),
+				MARGEN_LATERAL + "[]" + Space.SM + "[grow,fill]" + MARGEN_LATERAL, "[]"));
 		banda.setOpaque(false);
 		banda.setVisible(false);
 
-		banda.add(Labels.caps("Comodidades"), "aligny center");
-		banda.add(chipsDeComodidad(), "aligny center");
+		banda.add(Labels.caps("Comodidades"), "aligny top, gaptop 6");
+		banda.add(chipsDeComodidad(), "growx");
 
 		comodidadesVisibles = banda;
 
@@ -241,10 +254,21 @@ public class CatalogFilters extends JPanel {
 		masFiltros.setText(comodidades.isEmpty() ? "Más filtros" : "Más filtros (" + comodidades.size() + ")");
 	}
 
+	/**
+	 * Los chips de tipo, en una fila que se dobla si no caben.
+	 *
+	 * <p>
+	 * <b>Era una fila normal, y ahí estaba media avería.</b> Cinco chips en una fila
+	 * rígida exigen la suma de sus cinco anchos, y esa suma crece con el escalado del
+	 * sistema. En un portátil al 150 % —donde la aplicación recibe 1280 puntos
+	 * lógicos, no 1920— la exigencia no se podía cumplir y MigLayout hacía lo que
+	 * hace en ese caso: desbordar, dejando "Cabaña" dibujado fuera de la ventana.
+	 * Con {@link FilaFluida} el mínimo pasa a ser el chip más ancho y los demás bajan
+	 * a una segunda línea.
+	 */
 	private JPanel chipsDeTipo() {
 
-		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "", "[]"));
-		fila.setOpaque(false);
+		FilaFluida fila = new FilaFluida(Space.XS, Space.XS);
 
 		// ButtonGroup impone la exclusividad: al marcar uno, desmarca el anterior. Es
 		// el comportamiento estándar de Swing para opciones excluyentes y no hay motivo
@@ -261,16 +285,16 @@ public class CatalogFilters extends JPanel {
 			});
 
 			grupo.add(chip);
-			fila.add(chip, "gapright " + Space.XS);
+			fila.add(chip);
 		}
 
 		return fila;
 	}
 
+	/** Las siete comodidades, también en fila fluida. Ver {@link #chipsDeTipo()}. */
 	private JPanel chipsDeComodidad() {
 
-		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "", "[]"));
-		fila.setOpaque(false);
+		FilaFluida fila = new FilaFluida(Space.XS, Space.XS);
 
 		for (Amenity amenity : Amenity.values()) {
 
@@ -289,7 +313,7 @@ public class CatalogFilters extends JPanel {
 			});
 
 			chipsPorComodidad.put(amenity, chip);
-			fila.add(chip, "gapright " + Space.XS);
+			fila.add(chip);
 		}
 
 		return fila;

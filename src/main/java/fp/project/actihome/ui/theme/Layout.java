@@ -49,7 +49,86 @@ public final class Layout {
 	/** Y a partir de este, "muy grande" (monitores de 2K y 4K maximizados). */
 	private static final int UMBRAL_ENORME = 2200;
 
+	/**
+	 * Por debajo de este ancho la pantalla va justa y hay que soltar lastre.
+	 *
+	 * <p>
+	 * El número no es una preferencia estética, sale de una máquina concreta: un
+	 * portátil de 1920×1080 con el escalado de Windows al 150 % le da a la
+	 * aplicación <b>1280 puntos lógicos</b> de ancho. Ese es el caso que hay que
+	 * cubrir, así que el umbral queda por encima.
+	 */
+	private static final int UMBRAL_COMPACTO = 1320;
+
+	/**
+	 * El tamaño de ventana más pequeño que la aplicación se compromete a servir bien.
+	 *
+	 * <p>
+	 * <b>Hay uno solo, y ese es el cambio.</b> Antes cada pantalla declaraba el suyo
+	 * —1180×760 el catálogo, 900×840 el registro, 680×720 la reserva— con números
+	 * ajustados mirando capturas en una máquina concreta. Eso tenía dos consecuencias
+	 * malas a la vez: la aplicación cambiaba de tamaño mínimo al navegar, y en un
+	 * portátil con el escalado de Windows al 150 % —donde la ventana dispone de
+	 * 1280×660 puntos lógicos— varios de esos mínimos <b>no cabían en la pantalla</b>,
+	 * así que la ventana no se dejaba encoger hasta un tamaño en el que se viera bien.
+	 *
+	 * <p>
+	 * Ahora el suelo es del sistema y se verifica automáticamente:
+	 * {@code MedirResponsive} comprueba que las dieciséis pantallas caben aquí sin
+	 * que nada se salga. Lo que hay por debajo lo cubre el scroll de rescate.
+	 *
+	 * <p>
+	 * El {@code Navigator} lo acota además al escritorio real, porque un mínimo mayor
+	 * que la pantalla deja una ventana que no se puede ni colocar.
+	 */
+	public static final java.awt.Dimension MINIMO_DE_VENTANA = new java.awt.Dimension(1024, 600);
+
 	private Layout() {
+	}
+
+	/**
+	 * Cuánto sitio hay, en las tres únicas categorías que la interfaz distingue.
+	 *
+	 * <p>
+	 * <b>Tener tres regímenes en vez de un número suelto es lo que hace que esto sea
+	 * un sistema.</b> Si cada pantalla compara el ancho con su propia constante, al
+	 * final hay quince umbrales distintos y la interfaz cambia de forma a saltos
+	 * incoherentes: la cabecera se simplifica a 1200 y el hero a 1150, así que entre
+	 * medias queda un estado que nadie ha diseñado. Con tres peldaños compartidos,
+	 * todas las pantallas cambian a la vez y el resultado se puede mirar entero.
+	 */
+	public enum Regimen {
+
+		/** Cabe lo imprescindible: se sueltan firmas, rótulos y cifras decorativas. */
+		COMPACTO,
+
+		/** El diseño completo, sin holguras. */
+		MEDIO,
+
+		/** Sobra sitio: la tipografía de display sube un escalón. */
+		AMPLIO
+	}
+
+	/** En qué régimen está una ventana de este ancho. */
+	public static Regimen regimen(int ancho) {
+
+		if (ancho < UMBRAL_COMPACTO) {
+			return Regimen.COMPACTO;
+		}
+
+		return ancho < UMBRAL_GRANDE ? Regimen.MEDIO : Regimen.AMPLIO;
+	}
+
+	/**
+	 * Si hay que aligerar la pantalla.
+	 *
+	 * <p>
+	 * Lo que se suelta en compacto es siempre <b>decoración o repetición</b>, nunca
+	 * una acción ni un dato que no esté en otro sitio. Esconder un botón porque la
+	 * ventana es pequeña sería cambiar un fallo visible por uno invisible.
+	 */
+	public static boolean esCompacto(int ancho) {
+		return regimen(ancho) == Regimen.COMPACTO;
 	}
 
 	/**

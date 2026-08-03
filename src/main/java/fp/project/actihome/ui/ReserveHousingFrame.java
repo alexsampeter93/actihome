@@ -40,6 +40,7 @@ import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Formato;
@@ -153,7 +154,6 @@ public class ReserveHousingFrame extends JFrame {
 
 		setTitle("ActiHome");
 		setSize(760, 780);
-		setMinimumSize(new Dimension(680, 720));
 		setLocationRelativeTo(null);
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[grow,fill]"));
@@ -163,7 +163,7 @@ public class ReserveHousingFrame extends JFrame {
 
 		exterior.add(formulario(), Layout.ancho(Layout.FORMULARIO) + ", aligny center, alignx center");
 
-		raiz.add(exterior, "grow");
+		raiz.add(Rescate.envolver(exterior), "grow");
 
 		setContentPane(raiz);
 	}

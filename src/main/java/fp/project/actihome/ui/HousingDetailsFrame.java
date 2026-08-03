@@ -28,6 +28,7 @@ import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.InlineScore;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
@@ -126,7 +127,6 @@ public class HousingDetailsFrame extends JFrame {
 
 		setTitle("ActiHome");
 		setSize(1180, 820);
-		setMinimumSize(new Dimension(1000, 700));
 		setLocationRelativeTo(null);
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));
@@ -135,7 +135,7 @@ public class HousingDetailsFrame extends JFrame {
 		contenido.setOpaque(false);
 
 		raiz.add(headerPanel, "growx");
-		raiz.add(contenido, "grow");
+		raiz.add(Rescate.envolver(contenido), "grow");
 
 		setContentPane(raiz);
 	}

@@ -148,8 +148,23 @@ public class HeaderPanel extends JPanel {
 		// solo, así que al añadirle debajo la firma "By CocoBrain" la segunda línea
 		// salía cortada por el borde. El aire lateral sí se mantiene, que es el que se
 		// percibe en una barra.
-		setLayout(new MigLayout(Space.insets(Space.XS, Space.XXXL, Space.XS, Space.XXXL),
-				"[]11[]push[]" + Space.XXL + "[]" + Space.XXL + "[]", "[]"));
+		//
+		// **Las separaciones son elásticas, y ese es el arreglo de fondo.** Antes eran
+		// números fijos —40 de margen, 34 entre bloques—, así que la barra tenía un
+		// ancho mínimo que era la suma de todo lo que lleva más esos huecos. En un
+		// portátil con el escalado de Windows al 150 % la aplicación recibe 1280 puntos
+		// lógicos de ancho, no 1920, y ese mínimo no cabía: el avatar y el nombre de
+		// usuario quedaban dibujados fuera de la ventana.
+		//
+		// La sintaxis "16:34:34" es mínimo:preferido:máximo aplicada a un hueco. Con
+		// ella la barra usa el aire que el diseño pide cuando hay sitio y lo cede —solo
+		// entonces, y solo hasta un tope decente— cuando no lo hay. Es preferible a
+		// esconder elementos: el aire se puede negociar, un botón no.
+		setLayout(new MigLayout(Space.insets(Space.XS, 0, Space.XS, 0),
+				Space.LG + ":" + Space.XXXL + ":" + Space.XXXL + "[]11[]push[]" + Space.MD + ":" + Space.XXL + ":"
+						+ Space.XXL + "[]" + Space.MD + ":" + Space.XXL + ":" + Space.XXL + "[]" + Space.LG + ":"
+						+ Space.XXXL + ":" + Space.XXXL,
+				"[]"));
 		setOpaque(false);
 		setPreferredSize(new Dimension(0, ALTO));
 		setMinimumSize(new Dimension(0, ALTO));
@@ -240,7 +255,11 @@ public class HeaderPanel extends JPanel {
 
 		Destino destino = new Destino(texto, pantalla);
 		destinos.add(destino);
-		contenedor.add(destino, "gapleft " + (destinos.size() == 1 ? 0 : Space.XL));
+
+		// El hueco entre destinos también es elástico, por el mismo motivo que los de la
+		// barra: es aire, y el aire es lo primero que se cede cuando falta ancho.
+		contenedor.add(destino,
+				destinos.size() == 1 ? "gapleft 0" : "gapleft " + Space.SM + ":" + Space.XL + ":" + Space.XL);
 	}
 
 	private void construirZonaUsuario() {

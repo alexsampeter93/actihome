@@ -81,7 +81,6 @@ public class ShowMyReservationsFrame extends JFrame {
 
 		setTitle("ActiHome");
 		setSize(1000, 780);
-		setMinimumSize(new Dimension(820, 620));
 		setLocationRelativeTo(null);
 
 		headerPanel.marcarActual(ShowMyReservationsFrame.class);

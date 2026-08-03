@@ -21,6 +21,7 @@ import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
@@ -98,7 +99,6 @@ public class UpdateProfileFrame extends JFrame {
 
 		setTitle("ActiHome");
 		setSize(820, 760);
-		setMinimumSize(new Dimension(700, 680));
 		setLocationRelativeTo(null);
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));
@@ -108,7 +108,7 @@ public class UpdateProfileFrame extends JFrame {
 		exterior.add(formulario(), Layout.ancho(Layout.FORMULARIO) + ", aligny center, alignx center");
 
 		raiz.add(headerPanel, "growx");
-		raiz.add(exterior, "grow");
+		raiz.add(Rescate.envolver(exterior), "grow");
 
 		setContentPane(raiz);
 	}

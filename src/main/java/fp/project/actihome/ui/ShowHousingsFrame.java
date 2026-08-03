@@ -217,7 +217,6 @@ public class ShowHousingsFrame extends JFrame {
 		// mínimo no es un capricho, es el ancho por debajo del cual los chips de
 		// comodidad empiezan a salirse.
 		setSize(1400, 900);
-		setMinimumSize(new Dimension(1180, 760));
 		setLocationRelativeTo(null);
 
 		headerPanel.marcarActual(ShowHousingsFrame.class);
@@ -339,8 +338,10 @@ public class ShowHousingsFrame extends JFrame {
 		// ventana de escritorio el alto es el recurso escaso: cada píxel que se lleva
 		// el hero se lo quita a la lista, que es lo único que el usuario ha venido a
 		// mirar. El aire lateral se mantiene, que es el que se nota.
-		JPanel panel = new JPanel(new MigLayout(Space.insets(Space.XL, Space.HUGE, Space.SM, Space.HUGE),
-				"[grow]" + Space.XXXL + "[]", "[]"));
+		JPanel panel = new JPanel(new MigLayout(Space.insets(Space.XL, 0, Space.SM, 0),
+				Space.LG + ":" + Space.HUGE + ":" + Space.HUGE + "[grow]" + Space.MD + ":" + Space.XXXL + ":"
+						+ Space.XXXL + "[]" + Space.LG + ":" + Space.HUGE + ":" + Space.HUGE,
+				"[]"));
 		panel.setOpaque(false);
 
 		// El titular NO lleva el tope de Layout.TEXTO que tenía antes. Ese tope está
@@ -415,7 +416,12 @@ public class ShowHousingsFrame extends JFrame {
 		// subir a la cabecera, así que se recupera su banda de ~85px sin que el hero
 		// crezca ni un píxel. Ponerlo bajo el titular, en la columna izquierda, fue el
 		// primer intento y salía más caro: el hero pasaba de 183 a 231px.
-		panel.add(filtros.extraerBuscador(), "w 340!, h 38!, alignx right");
+		// El ancho del buscador es un rango, no un número. Con "w 340!" el hero exigía
+		// 340 puntos pasara lo que pasara, y en una ventana estrecha esa exigencia se
+		// traducía en que el campo se dibujaba saliéndose por la derecha. Con
+		// "220:340:340" mide lo que el diseño pide mientras haya sitio y se estrecha
+		// hasta un ancho todavía cómodo de escribir cuando no lo hay.
+		panel.add(filtros.extraerBuscador(), "w 220:340:340, h 38!, alignx right");
 		panel.add(cifras());
 
 		return panel;
@@ -423,8 +429,10 @@ public class ShowHousingsFrame extends JFrame {
 
 	private JPanel cifras() {
 
-		JPanel panel = new JPanel(new MigLayout(Space.insets(0),
-				"push[]" + Space.XL + "[1!]" + Space.XL + "[]" + Space.XL + "[1!]" + Space.XL + "[]", "[]"));
+		String aire = Space.SM + ":" + Space.XL + ":" + Space.XL;
+
+		JPanel panel = new JPanel(
+				new MigLayout(Space.insets(0), "push[]" + aire + "[1!]" + aire + "[]" + aire + "[1!]" + aire + "[]", "[]"));
 		panel.setOpaque(false);
 
 		enCatalogo = new Stat("0", "en catálogo");

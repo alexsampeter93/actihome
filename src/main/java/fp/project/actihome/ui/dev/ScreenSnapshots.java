@@ -89,9 +89,22 @@ public final class ScreenSnapshots {
 	/** Base desechable: se crea al arrancar y muere con el proceso. */
 	private static final String BASE_EN_MEMORIA = "jdbc:h2:mem:snapshots;DB_CLOSE_DELAY=-1;MODE=MySQL";
 
-	/** Tamaño de ventana con el que se capturan las pantallas. */
-	private static final int ANCHO = 1400;
-	private static final int ALTO = 900;
+	/**
+	 * Tamaño de ventana con el que se capturan las pantallas.
+	 *
+	 * <p>
+	 * <b>Se puede cambiar desde la línea de comandos</b>, y conviene usarlo:
+	 * capturar siempre a 1400×900 es lo que hizo que los recortes del portátil del
+	 * usuario no aparecieran en ninguna captura durante meses. Un portátil de
+	 * 1920×1080 con el escalado de Windows al 150 % le entrega a la aplicación
+	 * 1280×660 puntos, y esa es la medida en la que hay que mirar el resultado.
+	 *
+	 * <pre>
+	 * "-Dexec.args=fase7-compacto ADMIN 1280x660"
+	 * </pre>
+	 */
+	private static int ancho = 1400;
+	private static int alto = 900;
 
 	private ScreenSnapshots() {
 	}
@@ -103,6 +116,13 @@ public final class ScreenSnapshots {
 
 		String prefijo = args.length > 0 ? args[0] : "catalogo";
 		RoleType rol = args.length > 1 ? RoleType.valueOf(args[1]) : RoleType.ADMIN;
+
+		if (args.length > 2 && args[2].contains("x")) {
+
+			String[] medidas = args[2].split("x");
+			ancho = Integer.parseInt(medidas[0].trim());
+			alto = Integer.parseInt(medidas[1].trim());
+		}
 
 		SpringApplication app = new SpringApplication(ActihomeApplication.class);
 		app.setWebApplicationType(WebApplicationType.NONE);
@@ -472,7 +492,7 @@ public final class ScreenSnapshots {
 	 */
 	private static BufferedImage dibujar(JFrame ventana, Runnable despuesDeMostrar) {
 
-		ventana.setSize(new Dimension(ANCHO, ALTO));
+		ventana.setSize(new Dimension(ancho, alto));
 		ventana.setLocation(-20000, -20000);
 		ventana.setVisible(true);
 

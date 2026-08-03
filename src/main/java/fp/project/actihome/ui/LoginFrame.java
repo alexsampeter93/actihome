@@ -113,7 +113,6 @@ public class LoginFrame extends JFrame {
 
 		setTitle("ActiHome");
 		setSize(980, 620);
-		setMinimumSize(new java.awt.Dimension(860, 560));
 		setLocationRelativeTo(null);
 
 		// Columna izquierda fijada al 45 % con mínimo y máximo iguales, y "wmin 0" en

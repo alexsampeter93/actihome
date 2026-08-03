@@ -89,7 +89,6 @@ public class UploadHousingFrame extends JFrame {
 
 		setTitle("ActiHome");
 		setSize(1120, 800);
-		setMinimumSize(new Dimension(940, 660));
 		setLocationRelativeTo(null);
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));

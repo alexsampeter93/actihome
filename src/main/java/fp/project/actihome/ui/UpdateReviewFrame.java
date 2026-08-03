@@ -94,7 +94,6 @@ public class UpdateReviewFrame extends JFrame {
 
 		setTitle("ActiHome");
 		setSize(760, 800);
-		setMinimumSize(new Dimension(680, 720));
 		setLocationRelativeTo(null);
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[grow,fill]"));

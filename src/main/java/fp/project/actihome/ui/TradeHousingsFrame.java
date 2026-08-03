@@ -30,6 +30,7 @@ import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.components.SwapGlyph;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
@@ -123,7 +124,6 @@ public class TradeHousingsFrame extends JFrame {
 
 		setTitle("ActiHome");
 		setSize(1040, 800);
-		setMinimumSize(new Dimension(880, 680));
 		setLocationRelativeTo(null);
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));
@@ -155,7 +155,7 @@ public class TradeHousingsFrame extends JFrame {
 		exterior.add(acciones, Layout.anchoCentrado(Layout.TEXTO));
 
 		raiz.add(headerPanel, "growx");
-		raiz.add(exterior, "grow");
+		raiz.add(Rescate.envolver(exterior), "grow");
 
 		setContentPane(raiz);
 	}

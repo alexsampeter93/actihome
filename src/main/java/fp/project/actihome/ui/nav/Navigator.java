@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import fp.project.actihome.ui.theme.BrandAssets;
+import fp.project.actihome.ui.theme.Layout;
 
 /**
  * Único responsable de abrir y cerrar ventanas.
@@ -245,25 +246,34 @@ public class Navigator {
 	 * necesita.
 	 *
 	 * <p>
-	 * <b>El fallo que corrige.</b> Cada pantalla declaraba su mínimo con números
-	 * escritos a mano ({@code setMinimumSize(new Dimension(1180, 760))}), ajustados
-	 * mirando capturas en una máquina concreta. Pero cuánto ocupa una interfaz
-	 * depende de cuánto miden las fuentes y los controles, y eso cambia con el
-	 * <b>escalado del sistema</b>: en un portátil al 150 % todo mide vez y media, así
-	 * que 1180 dejaba de ser suficiente y la ventana permitía encogerse hasta que
-	 * los textos empezaban a truncarse — "Todos" quedaba en "Tod…", "DISPONIBLES" en
-	 * "SPONIBLES…". El síntoma no era que faltara sitio, era que <b>nadie impedía
-	 * que faltara</b>.
+	 * <b>El fallo que corrige, y por qué la primera corrección no bastó.</b> Cada
+	 * pantalla declaraba su mínimo con números escritos a mano
+	 * ({@code setMinimumSize(new Dimension(1180, 760))}), ajustados mirando capturas
+	 * en una máquina concreta. El primer arreglo fue preguntarle al contenido cuál
+	 * era su mínimo real y quedarse con el mayor de los dos — y ahí estaba el error:
+	 * <b>tomar el mayor conserva el número escrito a mano</b>, que era justo el
+	 * problema. En un portátil con el escalado de Windows al 150 % la ventana
+	 * dispone de 1280×660 puntos lógicos, así que un mínimo de 1180×760 no se puede
+	 * cumplir: la ventana no se dejaba encoger hasta un tamaño en el que se viera
+	 * bien.
 	 *
 	 * <p>
-	 * Preguntarle al contenido ya construido cuál es su mínimo real resuelve las
-	 * diecisiete pantallas y cualquier escalado, porque la medida se toma en la
-	 * máquina donde se está ejecutando. Se respeta además el mínimo que la pantalla
-	 * hubiera declarado por su cuenta, tomando el mayor de los dos.
+	 * Ahora no hay números por pantalla. El mínimo sale de dos cosas, las dos
+	 * medidas en la máquina donde se ejecuta:
+	 *
+	 * <ul>
+	 * <li>lo que el <b>contenido</b> exige de verdad, que tras hacer la interfaz
+	 * adaptable se ha quedado en muy poco;</li>
+	 * <li>el <b>suelo del sistema</b> ({@link Layout#MINIMO_DE_VENTANA}), que es el
+	 * tamaño para el que se garantiza que la aplicación se ve bien, verificado
+	 * automáticamente por {@code MedirResponsive}.</li>
+	 * </ul>
 	 *
 	 * <p>
-	 * El tope de pantalla no es opcional: un mínimo mayor que el escritorio deja una
-	 * ventana que no se puede colocar ni cerrar cómodamente.
+	 * El tope de pantalla no es opcional y aquí es lo que salva el caso del
+	 * portátil: si el escritorio es más pequeño que el suelo, manda el escritorio.
+	 * Un mínimo mayor que la pantalla deja una ventana que no se puede colocar ni
+	 * cerrar cómodamente.
 	 */
 	private void fijarMinimoSegunElContenido(JFrame ventana) {
 
@@ -273,10 +283,8 @@ public class Navigator {
 		int ancho = contenido.width + bordes.left + bordes.right;
 		int alto = contenido.height + bordes.top + bordes.bottom;
 
-		Dimension declarado = ventana.getMinimumSize();
-
-		ventana.setMinimumSize(acotarAPantalla(ventana, Math.max(ancho, declarado.width),
-				Math.max(alto, declarado.height)));
+		ventana.setMinimumSize(acotarAPantalla(ventana, Math.max(ancho, Layout.MINIMO_DE_VENTANA.width),
+				Math.max(alto, Layout.MINIMO_DE_VENTANA.height)));
 	}
 
 	/**
