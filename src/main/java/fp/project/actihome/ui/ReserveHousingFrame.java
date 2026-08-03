@@ -155,7 +155,12 @@ public class ReserveHousingFrame extends JFrame {
 		JPanel exterior = new JPanel(new MigLayout(Space.insets(Space.GIANT), "[grow]", "[grow]"));
 		exterior.setOpaque(false);
 
-		exterior.add(formulario(), Layout.ancho(Layout.FORMULARIO) + ", aligny center, alignx center");
+		// El ancho ya no es Layout.FORMULARIO (440): el calendario de dos meses
+		// necesita más sitio que un formulario de texto, y esa es precisamente la
+		// excepción que el propio sistema de diseño prevé para rejillas ("las
+		// rejillas sí crecen"). El campo de tarjeta, que sí es texto, mantiene su
+		// ancho cómodo de lectura por su cuenta, en formulario().
+		exterior.add(formulario(), Layout.ancho(CalendarioRango.ANCHO_PREFERIDO) + ", aligny center, alignx center");
 
 		raiz.add(Rescate.envolver(exterior), "grow");
 
@@ -173,8 +178,10 @@ public class ReserveHousingFrame extends JFrame {
 		panel.add(cabecera());
 		panel.add(campoFechas());
 
+		// A diferencia del calendario, esto sí es texto: mantiene el ancho cómodo de
+		// lectura de un formulario aunque el panel que lo contiene sea más ancho.
 		tarjeta = Field.text("Tarjeta de crédito");
-		panel.add(tarjeta);
+		panel.add(tarjeta, Layout.ancho(Layout.FORMULARIO));
 
 		resumen = Labels.body(" ");
 		panel.add(resumen);

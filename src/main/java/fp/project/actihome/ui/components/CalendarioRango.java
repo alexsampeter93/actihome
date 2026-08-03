@@ -37,13 +37,22 @@ import fp.project.actihome.ui.theme.Typography;
  * puede pulsar— antes de intentarlo.
  *
  * <p>
+ * <b>Dos meses a la vez: el actual y el siguiente.</b> Es la petición que
+ * resuelve el caso más incómodo de un calendario de un solo mes: reservar del
+ * 28 de un mes al 3 del siguiente exigiría pulsar "siguiente" a medio camino y
+ * perder de vista el día de entrada. Con los dos meses lado a lado, ese tramo
+ * se ve entero y se elige con los mismos dos clics que cualquier otro.
+ *
+ * <p>
  * <b>Selección de dos clics, sin arrastrar.</b> El primer clic en un día libre
  * lo fija como entrada; el segundo, si el tramo hasta él no cruza ningún día
- * ocupado, lo fija como salida. Pulsar un día anterior o igual al de entrada
- * reinicia la selección ahí. Pulsar uno posterior que cruza un día ocupado
- * también reinicia la selección en el día pulsado, en vez de dejar la
- * selección a medias o mostrar un error: el usuario ya ha dicho "quiero
- * empezar aquí", y eso es más útil que un mensaje.
+ * ocupado, lo fija como salida —da igual que los dos clics caigan en el mismo
+ * bloque de mes o en bloques distintos, es la misma fecha para las dos cosas—.
+ * Pulsar un día anterior o igual al de entrada reinicia la selección ahí.
+ * Pulsar uno posterior que cruza un día ocupado también reinicia la selección
+ * en el día pulsado, en vez de dejar la selección a medias o mostrar un
+ * error: el usuario ya ha dicho "quiero empezar aquí", y eso es más útil que
+ * un mensaje.
  *
  * <p>
  * <b>Un día ocupado no se puede elegir ni como entrada ni como salida</b>, ni
@@ -61,6 +70,16 @@ import fp.project.actihome.ui.theme.Typography;
  * Swing el alcance con Tab, la activación con Espacio o Intro, y el estado
  * deshabilitado —usado aquí para los días pasados y los ocupados— sin tener
  * que reimplementar nada de eso a mano.
+ *
+ * <p>
+ * <b>Ancho fijo, no un formulario.</b> Los dos meses miden {@link #ANCHO_PREFERIDO}
+ * de ancho entre los dos, por encima de lo que {@code Layout.FORMULARIO} (440)
+ * considera cómodo para un campo de texto — pero esa regla es para texto, y
+ * esto es una rejilla: la misma excepción que ya vale para el catálogo
+ * ("las rejillas sí crecen"). Quien coloque este componente debe darle su
+ * propio ancho con {@code Layout.ancho(CalendarioRango.ANCHO_PREFERIDO)}, sin
+ * heredar el límite de 440 que sí debe seguir aplicando al resto del
+ * formulario.
  */
 public class CalendarioRango extends JPanel {
 
@@ -70,33 +89,45 @@ public class CalendarioRango extends JPanel {
 	private static final String[] DIAS_SEMANA = { "L", "M", "X", "J", "V", "S", "D" };
 	private static final int LADO_CELDA = 36;
 	private static final int FILAS_REJILLA = 6;
+	private static final int ANCHO_MES = DIAS_SEMANA.length * LADO_CELDA;
+	private static final int ANCHO_FLECHA = 28;
+	private static final int MESES_VISIBLES = 2;
+
+	/** Ancho total que necesita el componente: úsalo para darle su propia columna. */
+	public static final int ANCHO_PREFERIDO = 2 * ANCHO_FLECHA + 2 * Space.SM + MESES_VISIBLES * ANCHO_MES
+			+ (MESES_VISIBLES - 1) * Space.XL;
 
 	private final transient Runnable alCambiar;
 	private final transient List<Reservation> ocupacion = new ArrayList<>();
 
+	/** El primero de los dos meses visibles; el segundo es siempre el siguiente. */
 	private YearMonth mesVisible = YearMonth.now();
 	private LocalDate inicio;
 	private LocalDate fin;
 
-	private JLabel etiquetaMes;
 	private JButton botonAnterior;
-	private JPanel rejilla;
+	private final JLabel[] etiquetasMes = new JLabel[MESES_VISIBLES];
+	private final JPanel[] rejillas = new JPanel[MESES_VISIBLES];
 
 	public CalendarioRango(Runnable alCambiar) {
 
-		super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XS + "[]" + Space.XXS + "[]"));
+		super(new MigLayout(Space.insets(0),
+				"[]" + Space.SM + "[]" + Space.XL + "[]" + Space.SM + "[]", "[]"));
 
 		this.alCambiar = alCambiar;
 		setOpaque(false);
 
-		add(cabecera(), "growx");
-		add(diasDeLaSemana(), "growx");
+		botonAnterior = Buttons.link("←", e -> cambiarMes(-1));
+		add(botonAnterior, "aligny top, w " + ANCHO_FLECHA + "!");
 
-		rejilla = new JPanel();
-		rejilla.setOpaque(false);
-		add(rejilla, "growx");
+		for (int i = 0; i < MESES_VISIBLES; i++) {
+			add(bloqueMes(i), "aligny top");
+		}
 
-		pintarMes();
+		JButton botonSiguiente = Buttons.link("→", e -> cambiarMes(1));
+		add(botonSiguiente, "aligny top, w " + ANCHO_FLECHA + "!");
+
+		pintarMeses();
 	}
 
 	/** El día más temprano que se puede elegir como entrada: mañana, no hoy. */
@@ -117,7 +148,7 @@ public class CalendarioRango extends JPanel {
 
 		ocupacion.clear();
 		ocupacion.addAll(reservas);
-		pintarMes();
+		pintarMeses();
 	}
 
 	/** Fija una selección inicial, p. ej. al abrir la pantalla. */
@@ -126,7 +157,7 @@ public class CalendarioRango extends JPanel {
 		this.inicio = inicio;
 		this.fin = fin;
 		mesVisible = YearMonth.from(inicio != null ? inicio : LocalDate.now());
-		pintarMes();
+		pintarMeses();
 	}
 
 	public LocalDate getInicio() {
@@ -137,19 +168,25 @@ public class CalendarioRango extends JPanel {
 		return fin;
 	}
 
-	private JPanel cabecera() {
+	/** Un bloque de mes: su propio rótulo, la fila de días de la semana y la rejilla. */
+	private JPanel bloqueMes(int indice) {
 
-		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]push[]push[]", "[]"));
-		panel.setOpaque(false);
+		JPanel bloque = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
+				"[]" + Space.XS + "[]" + Space.XXS + "[]"));
+		bloque.setOpaque(false);
 
-		botonAnterior = Buttons.link("←", e -> cambiarMes(-1));
-		etiquetaMes = Labels.body(" ");
+		JLabel etiqueta = Labels.body(" ");
+		etiquetasMes[indice] = etiqueta;
+		bloque.add(etiqueta, "alignx center");
 
-		panel.add(botonAnterior);
-		panel.add(etiquetaMes, "alignx center");
-		panel.add(Buttons.link("→", e -> cambiarMes(1)));
+		bloque.add(diasDeLaSemana());
 
-		return panel;
+		JPanel rejilla = new JPanel();
+		rejilla.setOpaque(false);
+		rejillas[indice] = rejilla;
+		bloque.add(rejilla);
+
+		return bloque;
 	}
 
 	private JPanel diasDeLaSemana() {
@@ -174,29 +211,37 @@ public class CalendarioRango extends JPanel {
 	private void cambiarMes(int delta) {
 
 		mesVisible = mesVisible.plusMonths(delta);
-		pintarMes();
+		pintarMeses();
 	}
 
-	/** Reconstruye la cabecera del mes y las 42 celdas de la rejilla (6 semanas fijas). */
-	private void pintarMes() {
+	/** Reconstruye los rótulos y las rejillas de los {@link #MESES_VISIBLES} meses. */
+	private void pintarMeses() {
 
-		String nombreMes = mesVisible.getMonth().getDisplayName(TextStyle.FULL, ES);
-		etiquetaMes.setText(Character.toUpperCase(nombreMes.charAt(0)) + nombreMes.substring(1) + " " + mesVisible.getYear());
 		botonAnterior.setEnabled(mesVisible.isAfter(YearMonth.from(minimoSeleccionable())));
+
+		for (int i = 0; i < MESES_VISIBLES; i++) {
+			pintarMes(mesVisible.plusMonths(i), etiquetasMes[i], rejillas[i]);
+		}
+	}
+
+	private void pintarMes(YearMonth mes, JLabel etiquetaMes, JPanel rejilla) {
+
+		String nombreMes = mes.getMonth().getDisplayName(TextStyle.FULL, ES);
+		etiquetaMes.setText(Character.toUpperCase(nombreMes.charAt(0)) + nombreMes.substring(1) + " " + mes.getYear());
 
 		rejilla.removeAll();
 		rejilla.setLayout(new MigLayout("wrap 7, " + Space.insets(0), "[]0[]0[]0[]0[]0[]0[]", ""));
 
-		int diasEnMes = mesVisible.lengthOfMonth();
+		int diasEnMes = mes.lengthOfMonth();
 		// ISO: lunes = 1 ... domingo = 7. La rejilla empieza en lunes.
-		int huecosIniciales = mesVisible.atDay(1).getDayOfWeek().getValue() - 1;
+		int huecosIniciales = mes.atDay(1).getDayOfWeek().getValue() - 1;
 
 		for (int i = 0; i < huecosIniciales; i++) {
 			rejilla.add(relleno());
 		}
 
 		for (int dia = 1; dia <= diasEnMes; dia++) {
-			rejilla.add(new Dia(mesVisible.atDay(dia)));
+			rejilla.add(new Dia(mes.atDay(dia)));
 		}
 
 		int celdasUsadas = huecosIniciales + diasEnMes;
@@ -272,7 +317,7 @@ public class CalendarioRango extends JPanel {
 			fin = dia;
 		}
 
-		pintarMes();
+		pintarMeses();
 		alCambiar.run();
 	}
 
