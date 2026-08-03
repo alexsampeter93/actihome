@@ -14,6 +14,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -48,9 +49,21 @@ import fp.project.actihome.ui.theme.Typography;
  * <p>
  * Cabe entera en la ventana, sin scroll, según la regla de escritorio del
  * proyecto.
+ *
+ * <p>
+ * <b>{@code @Lazy}, y esto cierra B10 (parcialmente — ver {@code SignUpFrame},
+ * su gemela en este cierre).</b> Hasta ahora era, junto a {@code SignUpFrame},
+ * de las últimas pantallas sin marcar así: quedaba de la Fase 2, anterior a que
+ * {@code @Lazy} se asentara como convención para las diecisiete. Sin ella,
+ * Spring construía sus widgets Swing durante el arranque del contexto —en el
+ * hilo principal, no en el EDT—, que es justo lo que {@code B10} lleva anotado
+ * como deuda desde el principio del rediseño. Con ella, la primera construcción
+ * ocurre dentro del {@code EventQueue.invokeLater(...)} de
+ * {@code ActihomeApplication.main}, que es el sitio correcto.
  */
 @Component
 @Profile("!test")
+@Lazy
 public class LoginFrame extends JFrame {
 
 	private static final long serialVersionUID = 1L;

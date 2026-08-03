@@ -17,6 +17,7 @@ import javax.swing.JSpinner;
 import javax.swing.SpinnerDateModel;
 import javax.swing.SwingUtilities;
 
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -55,9 +56,18 @@ import fp.project.actihome.ui.theme.Typography;
  * {@code JComboBox} con dos opciones esconde la mitad de la información hasta
  * que se despliega; dos chips enseñan las dos alternativas a la vez y se
  * seleccionan con un solo clic en lugar de dos.
+ *
+ * <p>
+ * <b>{@code @Lazy}, y con esto se cierra B10.</b> Junto a {@code LoginFrame},
+ * era de las últimas dos pantallas —de diecisiete— sin esta anotación: ambas
+ * son de la Fase 2, anterior a que {@code @Lazy} se asentara como convención.
+ * Sin ella, Spring construía sus widgets Swing en el hilo principal durante el
+ * arranque del contexto, en vez de en el EDT. Ver la nota gemela en
+ * {@code LoginFrame}.
  */
 @Component
 @Profile("!test")
+@Lazy
 public class SignUpFrame extends JFrame {
 
 	private static final long serialVersionUID = 1L;
