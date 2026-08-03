@@ -4,8 +4,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 import fp.project.actihome.model.entities.Reservation;
+import fp.project.actihome.model.exceptions.AlreadyCancelledException;
 import fp.project.actihome.model.exceptions.AlreadyCheckedInException;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
+import fp.project.actihome.model.exceptions.CannotCancelException;
 import fp.project.actihome.model.exceptions.CannotCheckInException;
 import fp.project.actihome.model.exceptions.CheckOutMustBeOneDayAfterException;
 import fp.project.actihome.model.exceptions.CodeDoesNotMatchException;
@@ -38,5 +40,18 @@ public interface ReservationService {
 	 * comprobación de permisos.
 	 */
 	ArrayList<Reservation> showHousingReservations(Long housingId);
+
+	/**
+	 * Cancela una reserva del cliente.
+	 *
+	 * <p>
+	 * No se borra la fila: se marca {@code cancelled}, igual que un check-in se
+	 * marca en vez de crear una reserva nueva. Así "Mis reservas" sigue pudiendo
+	 * enseñar el historial completo, cancelaciones incluidas, y las dos consultas
+	 * de disponibilidad de {@link fp.project.actihome.model.entities.ReservationDao}
+	 * dejan de contarla.
+	 */
+	Reservation cancelReservation(Long customerId, Long reservationId) throws InstanceNotFoundException,
+			NotMyReservationException, AlreadyCancelledException, CannotCancelException;
 
 }

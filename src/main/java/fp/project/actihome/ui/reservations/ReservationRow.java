@@ -7,12 +7,14 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Reservation;
+import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.theme.Formato;
@@ -23,12 +25,15 @@ import fp.project.actihome.ui.theme.Typography;
  * Una fila de "mis reservas": miniatura, datos de la estancia y estado.
  *
  * <p>
- * El estado no es un dato guardado en {@link Reservation} —solo existe el
- * booleano {@code checkedIn}—, se deriva aquí de dos hechos: si ya se hizo el
- * check-in y si la fecha de salida ya ha pasado. Tres estados, cada uno con su
- * propio peso visual:
+ * El estado no es un dato guardado en {@link Reservation} —además de
+ * {@code cancelled} (Fase 7.5.3), solo existe el booleano {@code checkedIn}—,
+ * se deriva aquí de esos dos hechos y de si la fecha de salida ya ha pasado.
+ * Cuatro estados, cada uno con su propio peso visual:
  *
  * <ul>
+ * <li><b>Cancelada</b> — en el color secundario, y se comprueba <em>antes</em>
+ * que los demás: da igual que la salida ya haya pasado o que se hubiera hecho
+ * el check-in, cancelada manda.</li>
  * <li><b>Check-in pendiente</b> — en el color de acento, porque es el estado
  * que pide una acción.</li>
  * <li><b>✓ Check-in realizado</b> — en el color secundario: ya no hace falta
@@ -43,25 +48,50 @@ public class ReservationRow extends JPanel {
 
 	private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-	public ReservationRow(Reservation reservation, Runnable alAbrir) {
+	/**
+	 * @param alAbrir    qué hacer al pulsar la fila (va al check-in)
+	 * @param alCancelar qué hacer al confirmar la cancelación; solo se invoca si
+	 *                   {@link #esCancelable} decide mostrar el botón, así que
+	 *                   quien construye la fila no necesita repetir esa lógica
+	 */
+	public ReservationRow(Reservation reservation, Runnable alAbrir, Runnable alCancelar) {
 
 		super(new MigLayout(Space.insets(Space.MD, 0, Space.MD, 0), "[96!]" + Space.XL + "[grow,fill]" + Space.XL + "[]",
 				"[]"));
 
 		setOpaque(false);
-		setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
 		add(miniatura(reservation.getHousing().getImage()), "w 96!, h 96!");
 		add(informacion(reservation), "aligny center");
-		add(totalYEstado(reservation), "aligny center");
+		add(totalYEstado(reservation, alCancelar), "aligny center");
 
-		addMouseListener(new MouseAdapter() {
+		// Una reserva cancelada no lleva a ningún sitio útil: el check-in de algo que
+		// ya no va a suceder no tiene sentido, así que ni el cursor ni el clic
+		// invitan a pulsar la fila.
+		if (!reservation.isCancelled()) {
 
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				alAbrir.run();
-			}
-		});
+			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+			addMouseListener(new MouseAdapter() {
+
+				@Override
+				public void mouseClicked(MouseEvent e) {
+					alAbrir.run();
+				}
+			});
+		}
+	}
+
+	/**
+	 * Si todavía tiene sentido ofrecer cancelar: ni cancelada ya, ni con el
+	 * check-in hecho, ni con la estancia ya empezada. Mismo criterio que aplica
+	 * {@code ReservationServiceImpl.cancelReservation} — repetido aquí porque es
+	 * lo que decide si el botón se ve, no una llamada al servicio desde un
+	 * componente visual.
+	 */
+	private static boolean esCancelable(Reservation reservation) {
+
+		return !reservation.isCancelled() && !reservation.isCheckedIn()
+				&& LocalDateTime.now().isBefore(reservation.getCheckIn());
 	}
 
 	/**
@@ -95,9 +125,10 @@ public class ReservationRow extends JPanel {
 		return panel;
 	}
 
-	private JPanel totalYEstado(Reservation reservation) {
+	private JPanel totalYEstado(Reservation reservation, Runnable alCancelar) {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[]", "[]" + Space.XXS + "[]"));
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[]",
+				"[]" + Space.XXS + "[]" + Space.XS + "[]"));
 		panel.setOpaque(false);
 
 		JLabel total = Labels.price(Formato.precio(reservation.getTotalPrice()));
@@ -106,10 +137,18 @@ public class ReservationRow extends JPanel {
 
 		panel.add(estado(reservation));
 
+		if (esCancelable(reservation)) {
+			panel.add(cancelar(alCancelar));
+		}
+
 		return panel;
 	}
 
 	private JLabel estado(Reservation reservation) {
+
+		if (reservation.isCancelled()) {
+			return Labels.caps("Cancelada");
+		}
 
 		boolean completada = LocalDateTime.now().isAfter(reservation.getCheckOut());
 
@@ -122,5 +161,16 @@ public class ReservationRow extends JPanel {
 		}
 
 		return Labels.capsAccent("Check-in pendiente");
+	}
+
+	/**
+	 * El botón "Cancelar" de la fila. Es un {@code Buttons.link} de verdad, no un
+	 * texto pintado a mano como el enlace de {@code HousingRow} — aquí no hace
+	 * falta consumir el clic para que no compita con el de la fila, porque el
+	 * clic de fila solo lleva al check-in de reservas ya no cancelables, y esta
+	 * columna vive fuera de esa zona clicable en el resto de casos.
+	 */
+	private JButton cancelar(Runnable alCancelar) {
+		return Buttons.link("Cancelar", e -> alCancelar.run());
 	}
 }

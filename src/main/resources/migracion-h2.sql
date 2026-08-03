@@ -53,3 +53,8 @@ UPDATE HOUSINGS SET name = type WHERE name = '';
 -- anterior a esta fase necesita aplicar a mano:
 --     ALTER TABLE HOUSINGS DROP COLUMN available;
 ALTER TABLE HOUSINGS DROP COLUMN IF EXISTS available;
+
+-- Fase 7.5.3: cancelar una reserva. Quien tenga una base MySQL anterior a
+-- esta fase necesita aplicar a mano:
+--     ALTER TABLE RESERVATIONS ADD COLUMN cancelled BOOLEAN DEFAULT FALSE NOT NULL;
+ALTER TABLE RESERVATIONS ADD COLUMN IF NOT EXISTS cancelled BOOLEAN DEFAULT FALSE NOT NULL;

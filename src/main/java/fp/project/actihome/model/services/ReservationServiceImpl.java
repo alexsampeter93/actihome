@@ -17,8 +17,10 @@ import fp.project.actihome.model.entities.Reservation;
 import fp.project.actihome.model.entities.ReservationDao;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
+import fp.project.actihome.model.exceptions.AlreadyCancelledException;
 import fp.project.actihome.model.exceptions.AlreadyCheckedInException;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
+import fp.project.actihome.model.exceptions.CannotCancelException;
 import fp.project.actihome.model.exceptions.CannotCheckInException;
 import fp.project.actihome.model.exceptions.CheckOutMustBeOneDayAfterException;
 import fp.project.actihome.model.exceptions.CodeDoesNotMatchException;
@@ -132,5 +134,35 @@ public class ReservationServiceImpl implements ReservationService {
 	@Override
 	public ArrayList<Reservation> showHousingReservations(Long housingId) {
 		return reservationDao.findByHousingId(housingId);
+	}
+
+	@Override
+	public Reservation cancelReservation(Long customerId, Long reservationId) throws InstanceNotFoundException,
+			NotMyReservationException, AlreadyCancelledException, CannotCancelException {
+
+		User customer = permissionChecker.checkUser(customerId);
+		Optional<Reservation> reservation = reservationDao.findById(reservationId);
+
+		if (!reservation.isPresent()) {
+			throw new InstanceNotFoundException("project.entities.reservation", reservationId);
+		}
+
+		if (!reservation.get().getCustomer().equals(customer)) {
+			throw new NotMyReservationException();
+		}
+
+		if (reservation.get().isCancelled()) {
+			throw new AlreadyCancelledException();
+		}
+
+		// Ni tras el check-in ni una vez empezada la estancia: en ese punto ya se ha
+		// hecho uso de la reserva, o está a punto de empezar, y cancelarla no
+		// deshace nada del lado del alojamiento.
+		if (reservation.get().isCheckedIn() || !LocalDateTime.now().isBefore(reservation.get().getCheckIn())) {
+			throw new CannotCancelException();
+		}
+
+		reservation.get().setCancelled(true);
+		return reservation.get();
 	}
 }

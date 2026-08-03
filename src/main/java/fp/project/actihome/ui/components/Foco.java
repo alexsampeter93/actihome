@@ -12,8 +12,8 @@ import java.awt.event.KeyEvent;
 
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
-import javax.swing.JFrame;
 import javax.swing.KeyStroke;
+import javax.swing.RootPaneContainer;
 
 import fp.project.actihome.ui.theme.Theme;
 
@@ -148,8 +148,14 @@ public final class Foco {
 	 * reservas y el login no tienen "acción a medias" de la que salir: son
 	 * destinos, no pasos de un formulario. Añadir un Escape ahí no tendría a dónde
 	 * llevar que no fuera arbitrario.
+	 *
+	 * <p>
+	 * Tipado como {@code RootPaneContainer} —la interfaz común a {@code JFrame} y
+	 * {@code JDialog}— en vez de {@code JFrame} a secas, para que sirva también en
+	 * los diálogos modales (Fase 7.5.3, {@code Confirmacion}) sin duplicar esta
+	 * misma línea.
 	 */
-	public static void alPulsarEscape(JFrame ventana, Runnable accion) {
+	public static void alPulsarEscape(RootPaneContainer ventana, Runnable accion) {
 
 		ventana.getRootPane().registerKeyboardAction(e -> accion.run(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
 				JComponent.WHEN_IN_FOCUSED_WINDOW);

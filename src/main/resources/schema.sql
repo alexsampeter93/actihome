@@ -97,6 +97,10 @@ CREATE TABLE IF NOT EXISTS RESERVATIONS (
 	reservationDate DATETIME NOT NULL,
 	totalPrice DECIMAL(10, 2) NOT NULL,
 	checkedIn BOOLEAN NOT NULL,
+	-- Fase 7.5.3: si el cliente la ha cancelado. Una reserva cancelada deja de
+	-- contar para el solapamiento de fechas (ver ReservationDao), así que sus
+	-- días vuelven a estar libres para cualquiera.
+	cancelled BOOLEAN DEFAULT FALSE NOT NULL,
 	customerId BIGINT NOT NULL,
 	housingId BIGINT NOT NULL,
 	CONSTRAINT CustomerIdFK FOREIGN KEY(customerId) REFERENCES USERS(id),

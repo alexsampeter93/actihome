@@ -21,8 +21,10 @@ import fp.project.actihome.model.entities.Reservation;
 import fp.project.actihome.model.entities.ReservationDao;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
+import fp.project.actihome.model.exceptions.AlreadyCancelledException;
 import fp.project.actihome.model.exceptions.AlreadyCheckedInException;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
+import fp.project.actihome.model.exceptions.CannotCancelException;
 import fp.project.actihome.model.exceptions.CannotCheckInException;
 import fp.project.actihome.model.exceptions.CheckOutMustBeOneDayAfterException;
 import fp.project.actihome.model.exceptions.CodeDoesNotMatchException;
@@ -452,5 +454,125 @@ public class ReservationServiceTests {
 		assertThrows(InstanceNotFoundException.class, () -> reservationService.doCheckIn(customer.getId(),
 				Long.valueOf(285), reservation.getReservationCode()));
 
+	}
+
+	@Test
+	public void testCancelReservation()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			NotMyReservationException, AlreadyCancelledException, CannotCancelException {
+
+		User customer = signUpUser("Author", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+
+		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
+				"1234567890123456", entrada(), salida());
+
+		Reservation cancelada = reservationService.cancelReservation(customer.getId(), reservation.getId());
+
+		assertTrue(cancelada.isCancelled());
+	}
+
+	@Test
+	public void testCancelReservationNotMine()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+
+		User customer = signUpUser("Author", RoleType.CUSTOMER);
+		User otro = signUpUser("Author2", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+
+		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
+				"1234567890123456", entrada(), salida());
+
+		assertThrows(NotMyReservationException.class,
+				() -> reservationService.cancelReservation(otro.getId(), reservation.getId()));
+	}
+
+	@Test
+	public void testCancelAlreadyCancelled()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			NotMyReservationException, AlreadyCancelledException, CannotCancelException {
+
+		User customer = signUpUser("Author", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+
+		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
+				"1234567890123456", entrada(), salida());
+
+		reservationService.cancelReservation(customer.getId(), reservation.getId());
+
+		assertThrows(AlreadyCancelledException.class,
+				() -> reservationService.cancelReservation(customer.getId(), reservation.getId()));
+	}
+
+	@Test
+	public void testCancelAfterCheckIn()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			CodeDoesNotMatchException, NotMyReservationException, CannotCheckInException, AlreadyCheckedInException {
+
+		User customer = signUpUser("Author", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+
+		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
+				"1234567890123456", entrada(), salida());
+
+		// Mismo truco que testDoCheckIn: se adelanta el checkIn al pasado para poder
+		// hacer el check-in sin depender de una reserva que empiece hoy mismo.
+		reservation.setCheckIn(LocalDateTime.now().minusHours(1));
+		reservationService.doCheckIn(customer.getId(), reservation.getId(), reservation.getReservationCode());
+
+		assertThrows(CannotCancelException.class,
+				() -> reservationService.cancelReservation(customer.getId(), reservation.getId()));
+	}
+
+	@Test
+	public void testCancelNonExistentReservation() {
+
+		User customer = signUpUser("Author", RoleType.CUSTOMER);
+
+		assertThrows(InstanceNotFoundException.class,
+				() -> reservationService.cancelReservation(customer.getId(), Long.valueOf(285)));
+	}
+
+	/**
+	 * La prueba que de verdad demuestra que el cambio cruzado con la Fase 7.5.1
+	 * funcionó: sin excluir las reservas canceladas de
+	 * {@code existsOverlappingReservation}, cancelar no habría servido de nada —
+	 * las mismas fechas habrían seguido bloqueadas para cualquiera.
+	 */
+	@Test
+	public void testCancelledReservationDoesNotBlockRebooking()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			NotMyReservationException, AlreadyCancelledException, CannotCancelException {
+
+		User customer1 = signUpUser("Author", RoleType.CUSTOMER);
+		User customer2 = signUpUser("Author2", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+
+		Reservation primera = reservationService.reserveHousing(customer1.getId(), housing.getId(),
+				"1234567890123456", entrada(), salida());
+
+		reservationService.cancelReservation(customer1.getId(), primera.getId());
+
+		// Mismas fechas exactas, otro cliente: debe triunfar porque la primera ya no
+		// cuenta.
+		Reservation segunda = reservationService.reserveHousing(customer2.getId(), housing.getId(),
+				"1234567890123456", entrada(), salida());
+
+		assertTrue(!segunda.isCancelled());
 	}
 }

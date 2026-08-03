@@ -30,7 +30,9 @@ public class Reservation {
 
 	private BigDecimal totalPrice;
 	
-	private boolean checkedIn; 
+	private boolean checkedIn;
+
+	private boolean cancelled;
 
 	private User customer;
 
@@ -134,6 +136,22 @@ public class Reservation {
 
 	public void setCheckedIn(boolean checkedIn) {
 		this.checkedIn = checkedIn;
+	}
+
+	public boolean isCancelled() {
+		return cancelled;
+	}
+
+	/**
+	 * No hay tercer constructor con este campo (Fase 7.5.3) a propósito: una
+	 * reserva nunca nace cancelada, así que el valor por defecto de un
+	 * {@code boolean} ({@code false}) ya es el correcto en el único sitio donde se
+	 * construye una ({@code ReservationServiceImpl.reserveHousing}). Añadir un
+	 * argumento posicional más a los dos constructores existentes solo habría
+	 * obligado a tocar ese sitio para pasar un valor que siempre es el mismo.
+	 */
+	public void setCancelled(boolean cancelled) {
+		this.cancelled = cancelled;
 	}
 
 	@ManyToOne(optional = false, fetch = FetchType.EAGER)

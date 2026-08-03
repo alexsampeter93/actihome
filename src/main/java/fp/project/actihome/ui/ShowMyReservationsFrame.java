@@ -5,6 +5,7 @@ import java.util.List;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
@@ -17,9 +18,13 @@ import org.springframework.stereotype.Component;
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Reservation;
+import fp.project.actihome.model.exceptions.AlreadyCancelledException;
+import fp.project.actihome.model.exceptions.CannotCancelException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.exceptions.NotMyReservationException;
 import fp.project.actihome.model.services.ReservationService;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Confirmacion;
 import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
@@ -53,6 +58,7 @@ public class ShowMyReservationsFrame extends JFrame {
 
 	private JPanel lista;
 	private JScrollPane scroll;
+	private JLabel error;
 
 	public ShowMyReservationsFrame(ReservationService reservationService, SessionManager sessionManager,
 			Navigator navigator, HeaderPanel headerPanel) {
@@ -96,11 +102,14 @@ public class ShowMyReservationsFrame extends JFrame {
 
 	private JPanel titular() {
 
-		JPanel panel = new JPanel(
-				new MigLayout(Space.insets(Space.XL, Space.HUGE, Space.LG, Space.HUGE), "[grow,fill]", "[]"));
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.XL, Space.HUGE, Space.LG, Space.HUGE),
+				"[grow,fill]", "[]" + Space.XXS + "[]"));
 		panel.setOpaque(false);
 
 		panel.add(Labels.title("Mis reservas"));
+
+		error = Labels.error(" ");
+		panel.add(error);
 
 		return panel;
 	}
@@ -154,6 +163,7 @@ public class ShowMyReservationsFrame extends JFrame {
 	private void cargarReservas() {
 
 		lista.removeAll();
+		error.setText(" ");
 
 		List<Reservation> reservas;
 
@@ -192,7 +202,54 @@ public class ShowMyReservationsFrame extends JFrame {
 	private ReservationRow fila(Reservation reserva) {
 
 		return new ReservationRow(reserva,
-				() -> navigator.ir(DoCheckInFrame.class, frame -> frame.setReservation(reserva)));
+				() -> navigator.ir(DoCheckInFrame.class, frame -> frame.setReservation(reserva)),
+				() -> cancelar(reserva));
+	}
+
+	/**
+	 * Pide confirmación y, si se acepta, cancela la reserva.
+	 *
+	 * <p>
+	 * Un mensaje por excepción (patrón B11): las cuatro que declara
+	 * {@code cancelReservation} pueden pasar por motivos distintos, y un
+	 * "Error en los datos" genérico no diría cuál. Las dos que solo pueden darse
+	 * por una carrera con otra pestaña o sesión —cancelar algo ya cancelado, o
+	 * cancelar algo en lo que ya se ha hecho check-in mientras se decidía—
+	 * recargan la lista igualmente: el estado real ha cambiado y hay que
+	 * enseñarlo, no solo el mensaje.
+	 */
+	private void cancelar(Reservation reserva) {
+
+		boolean confirmado = Confirmacion.preguntar(this, "Cancelar la reserva",
+				"¿Seguro que quieres cancelar la reserva de \"" + reserva.getHousing().getName()
+						+ "\"? Las fechas quedarán libres para cualquiera que quiera reservarlas.",
+				"Cancelar reserva");
+
+		if (!confirmado) {
+			return;
+		}
+
+		try {
+			reservationService.cancelReservation(sessionManager.getLoggedInUser().getId(), reserva.getId());
+			cargarReservas();
+
+		} catch (InstanceNotFoundException ex) {
+			error.setText("Esta reserva ya no existe.");
+
+		} catch (NotMyReservationException ex) {
+			error.setText("Esta reserva no es tuya.");
+
+		} catch (AlreadyCancelledException ex) {
+			// cargarReservas() limpia el error al principio (para la carga normal), así
+			// que aquí va después: primero se refresca la lista con el estado real, luego
+			// se deja el mensaje puesto encima.
+			cargarReservas();
+			error.setText("Esta reserva ya estaba cancelada.");
+
+		} catch (CannotCancelException ex) {
+			cargarReservas();
+			error.setText("Ya no se puede cancelar: la estancia ya ha empezado, o ya has hecho el check-in.");
+		}
 	}
 
 	private JPanel estadoVacio() {
