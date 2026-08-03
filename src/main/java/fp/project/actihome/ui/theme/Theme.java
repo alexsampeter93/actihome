@@ -49,8 +49,17 @@ public final class Theme {
 	/** Línea de separación finísima. En este diseño sustituye a las sombras difusas. */
 	public static final Color HAIRLINE = new Color(0, 0, 0, 31);
 
-	/** Borde de los campos de formulario. */
-	public static final Color FIELD_BORDER = new Color(0, 0, 0, 51);
+	/**
+	 * Borde de los campos de formulario.
+	 *
+	 * <p>
+	 * <b>Ajustado en la Fase 7</b> tras medir con {@code MedirContraste}: el valor
+	 * original ({@code rgba(0,0,0,.2)}) daba 1,61:1 contra una ficha blanca, muy por
+	 * debajo del 3:1 que exige WCAG para el borde de un componente de interfaz —un
+	 * campo vacío apenas se distinguía de la superficie que lo rodea. Subido a
+	 * {@code rgba(0,0,0,.42)}, que da 3,03:1.
+	 */
+	public static final Color FIELD_BORDER = new Color(0, 0, 0, 107);
 
 	/**
 	 * Rojo de error, común a las cuatro estaciones.

@@ -2,15 +2,11 @@ package fp.project.actihome.ui.components;
 
 import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.function.Consumer;
 
-import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
@@ -39,6 +35,19 @@ import fp.project.actihome.ui.theme.Typography;
  * Como en el selector de estación, la opción activa se marca con color
  * <b>y</b> subrayado. Dos canales en lugar de uno: quien no distinga bien los
  * colores sigue viendo cuál está elegida.
+ *
+ * <p>
+ * <b>Segunda versión de {@code Opcion}: ya no dibuja su texto a mano.</b> La
+ * primera usaba {@code drawString} con {@code Theme.acc()} como color de
+ * texto —el mismo patrón, y los mismos dos fallos, que tenían
+ * {@code SeasonSelector.Pestana} y {@code HeaderPanel.Destino} antes de
+ * corregirse—: el texto pintado a mano no pasa por el motor de repintado
+ * estándar de Swing, lo que abría la puerta al mismo temblor al pasar el
+ * ratón, y {@code Theme.acc()} usado como color de texto en vez de
+ * {@code Theme.accText()} daba 1,88:1 en verano —muy por debajo del 4,5 que
+ * exige un texto de 11px—, detectado con {@code MedirContraste} (entrada 032
+ * del diario). Ahora es un {@code JLabel} de verdad más una barra aparte para
+ * el subrayado, igual que las otras dos.
  */
 public class OptionLinks extends JPanel {
 
@@ -79,73 +88,78 @@ public class OptionLinks extends JPanel {
 		return activo;
 	}
 
-	private class Opcion extends JComponent {
+	private class Opcion extends JPanel {
 
 		private static final long serialVersionUID = 1L;
 
 		private static final int GROSOR = 2;
-		private static final int AIRE = 6;
 
-		private final String texto;
 		private final int indice;
+		private final JLabel etiqueta;
+		private final JPanel subrayado;
 		private boolean encima;
 
 		Opcion(String texto, int indice) {
 
-			this.texto = texto.toUpperCase();
+			super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]"));
 			this.indice = indice;
 
-			setFont(Typography.label(11f));
+			setOpaque(false);
 			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-			addMouseListener(new MouseAdapter() {
+			etiqueta = new JLabel(texto.toUpperCase());
+			etiqueta.setFont(Typography.label(11f));
+
+			subrayado = new JPanel();
+			subrayado.setOpaque(true);
+			// Ver la nota gemela en SeasonSelector.Pestana: un JPanel recién creado
+			// informa un mínimo de 10x10, muy por encima del alto real que fuerza el "h
+			// GROSOR!" de abajo.
+			subrayado.setMinimumSize(new java.awt.Dimension(0, GROSOR));
+
+			add(etiqueta);
+			add(subrayado, "growx, h " + GROSOR + "!");
+
+			MouseAdapter interaccion = new MouseAdapter() {
 
 				@Override
 				public void mouseEntered(MouseEvent e) {
 					encima = true;
-					repaint();
+					actualizarColores();
 				}
 
 				@Override
 				public void mouseExited(MouseEvent e) {
 					encima = false;
-					repaint();
+					actualizarColores();
 				}
-			});
+			};
+
+			addMouseListener(interaccion);
+			etiqueta.addMouseListener(interaccion);
+
+			actualizarColores();
 		}
 
-		@Override
-		public Dimension getPreferredSize() {
-
-			return new Dimension(getFontMetrics(getFont()).stringWidth(texto) + 2,
-					getFontMetrics(getFont()).getHeight() + AIRE + GROSOR);
-		}
-
-		/** Ver la nota de {@code SeasonSelector.Pestana}: sin mínimo, se aplasta. */
-		@Override
-		public Dimension getMinimumSize() {
-			return getPreferredSize();
-		}
-
-		@Override
-		protected void paintComponent(Graphics g) {
-
-			Graphics2D g2 = (Graphics2D) g.create();
-			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		private void actualizarColores() {
 
 			boolean esActivo = indice == activo;
-			Color tinta = esActivo ? Theme.acc() : encima ? Theme.txt() : Theme.mut();
+			Color tinta = esActivo ? Theme.accText() : encima ? Theme.txt() : Theme.mut();
 
-			g2.setFont(getFont());
-			g2.setColor(tinta);
-			g2.drawString(texto, 0, g2.getFontMetrics().getAscent());
+			etiqueta.setForeground(tinta);
+			subrayado.setBackground(esActivo ? Theme.accText() : getBackground());
+			subrayado.setOpaque(esActivo);
+		}
 
-			if (esActivo) {
-				g2.setColor(Theme.acc());
-				g2.fillRect(0, getHeight() - GROSOR, getWidth() - 2, GROSOR);
-			}
+		/**
+		 * Se resuelve el estado en cada repintado, no solo al hacer clic o al pasar el
+		 * ratón. Ver la nota gemela en {@code SeasonSelector.Pestana.paint()}.
+		 */
+		@Override
+		public void paint(java.awt.Graphics g) {
 
-			g2.dispose();
+			actualizarColores();
+			super.paint(g);
 		}
 	}
 }

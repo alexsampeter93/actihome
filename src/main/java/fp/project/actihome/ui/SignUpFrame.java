@@ -274,7 +274,8 @@ public class SignUpFrame extends JFrame {
 
 		JLabel enlace = Labels.body("Inicia sesión");
 		enlace.setFont(Typography.sansSemiBold(Typography.BODY_SM));
-		enlace.setForeground(Theme.acc());
+		// accText(), no acc(): ver la nota gemela en LoginFrame.enlaceARegistro().
+		enlace.setForeground(Theme.accText());
 		enlace.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		enlace.addMouseListener(new MouseAdapter() {
 

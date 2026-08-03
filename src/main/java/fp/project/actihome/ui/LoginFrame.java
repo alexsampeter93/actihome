@@ -318,7 +318,11 @@ public class LoginFrame extends JFrame {
 
 		JLabel enlace = Labels.body("Regístrate");
 		enlace.setFont(Typography.sansSemiBold(Typography.BODY_SM));
-		enlace.setForeground(Theme.acc());
+		// accText(), no acc(): este enlace se quedó sin migrar al separar los dos
+		// tokens de acento (ADR-008) y en verano pintaba el texto con el amarillo de
+		// relleno, que da 1,88:1 sobre el fondo — muy por debajo del 4,5 que exige un
+		// texto de 14px. Detectado con MedirContraste (entrada 032 del diario).
+		enlace.setForeground(Theme.accText());
 		enlace.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		enlace.addMouseListener(new MouseAdapter() {
 

@@ -457,7 +457,13 @@ public class HeaderPanel extends JPanel {
 			Color base = Theme.bg();
 			etiqueta.setForeground(actual || encima ? base : new Color(base.getRed(), base.getGreen(), base.getBlue(), 150));
 
-			subrayado.setBackground(actual ? Theme.acc() : getBackground());
+			// Theme.bg(), no Theme.acc(): el mismo color que ya usa el texto activo justo
+			// encima, no el acento. Medido con MedirContraste (entrada 032 del diario):
+			// el acento como barra sobre la cabecera oscura daba 2,2-2,4:1 en tres de las
+			// cuatro estaciones —por debajo del 3:1 que exige un componente de
+			// interfaz—, casi invisible. Iba a colores distintos el texto y su propio
+			// subrayado, así que el arreglo además une los dos en el mismo tono.
+			subrayado.setBackground(actual ? base : getBackground());
 			subrayado.setOpaque(actual);
 		}
 

@@ -223,7 +223,15 @@ public class SeasonSelector extends JPanel {
 			}
 
 			etiqueta.setForeground(tinta);
-			subrayado.setBackground(activa ? Theme.acc() : getBackground());
+
+			// Sobre la cabecera, el subrayado usa el mismo blanco que ya usa el texto
+			// activo (línea de arriba), no Theme.acc(): medido con MedirContraste
+			// (entrada 032 del diario), el acento como barra sobre la cabecera oscura
+			// daba 2,2-2,4:1 en tres de las cuatro estaciones —por debajo del 3:1 que
+			// exige un componente de interfaz— y solo pasaba en verano. Fuera de la
+			// cabecera (rama sin uso hoy, ver la nota de clase) se mantiene el acento,
+			// que ahí sí tiene contraste de sobra contra el fondo claro.
+			subrayado.setBackground(activa ? (sobreCabecera ? Color.WHITE : Theme.acc()) : getBackground());
 			subrayado.setOpaque(activa);
 			subrayado.repaint();
 		}

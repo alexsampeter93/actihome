@@ -26,16 +26,24 @@ import java.time.MonthDay;
  */
 public enum Season {
 
+	// El acento y mut se ajustaron en la Fase 7 tras medir contraste con
+	// MedirContraste (entrada 032 del diario): accText daba 4,44:1 —por debajo del
+	// 4,5 que exige un texto de 11px— y se oscureció lo mínimo, manteniendo matiz y
+	// saturación, hasta 4,50:1. mut daba 3,39:1 sobre bg, muy por debajo del 4,5 que
+	// exige un texto de 14px; incluso sobre las fichas blancas se quedaba en 3,85:1.
 	PRIMAVERA("Primavera", "Estancias de primavera — Brotes, campo verde y días largos",
-			0x4E7A3E, 0x4E7A3E, 0xF3F1E6, 0x2A3A20, 0x232A1B, 0x7D8570, 0xE4E6D5, new Color(120, 150, 80, 41),
+			0x4E7A3E, 0x4D793D, 0xF3F1E6, 0x2A3A20, 0x232A1B, 0x696F5E, 0xE4E6D5, new Color(120, 150, 80, 41),
 			new Color(0xD9, 0x6A, 0x96)),
 
 	// Verano se aparta del handoff (ADR-008). Ver la nota extensa sobre accText más
 	// abajo: el relleno es un amarillo natural y el texto, un oro oscuro. El
 	// original (#C0870F para todo) daba 2,83:1 como texto sobre el crema, muy por
 	// debajo del mínimo legible.
+	//
+	// mut ajustado en la Fase 7 (entrada 032): daba 3,57:1 sobre bg, por debajo del
+	// 4,5 que exige un texto de 14px. Oscurecido manteniendo matiz y saturación.
 	VERANO("Verano", "Estancias de verano — Sol alto, luz dorada y sombra fresca",
-			0xE0AC1B, 0x806210, 0xFBF3E1, 0x33291A, 0x2B2513, 0x8C7F60, 0xF2E6C2, new Color(245, 195, 70, 46),
+			0xE0AC1B, 0x806210, 0xFBF3E1, 0x33291A, 0x2B2513, 0x796E53, 0xF2E6C2, new Color(245, 195, 70, 46),
 			new Color(0xD9, 0xA6, 0x2A)),
 
 	// Otoño se aparta del handoff a propósito (ADR-005). Los valores originales
@@ -48,12 +56,17 @@ public enum Season {
 	// Ajustado después hacia el rojo (#9C5A2E → #A34526) por preferencia del
 	// usuario: hoja de otoño en vez de barro. Sigue sin ser rojo vivo —la
 	// saturación se mantiene contenida— y gana contraste como texto (4,49 → 5,12).
+	//
+	// mut ajustado en la Fase 7 (entrada 032): 3,65:1 sobre bg y 4,36:1 sobre las
+	// fichas blancas, los dos por debajo del 4,5 que exige un texto de 14px.
 	OTONO("Otoño", "Estancias de otoño — Hojas, viñedos y tardes doradas",
-			0xA34526, 0xA34526, 0xF1EAE0, 0x3D2820, 0x2E211A, 0x8A7566, 0xE6DACB, new Color(150, 85, 45, 51),
+			0xA34526, 0xA34526, 0xF1EAE0, 0x3D2820, 0x2E211A, 0x79675A, 0xE6DACB, new Color(150, 85, 45, 51),
 			new Color(0xB5, 0x4E, 0x2A)),
 
+	// mut ajustado en la Fase 7 (entrada 032): 3,46:1 sobre bg, por debajo del 4,5
+	// que exige un texto de 14px.
 	INVIERNO("Invierno", "Estancias de invierno — Nieve, chimenea y luz de dusk",
-			0x5A5B86, 0x5A5B86, 0xECECF1, 0x242539, 0x22233A, 0x7C7C93, 0xDDDCE6, new Color(96, 98, 150, 38),
+			0x5A5B86, 0x5A5B86, 0xECECF1, 0x242539, 0x22233A, 0x69697C, 0xDDDCE6, new Color(96, 98, 150, 38),
 			new Color(0xAE, 0xB2, 0xCC));
 
 	private final String nombre;
