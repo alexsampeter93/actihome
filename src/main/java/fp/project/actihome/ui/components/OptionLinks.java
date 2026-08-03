@@ -69,14 +69,6 @@ public class OptionLinks extends JPanel {
 			final int indice = i;
 			Opcion opcion = new Opcion(opciones[i], indice);
 
-			opcion.addMouseListener(new MouseAdapter() {
-
-				@Override
-				public void mouseClicked(MouseEvent e) {
-					seleccionar(indice);
-				}
-			});
-
 			// Sin esto no había forma de elegir el orden con el teclado. Ver la nota de
 			// clase en Foco.
 			Foco.activable(opcion, () -> seleccionar(indice));
@@ -131,6 +123,16 @@ public class OptionLinks extends JPanel {
 			add(subrayado, "growx, h " + GROSOR + "!");
 
 			MouseAdapter interaccion = new MouseAdapter() {
+
+				// El clic se escuchaba solo en el panel (this), pero la etiqueta lo cubre
+				// casi entero: al ser un JLabel hijo, es él quien recibe el evento y el
+				// clic nunca llegaba al panel. Por eso "Ordenar" no respondía. Ver la nota
+				// gemela en HeaderPanel.Destino, que ya registraba el mismo listener en
+				// los dos sitios.
+				@Override
+				public void mouseClicked(MouseEvent e) {
+					seleccionar(indice);
+				}
 
 				@Override
 				public void mouseEntered(MouseEvent e) {

@@ -1,8 +1,10 @@
 package fp.project.actihome.ui.components;
 
+import java.awt.AWTEvent;
 import java.awt.BasicStroke;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
@@ -46,6 +48,40 @@ import fp.project.actihome.ui.theme.Theme;
  */
 public final class Foco {
 
+	/** Client property: si el foco actual se ganó pulsando Tab. */
+	private static final String FOCO_POR_TECLADO = "foco.porTeclado";
+
+	/**
+	 * Si el último Tab/ratón visto en toda la aplicación fue una tecla Tab.
+	 *
+	 * <p>
+	 * <b>Por qué hace falta un vigía global y no basta con mirar el propio
+	 * evento.</b> El foco de un componente puede cambiar por tres vías distintas:
+	 * pulsar Tab, hacer clic, o que Swing lo asigne <em>solo</em> —cuando una
+	 * ventana se muestra por primera vez, el gestor de foco elige un componente
+	 * por defecto sin que medie ni tecla ni clic—. Esa tercera vía es la que
+	 * dejaba el anillo dibujado nada más entrar en el catálogo recién iniciada la
+	 * sesión: {@code CATÁLOGO} de la cabecera es el primer componente enfocable
+	 * de la ventana, así que se lo quedaba por defecto. Preguntar "¿fue un clic?"
+	 * no lo detecta, porque no fue ni lo uno ni lo otro. La pregunta que sí lo
+	 * cubre es la contraria: "¿fue de verdad Tab?", con un no por defecto.
+	 */
+	private static volatile boolean ultimoFueTab;
+
+	static {
+		Toolkit.getDefaultToolkit().addAWTEventListener(evento -> {
+
+			if (evento instanceof KeyEvent && evento.getID() == KeyEvent.KEY_PRESSED
+					&& ((KeyEvent) evento).getKeyCode() == KeyEvent.VK_TAB) {
+				ultimoFueTab = true;
+
+			} else if (evento.getID() == java.awt.event.MouseEvent.MOUSE_PRESSED) {
+				ultimoFueTab = false;
+			}
+
+		}, AWTEvent.KEY_EVENT_MASK | AWTEvent.MOUSE_EVENT_MASK);
+	}
+
 	private Foco() {
 	}
 
@@ -71,11 +107,16 @@ public final class Foco {
 		});
 
 		// Sin esto el anillo no se repintaría al llegar o irse el foco con Tab: nada
-		// más dispara un repintado en ese momento.
+		// más dispara un repintado en ese momento. Y se anota aquí, al ganar el
+		// foco, si en ese instante el vigía dice que vino de Tab: es el único
+		// momento en que la pregunta tiene sentido, porque el vigía sigue
+		// actualizándose después con cualquier otra tecla o clic que pase por la
+		// aplicación.
 		componente.addFocusListener(new FocusAdapter() {
 
 			@Override
 			public void focusGained(FocusEvent e) {
+				componente.putClientProperty(FOCO_POR_TECLADO, ultimoFueTab);
 				componente.repaint();
 			}
 
@@ -127,6 +168,10 @@ public final class Foco {
 	public static void pintarAnillo(Graphics2D g2destino, JComponent componente) {
 
 		if (!componente.isFocusOwner()) {
+			return;
+		}
+
+		if (!Boolean.TRUE.equals(componente.getClientProperty(FOCO_POR_TECLADO))) {
 			return;
 		}
 
