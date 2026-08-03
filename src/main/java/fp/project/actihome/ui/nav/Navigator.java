@@ -123,6 +123,7 @@ public class Navigator {
 			ventana.setIconImages(iconos);
 		}
 
+		fijarMinimoSegunElContenido(ventana);
 		heredarGeometria(anterior, ventana);
 
 		visible = ventana;
@@ -237,6 +238,45 @@ public class Navigator {
 		ventana.setLocation(previa.x, previa.y);
 
 		encajarEnPantalla(ventana);
+	}
+
+	/**
+	 * Impide que la ventana se pueda encoger por debajo de lo que su contenido
+	 * necesita.
+	 *
+	 * <p>
+	 * <b>El fallo que corrige.</b> Cada pantalla declaraba su mínimo con números
+	 * escritos a mano ({@code setMinimumSize(new Dimension(1180, 760))}), ajustados
+	 * mirando capturas en una máquina concreta. Pero cuánto ocupa una interfaz
+	 * depende de cuánto miden las fuentes y los controles, y eso cambia con el
+	 * <b>escalado del sistema</b>: en un portátil al 150 % todo mide vez y media, así
+	 * que 1180 dejaba de ser suficiente y la ventana permitía encogerse hasta que
+	 * los textos empezaban a truncarse — "Todos" quedaba en "Tod…", "DISPONIBLES" en
+	 * "SPONIBLES…". El síntoma no era que faltara sitio, era que <b>nadie impedía
+	 * que faltara</b>.
+	 *
+	 * <p>
+	 * Preguntarle al contenido ya construido cuál es su mínimo real resuelve las
+	 * diecisiete pantallas y cualquier escalado, porque la medida se toma en la
+	 * máquina donde se está ejecutando. Se respeta además el mínimo que la pantalla
+	 * hubiera declarado por su cuenta, tomando el mayor de los dos.
+	 *
+	 * <p>
+	 * El tope de pantalla no es opcional: un mínimo mayor que el escritorio deja una
+	 * ventana que no se puede colocar ni cerrar cómodamente.
+	 */
+	private void fijarMinimoSegunElContenido(JFrame ventana) {
+
+		Dimension contenido = ventana.getContentPane().getMinimumSize();
+		Insets bordes = ventana.getInsets();
+
+		int ancho = contenido.width + bordes.left + bordes.right;
+		int alto = contenido.height + bordes.top + bordes.bottom;
+
+		Dimension declarado = ventana.getMinimumSize();
+
+		ventana.setMinimumSize(acotarAPantalla(ventana, Math.max(ancho, declarado.width),
+				Math.max(alto, declarado.height)));
 	}
 
 	/**

@@ -103,14 +103,35 @@ public class Field extends JPanel {
 	 * {@link WrappingText}: sin él, una frase larga se convierte en una única línea
 	 * con barra de desplazamiento horizontal, que es una forma pésima de escribir.
 	 */
-	public static Field textArea(String etiqueta, int alto) {
+	/**
+	 * Campo de varias líneas.
+	 *
+	 * <p>
+	 * <b>El alto se pide en líneas, no en píxeles</b>, y esa es la diferencia que
+	 * importa. Antes recibía un número de píxeles fijo (96), ajustado mirando la
+	 * pantalla de quien lo escribió. En un sistema con el escalado al 150 % la
+	 * fuente mide vez y media pero la caja seguía midiendo 96, así que la última
+	 * línea de texto quedaba cortada por la mitad: el cuadro no crecía con su
+	 * contenido.
+	 *
+	 * <p>
+	 * Calculándolo desde la altura real de una línea de la fuente ya cargada, la
+	 * caja mide siempre lo mismo <em>en líneas de texto</em>, que es la unidad en la
+	 * que uno piensa cuando decide cuánto debe caber.
+	 *
+	 * @param lineas cuántas líneas de texto deben verse sin desplazar
+	 */
+	public static Field textArea(String etiqueta, int lineas) {
 
 		JTextArea area = new JTextArea();
 		area.setLineWrap(true);
 		area.setWrapStyleWord(true);
 		area.setBorder(BorderFactory.createEmptyBorder(Space.XS, Space.XS, Space.XS, Space.XS));
+		area.setFont(Typography.sans(Typography.BODY));
 
-		return new Field(etiqueta, area, alto);
+		int altoDeLinea = area.getFontMetrics(area.getFont()).getHeight();
+
+		return new Field(etiqueta, area, lineas * altoDeLinea + Space.XS * 2 + 2);
 	}
 
 	public String getText() {

@@ -80,7 +80,7 @@ public class HeaderPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
 
 	/** Alto fijo. La cabecera no crece con la ventana: lo que crece es el contenido. */
-	private static final int ALTO = 66;
+	private static final int ALTO = 72;
 
 	private final transient SessionManager sessionManager;
 	private final transient Navigator navigator;
@@ -143,14 +143,19 @@ public class HeaderPanel extends JPanel {
 
 	private void initUI() {
 
-		setLayout(new MigLayout(Space.insets(Space.LG, Space.XXXL, Space.LG, Space.XXXL),
+		// Márgenes verticales cortos (XS en vez de LG). Con 20px arriba y abajo, de los
+		// 66px de la barra quedaban 26 para el contenido: justo lo que mide el wordmark
+		// solo, así que al añadirle debajo la firma "By CocoBrain" la segunda línea
+		// salía cortada por el borde. El aire lateral sí se mantiene, que es el que se
+		// percibe en una barra.
+		setLayout(new MigLayout(Space.insets(Space.XS, Space.XXXL, Space.XS, Space.XXXL),
 				"[]11[]push[]" + Space.XXL + "[]" + Space.XXL + "[]", "[]"));
 		setOpaque(false);
 		setPreferredSize(new Dimension(0, ALTO));
 		setMinimumSize(new Dimension(0, ALTO));
 
 		add(new SeasonGlyph(16), "w 16!, h 16!");
-		add(wordmark());
+		add(marca());
 
 		navegacion = new JPanel(new MigLayout(Space.insets(0), "", "[]"));
 		navegacion.setOpaque(false);
@@ -205,6 +210,30 @@ public class HeaderPanel extends JPanel {
 	 */
 	private JLabel wordmark() {
 		return Labels.brand("ActiHome", 20f);
+	}
+
+	/**
+	 * El wordmark con la firma de CocoBrain debajo.
+	 *
+	 * <p>
+	 * <b>La firma vivía en el colofón del catálogo</b>, y el colofón se eliminó para
+	 * devolverle 80px a la lista. Aquí no cuesta alto: la versalita cabe bajo el
+	 * wordmark dentro de los 66px que la cabecera ya ocupaba, y además gana
+	 * presencia — antes solo aparecía en el catálogo y ahora firma <b>las
+	 * diecisiete pantallas</b>.
+	 *
+	 * <p>
+	 * Se escribe <b>"By CocoBrain"</b> y no "por CocoBrain": es como firma la marca.
+	 */
+	private JPanel marca() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[]", "[]0[]"));
+		panel.setOpaque(false);
+
+		panel.add(wordmark());
+		panel.add(Labels.capsOnHeader("By CocoBrain"), "gaptop -2");
+
+		return panel;
 	}
 
 	private void anadirDestino(JPanel contenedor, String texto, Class<?> pantalla) {

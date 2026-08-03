@@ -107,6 +107,27 @@ public class Chip extends JToggleButton {
 		return new Dimension(d.width, Math.max(d.height, 30));
 	}
 
+	/**
+	 * Un chip no se encoge: o cabe entero o no cabe.
+	 *
+	 * <p>
+	 * <b>Faltaba, y es la trampa que el propio manual del proyecto advierte.</b> Un
+	 * componente que declara el tamaño preferido pero no el mínimo hereda el mínimo
+	 * del <i>look and feel</i>, que para un botón permite recortar el texto con
+	 * puntos suspensivos. En cuanto la ventana se quedaba corta —cosa que pasa
+	 * antes de lo previsto en un sistema con el escalado al 150 %— los filtros se
+	 * leían "Tod…", "Ca…", "Caba…". Un filtro cuyo nombre no se lee no es un filtro.
+	 *
+	 * <p>
+	 * Devolviendo el preferido como mínimo, el chip deja de ser el que cede espacio
+	 * y el problema sube al contenedor, que es donde se puede resolver de verdad:
+	 * ampliando el mínimo de la ventana.
+	 */
+	@Override
+	public Dimension getMinimumSize() {
+		return getPreferredSize();
+	}
+
 	@Override
 	protected void paintComponent(Graphics g) {
 

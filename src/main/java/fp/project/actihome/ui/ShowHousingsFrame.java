@@ -3,6 +3,7 @@ package fp.project.actihome.ui;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -114,6 +115,9 @@ public class ShowHousingsFrame extends JFrame {
 	/** Tamaño del titular del hero. Ver la nota en {@code titular()}. */
 	private static final float TITULAR = 40f;
 
+	/** Por debajo de esto el titular deja de encogerse: mejor dos lineas que ilegible. */
+	private static final float TITULAR_MINIMO = 26f;
+
 	/** Columnas de la vista de cuadrícula, según el handoff. */
 	private static final int COLUMNAS_CUADRICULA = 3;
 
@@ -159,6 +163,7 @@ public class ShowHousingsFrame extends JFrame {
 	private JLabel resumenCompacto;
 	private JLabel tituloCompacto;
 	private boolean heroContraido;
+	private JPanel controlesHero;
 
 	/**
 	 * Testigo de la suscripción a los cambios de estación.
@@ -338,8 +343,15 @@ public class ShowHousingsFrame extends JFrame {
 				"[grow]" + Space.XXXL + "[]", "[]"));
 		panel.setOpaque(false);
 
-		panel.add(titular(), Layout.ancho(Layout.TEXTO) + ", aligny bottom");
-		panel.add(controles(), "aligny bottom");
+		// El titular NO lleva el tope de Layout.TEXTO que tenía antes. Ese tope está
+		// pensado para columnas de texto legible —una línea muy larga cansa de leer— y
+		// un titular de display no es eso. Con el tope puesto y la fuente escalada a
+		// ×1.35 en pantallas grandes, la frase pedía más de los 560px permitidos y se
+		// quedaba en "Elige dónde quieres desperta": la última letra, cortada.
+		panel.add(titular(), "growx, aligny bottom");
+
+		controlesHero = controles();
+		panel.add(controlesHero, "aligny bottom");
 
 		return panel;
 	}
@@ -780,15 +792,64 @@ public class ShowHousingsFrame extends JFrame {
 	}
 
 	/** Los titulares crecen con la ventana; el cuerpo de texto nunca. */
+	/**
+	 * Escala el titular con el tamaño de la ventana, <b>sin dejar nunca que se
+	 * corte</b>.
+	 *
+	 * <p>
+	 * <b>Escalar a ciegas no basta, y este fue el fallo.</b> La regla del sistema
+	 * dice que la tipografía de display crece en ventanas grandes
+	 * ({@code Layout.display}), y así estaba: ×1.35 por encima de cierto ancho. Pero
+	 * nadie comprobaba que la frase resultante cupiera, así que en un monitor de 27
+	 * pulgadas el titular pedía más sitio del que tenía y se quedaba en "Elige dónde
+	 * quieres <b>desperta</b>". Un texto cortado es peor que un texto pequeño.
+	 *
+	 * <p>
+	 * Ahora el tamaño que devuelve la regla es el <em>punto de partida</em>, no la
+	 * última palabra: se mide lo que ocuparía la frase con esa fuente y se va
+	 * bajando hasta que entra en el sitio real que le queda al titular. La medida se
+	 * hace con {@code FontMetrics}, que es lo mismo que usará Swing al dibujar, así
+	 * que no hay estimaciones de por medio.
+	 */
 	private void ajustarEscalaDeDisplay() {
 
 		int ancho = getWidth();
 
-		tituloPrimera.setFont(Typography.serifMedium(Layout.display(TITULAR, ancho)));
-		tituloSegunda.setFont(Typography.serifMedium(Layout.display(TITULAR, ancho)));
+		if (ancho <= 0 || tituloPrimera == null) {
+			return;
+		}
+
+		float tamano = Layout.display(TITULAR, ancho);
+		int disponible = anchoParaElTitular();
+
+		while (tamano > TITULAR_MINIMO && anchoDelTitular(tamano) > disponible) {
+			tamano -= 1f;
+		}
+
+		tituloPrimera.setFont(Typography.serifMedium(tamano));
+		tituloSegunda.setFont(Typography.serifMedium(tamano));
 
 		revalidate();
 		repaint();
+	}
+
+	/** Lo que mediría la frase completa dibujada con ese cuerpo. */
+	private int anchoDelTitular(float tamano) {
+
+		FontMetrics metrica = getFontMetrics(Typography.serifMedium(tamano));
+
+		return metrica.stringWidth(tituloPrimera.getText()) + Space.SM + metrica.stringWidth(tituloSegunda.getText());
+	}
+
+	/**
+	 * El ancho que le queda de verdad al titular: la ventana menos los márgenes del
+	 * hero, la columna de la derecha y el hueco entre ambas.
+	 */
+	private int anchoParaElTitular() {
+
+		int derecha = controlesHero == null ? 360 : controlesHero.getPreferredSize().width;
+
+		return getWidth() - Space.HUGE * 2 - Space.XXXL - derecha;
 	}
 
 	/** Botón circular de "añadir", del handoff: sin degradados ni animaciones. */

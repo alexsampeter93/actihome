@@ -93,7 +93,7 @@ public class HousingForm extends JPanel {
 		habitaciones = Field.text("Nº de habitaciones");
 		precio = Field.text("Precio por noche (€)");
 		ubicacion = Field.text("Ubicación");
-		descripcion = Field.textArea("Descripción", 96);
+		descripcion = Field.textArea("Descripción", 4);
 
 		add(columnaIzquierda(conCodigo), "aligny top");
 		add(columnaDerecha(), "aligny top");
