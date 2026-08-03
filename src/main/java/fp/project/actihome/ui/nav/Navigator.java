@@ -7,7 +7,6 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
-import java.awt.Window;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -64,9 +63,12 @@ import fp.project.actihome.ui.theme.Layout;
  * <li><b>B13</b>: ninguna ventana declaraba qué hacer al pulsar la X, así que
  * regía el valor por defecto de Swing —ocultarla— y el proceso Java se quedaba
  * vivo en segundo plano. El navegador lo fija al mostrarla.</li>
- * <li>La ventana anterior se cierra <b>después</b> de mostrar la nueva. Al
- * revés, cerrar la última ventana visible puede terminar la aplicación antes de
- * que aparezca la siguiente.</li>
+ * <li>La ventana anterior se <b>oculta</b>, nunca se dispone, y se hace
+ * <b>después</b> de mostrar la nueva. Disponerla —quitarle el par nativo, no
+ * solo esconderla— era lo que hacía que cada navegación se sintiera como cerrar
+ * la aplicación y volver a abrirla: Windows trataba la siguiente visita a esa
+ * pantalla como una ventana genuinamente nueva, con su parpadeo de apertura
+ * incluido. Ver la nota en {@link #mostrar}.</li>
  * </ul>
  */
 @Component
@@ -139,36 +141,31 @@ public class Navigator {
 		visible = ventana;
 		ventana.setVisible(true);
 
-		// Se cierra CUALQUIER otra ventana viva, no solo la que el navegador recuerda
-		// haber mostrado.
+		// **Se oculta la anterior, no se dispone.** Esta era la causa real y de fondo
+		// del salto que llevaba dos entradas del diario reportándose: no era un
+		// problema de tamaño ni de posición —esos se corrigieron y seguían sin
+		// bastar—, era que {@code dispose()} no oculta una ventana, le retira el par
+		// nativo por completo. La siguiente vez que se visitaba esa misma pantalla,
+		// Windows tenía que crear una ventana nueva de verdad, con la animación de
+		// apertura que eso conlleva — el "se abre y se cierra la app" que describió el
+		// usuario, y pasaba en **cualquier** navegación (editar, registrar, cerrar
+		// sesión, añadir reserva...) porque el mecanismo es el mismo en las diecisiete
+		// pantallas.
 		//
-		// El motivo es que el rediseño va por fases y conviven dos estilos de
-		// navegación: las pantallas nuevas usan este navegador y las que quedan por
-		// rediseñar siguen haciendo "dispose(); getBean(...); setVisible(true)" por su
-		// cuenta. Cuando una de esas navega, el navegador se queda apuntando a una
-		// ventana ya cerrada; en el siguiente salto cerraría esa —que ya no está— en
-		// lugar de la que el usuario tiene delante, y acabarían dos ventanas abiertas a
-		// la vez. En una aplicación de una sola ventana eso se lee directamente como
-		// que algo se ha roto.
+		// Antes había que disponer porque el rediseño iba por fases y convivían dos
+		// estilos de navegación: las pantallas nuevas usaban este navegador y las que
+		// quedaban por rediseñar seguían haciendo "dispose(); getBean(...);
+		// setVisible(true)" por su cuenta, dejando ventanas sueltas que había que
+		// barrer. Esa fase terminó: las diecisiete pantallas navegan ya por aquí, así
+		// que no queda ninguna ventana que no sea la que el navegador recuerda.
 		//
-		// Preguntar por las ventanas vivas en vez de fiarse de lo apuntado hace que el
-		// navegador sea correcto pase lo que pase fuera de él. Cuando no queden
-		// pantallas del estilo antiguo, esto se podrá simplificar.
-		//
-		// El orden importa y no es negociable: **primero se muestra la nueva y después
-		// se cierran las demás**. Al revés, cerrar la última ventana viva puede terminar
-		// la aplicación antes de que aparezca la siguiente.
-		for (Window abierta : Window.getWindows()) {
-
-			if (abierta != ventana && abierta instanceof JFrame && abierta.isDisplayable()) {
-				abierta.dispose();
-			}
-		}
-
-		// Redundante con el bucle de arriba, pero explícito: la ventana que el navegador
-		// sí conocía queda cerrada seguro.
+		// Ocultar en vez de disponer tiene además una ventaja de la que no se hablaba
+		// antes: el par nativo de cada pantalla se crea **una sola vez**, la primera
+		// vez que se visita en toda la sesión. A partir de ahí, mostrarla es solo
+		// hacerla visible — instantáneo, sin parpadeo, y sin la interferencia de
+		// Windows tratándolo como una ventana nueva de verdad.
 		if (anterior != null && anterior != ventana) {
-			anterior.dispose();
+			anterior.setVisible(false);
 		}
 	}
 
