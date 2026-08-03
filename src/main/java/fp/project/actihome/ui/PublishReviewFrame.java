@@ -17,6 +17,7 @@ import net.miginfocom.swing.MigLayout;
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.exceptions.AlreadyPublishedException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.exceptions.MustHaveStayedException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.exceptions.ScoreOutOfBoundsException;
 import fp.project.actihome.model.services.HousingService;
@@ -43,13 +44,15 @@ import fp.project.actihome.ui.theme.Space;
  *
  * <p>
  * <b>Mensajes por excepción, no un genérico</b> (bug B11). Publicar puede
- * fallar por cuatro motivos distintos y el servicio los distingue con cuatro
+ * fallar por cinco motivos distintos y el servicio los distingue con cinco
  * excepciones; la versión anterior los capturaba todos con
  * {@code catch (Exception)} y decía siempre "Error en los datos", que no ayuda a
  * arreglar nada. El caso que más importa es
  * {@link AlreadyPublishedException}: no es un error de escritura, es que ya
  * habías opinado sobre esta casa, y lo que toca entonces es editar la reseña que
- * ya existe.
+ * ya existe. {@link MustHaveStayedException} (Fase 7.5.4) es el más nuevo:
+ * antes cualquier CUSTOMER podía puntuar cualquier alojamiento sin haberlo
+ * pisado.
  */
 @Component
 @Profile("!test")
@@ -199,6 +202,9 @@ public class PublishReviewFrame extends JFrame {
 
 		} catch (AlreadyPublishedException ex) {
 			error.setText("Ya has publicado una reseña de este alojamiento. Puedes editarla desde el listado.");
+
+		} catch (MustHaveStayedException ex) {
+			error.setText("Solo puedes reseñar un alojamiento en el que te hayas alojado.");
 
 		} catch (ScoreOutOfBoundsException ex) {
 			// Con el selector de estrellas no debería poder ocurrir —el control solo

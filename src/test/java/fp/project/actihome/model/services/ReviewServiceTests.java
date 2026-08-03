@@ -14,18 +14,24 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.Reservation;
 import fp.project.actihome.model.entities.Review;
 import fp.project.actihome.model.entities.ReviewDao;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.AlreadyPublishedException;
+import fp.project.actihome.model.exceptions.AlreadyReservedException;
+import fp.project.actihome.model.exceptions.CheckOutMustBeOneDayAfterException;
 import fp.project.actihome.model.exceptions.DuplicateInstanceException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.exceptions.LessThanOneRoomException;
+import fp.project.actihome.model.exceptions.MustBeTodayOrAfterException;
+import fp.project.actihome.model.exceptions.MustHaveStayedException;
 import fp.project.actihome.model.exceptions.NegativePrizeException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.exceptions.NotTheAuthorException;
 import fp.project.actihome.model.exceptions.ScoreOutOfBoundsException;
+import fp.project.actihome.model.exceptions.WrongCreditCardNumberException;
 
 @SpringBootTest
 @Transactional
@@ -43,6 +49,9 @@ public class ReviewServiceTests {
 
 	@Autowired
 	private ReviewDao reviewDao;
+
+	@Autowired
+	private ReservationService reservationService;
 
 	private User signUpUser(String username, RoleType role) {
 
@@ -67,14 +76,42 @@ public class ReviewServiceTests {
 				ownerId);
 	}
 
+	/**
+	 * Reserva y "completa" una estancia (Fase 7.5.4): sin esto, ningún
+	 * {@code publishReview} de este archivo pasaría de
+	 * {@link MustHaveStayedException}, porque publicar exige ahora una reserva
+	 * propia, no cancelada, cuya salida ya haya pasado. Mismo truco que ya usa
+	 * {@code ReservationServiceTests.testDoCheckIn}: reservar con fechas válidas
+	 * y mover {@code checkOut} al pasado, en vez de intentar reservar con una
+	 * fecha de salida que ya haya pasado —el servicio lo rechazaría con
+	 * {@link CheckOutMustBeOneDayAfterException} antes de guardar nada.
+	 */
+	private void createCompletedStay(User customer, Housing housing) {
+
+		LocalDateTime entrada = LocalDateTime.now().plusDays(1);
+		LocalDateTime salida = entrada.plusDays(2);
+
+		try {
+			Reservation reserva = reservationService.reserveHousing(customer.getId(), housing.getId(),
+					"1234567890123456", entrada, salida);
+			reserva.setCheckOut(LocalDateTime.now().minusDays(1));
+
+		} catch (WrongCreditCardNumberException | MustBeTodayOrAfterException | CheckOutMustBeOneDayAfterException
+				| InstanceNotFoundException | AlreadyReservedException | NotAuthorizedUserException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	@Test
 	public void testPublishReview()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
-			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException {
+			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException,
+			MustHaveStayedException {
 
 		User author = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
 		Review review = reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.0, 3.6, 5,
 				4.2, 4.1);
 		Review publishedReview = reviewDao.findById(review.getId()).get();
@@ -96,11 +133,13 @@ public class ReviewServiceTests {
 	@Test
 	public void testPublishReviewSameHousingAndAuthor()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
-			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException {
+			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException,
+			MustHaveStayedException {
 
 		User author = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
 
 		reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.5, 3.5, 3.5, 3.5);
 
@@ -116,6 +155,7 @@ public class ReviewServiceTests {
 		User author = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
 
 		assertThrows(ScoreOutOfBoundsException.class, () -> reviewService.publishReview(author.getId(), housing.getId(),
 				"Título", "Cuerpo", -1, 3.5, 3.5, 3.5, 3.5));
@@ -152,11 +192,13 @@ public class ReviewServiceTests {
 
 	@Test
 	public void testFindReview() throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
-			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException {
+			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException,
+			MustHaveStayedException {
 
 		User author = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
 
 		Review review = reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.5, 3.5,
 				3.5, 3.5);
@@ -175,7 +217,8 @@ public class ReviewServiceTests {
 	@Test
 	public void testShowHousingReviews()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
-			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException {
+			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException,
+			MustHaveStayedException {
 
 		User author1 = signUpUser("Author1", RoleType.CUSTOMER);
 		User author2 = signUpUser("Author2", RoleType.CUSTOMER);
@@ -183,6 +226,10 @@ public class ReviewServiceTests {
 		User author4 = signUpUser("Author4", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author1, housing);
+		createCompletedStay(author2, housing);
+		createCompletedStay(author3, housing);
+		createCompletedStay(author4, housing);
 
 		Review review1 = reviewService.publishReview(author1.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.8,
 				3.5, 3.5, 3.5);
@@ -227,11 +274,12 @@ public class ReviewServiceTests {
 	@Test
 	public void testUpdateReview() throws DuplicateInstanceException, InstanceNotFoundException,
 			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException,
-			ScoreOutOfBoundsException, NotTheAuthorException {
+			ScoreOutOfBoundsException, NotTheAuthorException, MustHaveStayedException {
 
 		User author = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
 
 		Review review = reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.5, 3.5,
 				3.5, 3.5);
@@ -257,11 +305,13 @@ public class ReviewServiceTests {
 	@Test
 	public void testUpdateReviewWithNoAuthorization()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
-			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException {
+			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException,
+			MustHaveStayedException {
 
 		User author = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
 
 		Review review = reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.5, 3.5,
 				3.5, 3.5);
@@ -276,12 +326,14 @@ public class ReviewServiceTests {
 	@Test
 	public void testUpdateAnotherReview()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
-			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException {
+			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException,
+			MustHaveStayedException {
 
 		User author = signUpUser("Author", RoleType.CUSTOMER);
 		User author2 = signUpUser("Author2", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
 
 		Review review = reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.5, 3.5,
 				3.5, 3.5);
@@ -293,11 +345,13 @@ public class ReviewServiceTests {
 	@Test
 	public void testUpdateReviewOutOfBoundsScores()
 			throws InstanceNotFoundException, AlreadyPublishedException, ScoreOutOfBoundsException,
-			NotAuthorizedUserException, DuplicateInstanceException, LessThanOneRoomException, NegativePrizeException {
+			NotAuthorizedUserException, DuplicateInstanceException, LessThanOneRoomException, NegativePrizeException,
+			MustHaveStayedException {
 
 		User author = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
 
 		Review review = reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.5, 3.5,
 				3.5, 3.5);
@@ -322,5 +376,55 @@ public class ReviewServiceTests {
 		assertThrows(InstanceNotFoundException.class, () -> reviewService.updateReview(Long.valueOf(50), author.getId(),
 				"Nuevo título", "Nuevo cuerpo", 5, 4, 3, 4, 1));
 
+	}
+
+	@Test
+	public void testPublishReviewWithoutStayRejected() throws DuplicateInstanceException, InstanceNotFoundException,
+			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException {
+
+		User author = signUpUser("Author", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+
+		// Nunca ha reservado este alojamiento.
+		assertThrows(MustHaveStayedException.class, () -> reviewService.publishReview(author.getId(), housing.getId(),
+				"Título", "Cuerpo", 3.5, 3.5, 3.5, 3.5, 3.5));
+	}
+
+	@Test
+	public void testPublishReviewBeforeCheckOutRejected()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+
+		User author = signUpUser("Author", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+
+		// Reserva válida, pero la estancia todavía no ha terminado: la salida sigue
+		// en el futuro, sin el truco de createCompletedStay.
+		LocalDateTime entrada = LocalDateTime.now().plusDays(1);
+		reservationService.reserveHousing(author.getId(), housing.getId(), "1234567890123456", entrada,
+				entrada.plusDays(2));
+
+		assertThrows(MustHaveStayedException.class, () -> reviewService.publishReview(author.getId(), housing.getId(),
+				"Título", "Cuerpo", 3.5, 3.5, 3.5, 3.5, 3.5));
+	}
+
+	@Test
+	public void testPublishReviewAfterCompletedStayAllowed()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException,
+			MustHaveStayedException {
+
+		User author = signUpUser("Author", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
+
+		Review review = reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.5, 3.5,
+				3.5, 3.5);
+
+		assertEquals(author, review.getAuthor());
 	}
 }

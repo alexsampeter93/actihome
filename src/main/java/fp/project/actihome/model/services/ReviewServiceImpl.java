@@ -10,12 +10,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.entities.HousingDao;
+import fp.project.actihome.model.entities.ReservationDao;
 import fp.project.actihome.model.entities.Review;
 import fp.project.actihome.model.entities.ReviewDao;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.AlreadyPublishedException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.exceptions.MustHaveStayedException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.exceptions.NotTheAuthorException;
 import fp.project.actihome.model.exceptions.ScoreOutOfBoundsException;
@@ -33,11 +35,14 @@ public class ReviewServiceImpl implements ReviewService {
 	@Autowired
 	private HousingDao housingDao;
 
+	@Autowired
+	private ReservationDao reservationDao;
+
 	@Override
 	public Review publishReview(Long authorId, Long housingId, String title, String body, double locationScore,
 			double serviceScore, double wifiScore, double foodScore, double cleaningScore)
 			throws InstanceNotFoundException, AlreadyPublishedException, ScoreOutOfBoundsException,
-			NotAuthorizedUserException {
+			NotAuthorizedUserException, MustHaveStayedException {
 
 		User author = permissionChecker.checkUser(authorId);
 		Optional<Housing> housing = housingDao.findById(housingId);
@@ -48,6 +53,15 @@ public class ReviewServiceImpl implements ReviewService {
 
 		if (!housing.isPresent()) {
 			throw new InstanceNotFoundException("project.entities.housing", housingId);
+		}
+
+		// Fase 7.5.4: antes, cualquier CUSTOMER puntuaba cualquier alojamiento sin
+		// haberlo pisado. Se exige una reserva propia, no cancelada, cuya salida ya
+		// haya pasado — no basta con haber reservado, la estancia tiene que haberse
+		// completado de verdad.
+		if (!reservationDao.existsByCustomerIdAndHousingIdAndCancelledFalseAndCheckOutBefore(authorId, housingId,
+				LocalDateTime.now())) {
+			throw new MustHaveStayedException();
 		}
 
 		if ((locationScore < 0 || locationScore > 5) || (serviceScore < 0 || serviceScore > 5)

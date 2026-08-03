@@ -41,4 +41,16 @@ public interface ReservationDao extends PagingAndSortingRepository<Reservation, 
 
 	/** Todas las reservas de un alojamiento, para pintar los días ocupados en el calendario. */
 	ArrayList<Reservation> findByHousingId(Long housingId);
+
+	/**
+	 * Si el cliente ha completado alguna vez una estancia en este alojamiento
+	 * (Fase 7.5.4): una reserva suya cuya salida ya haya pasado.
+	 *
+	 * <p>
+	 * {@code CancelledFalse} en el nombre no es un añadido de última hora: una
+	 * reserva cancelada nunca llegó a suceder, así que no cuenta como estancia
+	 * completada aunque su fecha de salida ya haya pasado.
+	 */
+	boolean existsByCustomerIdAndHousingIdAndCancelledFalseAndCheckOutBefore(Long customerId, Long housingId,
+			LocalDateTime instante);
 }
