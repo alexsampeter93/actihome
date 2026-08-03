@@ -1,12 +1,8 @@
 package fp.project.actihome.ui;
 
-import java.awt.Dimension;
-
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.ScrollPaneConstants;
 
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
@@ -25,6 +21,7 @@ import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.housings.HousingForm;
 import fp.project.actihome.ui.housings.HousingForm.DatosInvalidos;
 import fp.project.actihome.ui.nav.Navigator;
@@ -119,16 +116,8 @@ public class UpdateHousingFrame extends JFrame {
 
 		exterior.add(acciones(), Layout.ancho(Layout.CONTENIDO) + ", alignx center");
 
-		JScrollPane scroll = new JScrollPane(exterior);
-		scroll.setOpaque(false);
-		scroll.getViewport().setOpaque(false);
-		scroll.setBorder(null);
-		scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		scroll.getVerticalScrollBar().setUnitIncrement(24);
-		scroll.setMinimumSize(new Dimension(0, 0));
-
 		raiz.add(headerPanel, "growx");
-		raiz.add(scroll, "grow");
+		raiz.add(Rescate.envolver(exterior), "grow");
 
 		setContentPane(raiz);
 	}

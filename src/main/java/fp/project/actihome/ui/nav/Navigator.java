@@ -167,24 +167,46 @@ public class Navigator {
 	 * Da a la pantalla nueva el tamaño y la posición que tenía la anterior.
 	 *
 	 * <p>
-	 * <b>El problema.</b> Cada frame fija su tamaño en {@code initUI()} con un
-	 * {@code setSize(...)} propio. Sin esto, agrandar o maximizar una pantalla no
-	 * servía de nada: al abrir la siguiente volvía a su tamaño de fábrica, y la
-	 * aplicación daba la sensación de encogerse sola a cada paso.
+	 * <b>Segunda versión de este método, y la primera tenía un fallo de fondo.</b>
+	 * Calculaba el tamaño como el mayor entre el anterior, el de diseño y
+	 * {@code loQueNecesitaElContenido(ventana)} — el tamaño <em>preferido</em> del
+	 * contenido de la pantalla de destino. Eso funciona para un formulario, cuyo
+	 * preferido es una medida razonable. Pero para el catálogo, cuya lista vive en
+	 * un {@code JScrollPane} sin más, el preferido <b>no está acotado por la
+	 * ventana</b>: es el alto de <em>todas</em> las filas apiladas. Medido con seis
+	 * alojamientos: <b>2289 píxeles</b>.
 	 *
 	 * <p>
-	 * <b>La regla, y por qué no es simplemente "copiar el tamaño anterior".</b>
-	 * Copiarlo tal cual tiene el defecto simétrico: al pasar del login —que es una
-	 * ventana pequeña— al catálogo, el catálogo abriría pequeño, más apretado de lo
-	 * que se diseñó. Así que se toma <b>el mayor entre el tamaño anterior y el
-	 * propio de la pantalla de destino</b>. Con eso:
+	 * Ese número entraba en el {@code Math.max(...)}, así que la primera vez que se
+	 * navegaba al catálogo la ventana se inflaba de golpe casi a pantalla completa
+	 * — el salto que reportó el usuario—, y como el tamaño resultante pasaba a ser
+	 * la "anterior" de la siguiente navegación, **se quedaba pegado** para el resto
+	 * de la sesión: ir y volver entre catálogo e intercambio no volvía a encoger
+	 * nunca la ventana. Cuantas más pantallas usaran listas o formularios largos,
+	 * más partes de la aplicación acumulaban el mismo problema — de ahí que el
+	 * usuario lo viera "cada vez con más pantallas".
+	 *
+	 * <p>
+	 * <b>La corrección de fondo, no un ajuste del número.</b> Ya no hace falta que
+	 * el navegador adivine cuánto necesita cada pantalla: desde que todas usan
+	 * {@link fp.project.actihome.ui.components.FilaFluida} y
+	 * {@link fp.project.actihome.ui.components.Rescate}, <b>cualquier pantalla se
+	 * ve correcta a cualquier tamaño</b> por encima del mínimo del sistema — y eso
+	 * está verificado por {@code MedirResponsive}, no es una esperanza. Así que el
+	 * navegador deja de intentar ajustar el tamaño al contenido de cada destino:
+	 * <b>conserva exactamente el tamaño que la ventana ya tenía</b>, sea cual sea,
+	 * y solo lo recalcula desde cero la primera vez que se abre una ventana en la
+	 * sesión.
 	 *
 	 * <ul>
-	 * <li>Si el usuario agrandó la ventana, la siguiente respeta ese tamaño.</li>
-	 * <li>Si venimos de una pantalla más pequeña que el destino, el destino usa el
-	 * suyo y no se queda estrecho.</li>
-	 * <li>Ninguna pantalla aparece nunca por debajo del tamaño para el que está
-	 * pensada.</li>
+	 * <li>El usuario decide el tamaño —a mano, o maximizando— y ese tamaño no
+	 * vuelve a moverse solo mientras navega.</li>
+	 * <li>Ninguna pantalla puede quedar "más apretada de lo que se diseñó" porque
+	 * ya no existe ese concepto: todas se adaptan al espacio que haya.</li>
+	 * <li>El único suelo que se respeta es el mínimo del sistema
+	 * ({@link fp.project.actihome.ui.theme.Layout#MINIMO_DE_VENTANA}), y de eso ya
+	 * se encarga {@link #fijarMinimoSegunElContenido}: Swing no deja que la ventana
+	 * baje de su propio mínimo, así que aquí no hace falta comprobarlo otra vez.</li>
 	 * </ul>
 	 *
 	 * <p>
@@ -202,8 +224,9 @@ public class Navigator {
 
 		if (anterior == null || !anterior.isDisplayable()) {
 
-			// Primera ventana de la sesión: su tamaño de diseño, pero sin quedarse corta
-			// para su propio contenido.
+			// Primera ventana de la sesión: su tamaño de diseño, acotado a la pantalla.
+			// Aquí sí tiene sentido preguntarle al contenido, porque no hay nada de lo que
+			// heredar todavía.
 			Dimension necesaria = loQueNecesitaElContenido(ventana);
 
 			ventana.setSize(acotarAPantalla(ventana, Math.max(ventana.getWidth(), necesaria.width),
@@ -221,21 +244,18 @@ public class Navigator {
 		ventana.setExtendedState(Frame.NORMAL);
 
 		Rectangle previa = anterior.getBounds();
-		Dimension necesaria = loQueNecesitaElContenido(ventana);
 
-		int ancho = Math.max(Math.max(previa.width, ventana.getWidth()), necesaria.width);
-		int alto = Math.max(Math.max(previa.height, ventana.getHeight()), necesaria.height);
-
-		ventana.setSize(acotarAPantalla(ventana, ancho, alto));
+		// Sin Math.max contra "lo que necesita el destino": ese era el origen del
+		// salto. El tamaño se hereda tal cual, solo acotado a la pantalla actual por
+		// si el usuario ha cambiado de monitor.
+		ventana.setSize(acotarAPantalla(ventana, previa.width, previa.height));
 
 		// **Se conserva la esquina, no el centro.** Antes se recentraba sobre el centro
-		// de la ventana anterior, y eso producía el "salto" que se veía al cambiar de
-		// pantalla: en cuanto el tamaño cambiaba aunque fuera unos píxeles, la posición
-		// cambiaba también y la ventana aparecía desplazada respecto a donde estaba la
-		// anterior. Manteniendo la esquina superior izquierda, dos pantallas del mismo
-		// tamaño se superponen exactamente y no hay movimiento; una más grande crece
-		// hacia la derecha y hacia abajo, que se percibe como que la ventana se abre,
-		// no como que se mueve.
+		// de la ventana anterior, y eso producía un salto adicional: en cuanto el
+		// tamaño cambiaba aunque fuera unos píxeles, la posición cambiaba también y la
+		// ventana aparecía desplazada respecto a donde estaba la anterior. Manteniendo
+		// la esquina superior izquierda, dos pantallas del mismo tamaño se superponen
+		// exactamente y no hay movimiento.
 		ventana.setLocation(previa.x, previa.y);
 
 		encajarEnPantalla(ventana);

@@ -70,6 +70,38 @@ public final class Typography {
 	}
 
 	/**
+	 * Deja un {@code Graphics2D} en un estado <b>determinista</b> para dibujar
+	 * texto a mano, sea cual sea el motivo del repintado.
+	 *
+	 * <p>
+	 * <b>El problema que resuelve.</b> Los componentes que dibujan su propio texto
+	 * —los destinos de la cabecera, las pestañas de estación— solo fijaban
+	 * {@code KEY_ANTIALIASING}, que afecta a las formas pero no obliga a nada sobre
+	 * cómo se suaviza el texto ni sobre si la métrica usa coordenadas fraccionarias
+	 * o redondeadas al píxel. Sin fijarlo, esos dos aspectos los decide lo que
+	 * traiga heredado el {@code Graphics2D} de turno — y ese heredado <b>no es
+	 * siempre igual</b>: el primer pintado completo de la ventana y un repintado
+	 * suelto disparado por pasar el ratón por encima pueden llegar con hints
+	 * distintos, sobre todo en un equipo con <b>varios monitores a escalados
+	 * distintos</b>. El resultado no es que el texto se mueva —comprobado con
+	 * {@code DiagnosticoHover}: las coordenadas de Swing no cambian—, es que se
+	 * <b>redibuja con un suavizado distinto</b> cada vez, y eso el ojo lo lee como
+	 * temblor.
+	 *
+	 * <p>
+	 * Fijando aquí, siempre, los mismos tres hints, el texto sale pixel a pixel
+	 * igual lo dispare lo que lo dispare.
+	 */
+	public static void hintsDeTextoEstable(java.awt.Graphics2D g2) {
+
+		g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+				java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+		g2.setRenderingHint(java.awt.RenderingHints.KEY_FRACTIONALMETRICS,
+				java.awt.RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
+	}
+
+	/**
 	 * Carga las fuentes empaquetadas y las registra en el entorno gráfico. Debe
 	 * llamarse una sola vez, al arrancar, antes de construir ninguna ventana.
 	 */

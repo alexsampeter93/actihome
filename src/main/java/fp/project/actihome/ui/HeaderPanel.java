@@ -1,6 +1,7 @@
 package fp.project.actihome.ui;
 
 import java.awt.Color;
+import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -405,15 +406,37 @@ public class HeaderPanel extends JPanel {
 				@Override
 				public void mouseEntered(MouseEvent e) {
 					encima = true;
-					repaint();
+					repintarFila();
 				}
 
 				@Override
 				public void mouseExited(MouseEvent e) {
 					encima = false;
-					repaint();
+					repintarFila();
 				}
 			});
+		}
+
+		/**
+		 * Repinta la fila entera de destinos, no solo este.
+		 *
+		 * <p>
+		 * <b>El motivo no es cosmético.</b> {@code repaint()} sin más solo marca sucios
+		 * los límites de <em>este</em> componente, con el redondeo que le toque en ese
+		 * instante. En un sistema con escalado por monitor —el caso del usuario, un
+		 * portátil y un monitor de 27" combinados—, ese redondeo puede no coincidir
+		 * exactamente con el que se usó en el último repintado completo de la ventana,
+		 * y el texto se redibuja uno o dos puntos desplazado: se percibe como que la
+		 * letra "tiembla" al pasar el ratón, aunque {@code getBounds()} no cambie nada
+		 * —comprobado con {@code DiagnosticoHover}, que no encontró ni un componente
+		 * movido—. Repintando el contenedor que agrupa todos los destinos, el
+		 * rectángulo sucio es siempre el mismo que el del último reparto de layout, así
+		 * que no hay redondeos distintos que puedan discrepar entre sí.
+		 */
+		private void repintarFila() {
+
+			Container fila = getParent();
+			(fila != null ? fila : this).repaint();
 		}
 
 		@Override
@@ -433,7 +456,7 @@ public class HeaderPanel extends JPanel {
 		protected void paintComponent(Graphics g) {
 
 			Graphics2D g2 = (Graphics2D) g.create();
-			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			Typography.hintsDeTextoEstable(g2);
 
 			boolean actual = pantalla == pantallaActual;
 

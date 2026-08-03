@@ -1,11 +1,11 @@
 package fp.project.actihome.ui.components;
 
 import java.awt.Color;
+import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -133,15 +133,32 @@ public class SeasonSelector extends JPanel {
 				@Override
 				public void mouseEntered(MouseEvent e) {
 					encima = true;
-					repaint();
+					repintarFila();
 				}
 
 				@Override
 				public void mouseExited(MouseEvent e) {
 					encima = false;
-					repaint();
+					repintarFila();
 				}
 			});
+		}
+
+		/**
+		 * Repinta la fila de las cuatro pestañas, no solo esta.
+		 *
+		 * <p>
+		 * Ver la nota gemela en {@code HeaderPanel.Destino.repintarFila()}: repintar
+		 * solo el componente bajo el ratón deja el redondeo del rectángulo sucio a
+		 * merced de en qué escalado de monitor esté en ese instante la ventana, y
+		 * puede no coincidir con el del último reparto completo. Repintando el
+		 * contenedor de las cuatro pestañas a la vez, el rectángulo es siempre el
+		 * mismo.
+		 */
+		private void repintarFila() {
+
+			Container fila = getParent();
+			(fila != null ? fila : this).repaint();
 		}
 
 		private boolean esActiva() {
@@ -187,7 +204,7 @@ public class SeasonSelector extends JPanel {
 		protected void paintComponent(Graphics g) {
 
 			Graphics2D g2 = (Graphics2D) g.create();
-			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			Typography.hintsDeTextoEstable(g2);
 
 			boolean activa = esActiva();
 			// Sobre la cabecera oscura no valen ni acc() ni mut(): el primero puede ser el
