@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,15 +21,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import fp.project.actihome.model.entities.Amenity;
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.Reservation;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
+import fp.project.actihome.model.exceptions.CheckOutMustBeOneDayAfterException;
 import fp.project.actihome.model.exceptions.DuplicateInstanceException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.exceptions.LessThanOneRoomException;
+import fp.project.actihome.model.exceptions.MustBeTodayOrAfterException;
 import fp.project.actihome.model.exceptions.NegativePrizeException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.exceptions.NotTheOwnerException;
+import fp.project.actihome.model.exceptions.WrongCreditCardNumberException;
 
 @SpringBootTest
 @Transactional
@@ -40,6 +45,9 @@ public class HousingServiceTests {
 
 	@Autowired
 	private HousingService housingService;
+
+	@Autowired
+	private ReservationService reservationService;
 
 	private User signUpUser(String username, RoleType role) {
 
@@ -115,7 +123,7 @@ public class HousingServiceTests {
 		assertTrue(housing.isBreakfast());
 		assertFalse(housing.isLunch());
 		assertTrue(housing.isDinner());
-		assertTrue(housing.isAvailable());
+		assertTrue(housingService.isAvailableNow(housing.getId()));
 		assertEquals(housing.getLocation(), "Playa del Orzán");
 		assertEquals(housing.getOwner(), owner);
 	}
@@ -394,5 +402,63 @@ public class HousingServiceTests {
 		housingService.tradeHousings(owner1.getId(), housing1.getId(), housing2.getHousingCode());
 		assertEquals(owner1, housing2.getOwner());
 		assertEquals(owner2, housing1.getOwner());
+	}
+
+	/**
+	 * Demuestra que el bug B5 ya no existe: reservar un alojamiento para el mes
+	 * que viene ya no lo bloquea para intercambio hoy mismo. Antes de la Fase
+	 * 7.5, cualquier reserva futura ponía {@code available} a {@code false} para
+	 * siempre.
+	 */
+	@Test
+	public void testTradeAllowedForFutureReservation() throws DuplicateInstanceException, InstanceNotFoundException,
+			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException, AlreadyReservedException,
+			WrongCreditCardNumberException, MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException {
+
+		User owner1 = signUpUser("Owner1", RoleType.ADMIN);
+		User owner2 = signUpUser("Owner2", RoleType.ADMIN);
+		User customer = signUpUser("TradeCustomer", RoleType.CUSTOMER);
+
+		Housing housing1 = housingService.uploadHousing(datos(24019), owner1.getId());
+		Housing housing2 = housingService.uploadHousing(
+				datos(24030).name("Casa en la playa 2").description("Descripción breve 2").location("Playa del Orzán 2"),
+				owner2.getId());
+
+		LocalDateTime entrada = LocalDate.now().plusDays(7).atTime(10, 30);
+		reservationService.reserveHousing(customer.getId(), housing1.getId(), "1234567890123456", entrada,
+				entrada.plusDays(4));
+
+		housingService.tradeHousings(owner1.getId(), housing1.getId(), housing2.getHousingCode());
+		assertEquals(owner1, housing2.getOwner());
+		assertEquals(owner2, housing1.getOwner());
+	}
+
+	/**
+	 * Un alojamiento con una estancia en curso justo ahora no se puede
+	 * intercambiar. Usa el mismo truco que {@code testDoCheckIn} para simular que
+	 * la estancia ya ha empezado: mover {@code checkIn} al pasado tras crear la
+	 * reserva con fechas válidas.
+	 */
+	@Test
+	public void testTradeBlockedDuringActiveStay() throws DuplicateInstanceException, InstanceNotFoundException,
+			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException, AlreadyReservedException,
+			WrongCreditCardNumberException, MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException {
+
+		User owner1 = signUpUser("Owner1", RoleType.ADMIN);
+		User owner2 = signUpUser("Owner2", RoleType.ADMIN);
+		User customer = signUpUser("TradeCustomer", RoleType.CUSTOMER);
+
+		Housing housing1 = housingService.uploadHousing(datos(24019), owner1.getId());
+		Housing housing2 = housingService.uploadHousing(
+				datos(24030).name("Casa en la playa 2").description("Descripción breve 2").location("Playa del Orzán 2"),
+				owner2.getId());
+
+		LocalDateTime entrada = LocalDate.now().plusDays(7).atTime(10, 30);
+		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing1.getId(),
+				"1234567890123456", entrada, entrada.plusDays(4));
+		reservation.setCheckIn(LocalDateTime.now().minusHours(1));
+
+		assertThrows(AlreadyReservedException.class,
+				() -> housingService.tradeHousings(owner1.getId(), housing1.getId(), housing2.getHousingCode()));
 	}
 }

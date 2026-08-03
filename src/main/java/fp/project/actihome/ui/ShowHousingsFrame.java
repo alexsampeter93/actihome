@@ -13,8 +13,10 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -150,6 +152,14 @@ public class ShowHousingsFrame extends JFrame {
 	 * buscador.
 	 */
 	private final transient Map<Long, Integer> resenasPorAlojamiento = new HashMap<>();
+
+	/**
+	 * Los alojamientos con una estancia en curso ahora mismo, calculados una sola
+	 * vez por recarga del catálogo. Mismo criterio que {@link #resenasPorAlojamiento}:
+	 * evita una consulta por fila cuando lo que cambia es solo el filtro, no la
+	 * base de datos.
+	 */
+	private transient Set<Long> ocupadosAhora = Collections.emptySet();
 
 	private JLabel tituloPrimera;
 	private JLabel tituloSegunda;
@@ -515,6 +525,7 @@ public class ShowHousingsFrame extends JFrame {
 
 		catalogo = housingService.showHousings();
 		resenasPorAlojamiento.clear();
+		ocupadosAhora = new HashSet<>(housingService.currentlyOccupiedHousingIds());
 
 		actualizarCifras(catalogo);
 		aplicarFiltros();
@@ -596,7 +607,9 @@ public class ShowHousingsFrame extends JFrame {
 	private void pintarCuadricula(List<Housing> alojamientos) {
 
 		for (Housing housing : alojamientos) {
-			lista.add(new HousingCard(housing, contarResenas(housing), abrir(housing)),
+			lista.add(
+					new HousingCard(housing, contarResenas(housing), !ocupadosAhora.contains(housing.getId()),
+							abrir(housing)),
 					"growx, aligny top, gapbottom " + Space.LG);
 		}
 	}
@@ -619,7 +632,8 @@ public class ShowHousingsFrame extends JFrame {
 				? () -> navigator.ir(TradeHousingsFrame.class, frame -> frame.setHousingId(housing.getId()))
 				: null;
 
-		return new HousingRow(housing, contarResenas(housing), abrir(housing), intercambiar);
+		return new HousingRow(housing, contarResenas(housing), !ocupadosAhora.contains(housing.getId()),
+				abrir(housing), intercambiar);
 	}
 
 	private boolean puedeIntercambiar(Housing housing) {
@@ -778,7 +792,7 @@ public class ShowHousingsFrame extends JFrame {
 
 		for (Housing housing : alojamientos) {
 
-			if (housing.isAvailable()) {
+			if (!ocupadosAhora.contains(housing.getId())) {
 				libres++;
 			}
 

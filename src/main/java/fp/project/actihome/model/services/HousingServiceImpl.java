@@ -1,8 +1,11 @@
 package fp.project.actihome.model.services;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.entities.HousingDao;
+import fp.project.actihome.model.entities.ReservationDao;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
@@ -26,6 +30,9 @@ public class HousingServiceImpl implements HousingService {
 
 	@Autowired
 	private HousingDao housingDao;
+
+	@Autowired
+	private ReservationDao reservationDao;
 
 	@Autowired
 	private PermissionChecker permissionChecker;
@@ -49,7 +56,6 @@ public class HousingServiceImpl implements HousingService {
 		Housing housing = new Housing();
 		housing.setHousingCode(data.getHousingCode());
 		housing.setOwner(owner);
-		housing.setAvailable(true);
 		copiarDatos(data, housing);
 
 		housingDao.save(housing);
@@ -124,10 +130,11 @@ public class HousingServiceImpl implements HousingService {
 	 * Vuelca los campos editables sobre la entidad.
 	 *
 	 * <p>
-	 * Deliberadamente <b>no</b> copia el código del alojamiento, el propietario, la
-	 * disponibilidad ni la puntuación: los cuatro los gobierna el propio servicio y
-	 * no un formulario. Tenerlo en un solo sitio evita la otra mitad del bug B9,
-	 * que era que el alta y la edición escribían conjuntos de campos distintos.
+	 * Deliberadamente <b>no</b> copia el código del alojamiento, el propietario ni
+	 * la puntuación: los tres los gobierna el propio servicio y no un formulario
+	 * (la disponibilidad ya ni siquiera es un campo que copiar, desde la Fase
+	 * 7.5). Tenerlo en un solo sitio evita la otra mitad del bug B9, que era que
+	 * el alta y la edición escribían conjuntos de campos distintos.
 	 */
 	private void copiarDatos(HousingData data, Housing housing) {
 
@@ -174,12 +181,31 @@ public class HousingServiceImpl implements HousingService {
 		if (!housing.isPresent() || !housingToTrade.isPresent()) {
 			throw new InstanceNotFoundException("project.entities.housing", ownersHousingId);
 		}
-		if (!housing.get().isAvailable() || !housingToTrade.get().isAvailable()) {
+		// No se usa isAvailableNow aquí: hace la pregunta contraria ("¿está libre?") y
+		// negarla dos veces solo confunde. estaOcupadoAhora dice lo que de verdad
+		// bloquea el intercambio.
+		if (estaOcupadoAhora(housing.get().getId()) || estaOcupadoAhora(housingToTrade.get().getId())) {
 			throw new AlreadyReservedException();
 		}
 
 		housing.get().setOwner(housingToTrade.get().getOwner());
 		housingToTrade.get().setOwner(owner);
+	}
+
+	@Override
+	public boolean isAvailableNow(Long housingId) {
+		return !estaOcupadoAhora(housingId);
+	}
+
+	private boolean estaOcupadoAhora(Long housingId) {
+
+		LocalDateTime ahora = LocalDateTime.now();
+		return reservationDao.existsOverlappingReservation(housingId, ahora, ahora);
+	}
+
+	@Override
+	public Set<Long> currentlyOccupiedHousingIds() {
+		return new HashSet<>(reservationDao.findHousingIdsWithActiveStay(LocalDateTime.now()));
 	}
 
 }

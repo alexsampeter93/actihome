@@ -34,6 +34,15 @@ import javax.persistence.Table;
  * </ul>
  *
  * <p>
+ * <b>Ya no tiene campo {@code available} (Fase 7.5).</b> Era un booleano que se
+ * ponía a {@code false} al reservar y nunca volvía a {@code true} (bug B5): un
+ * alojamiento reservado quedaba bloqueado para siempre, sin importar lo lejana
+ * que fuera la fecha. La disponibilidad ahora se calcula, no se guarda —ver
+ * {@code ReservationDao.existsOverlappingReservation} y
+ * {@code HousingService.isAvailableNow}—, así que un alojamiento reservado para
+ * el mes que viene sigue disponible hoy.
+ *
+ * <p>
  * <b>Sobre las anotaciones.</b> Como el resto de entidades del proyecto, se
  * anotan los <i>getters</i> y no los campos (acceso por propiedad), y no se usa
  * {@code @Column}: la estrategia de nombres estándar mapea cada propiedad
@@ -78,8 +87,6 @@ public class Housing {
 	private boolean pets;
 
 	private Double score;
-
-	private boolean available;
 
 	private String location;
 
@@ -243,14 +250,6 @@ public class Housing {
 
 	public void setScore(Double score) {
 		this.score = score;
-	}
-
-	public boolean isAvailable() {
-		return available;
-	}
-
-	public void setAvailable(boolean available) {
-		this.available = available;
 	}
 
 	public String getLocation() {

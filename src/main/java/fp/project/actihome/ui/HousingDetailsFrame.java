@@ -238,8 +238,9 @@ public class HousingDetailsFrame extends JFrame {
 
 	private ImagePlaceholder foto() {
 
-		ImagePlaceholder placeholder = new ImagePlaceholder(housing.getType(),
-				housing.isAvailable() ? "Disponible" : "Reservada", housing.isAvailable(), housing.getImage());
+		boolean disponible = housingService.isAvailableNow(housing.getId());
+		ImagePlaceholder placeholder = new ImagePlaceholder(housing.getType(), disponible ? "Disponible" : "Reservada",
+				disponible, housing.getImage());
 		placeholder.setMinimumSize(new Dimension(0, 320));
 		return placeholder;
 	}
@@ -340,7 +341,7 @@ public class HousingDetailsFrame extends JFrame {
 		panel.setOpaque(false);
 
 		panel.add(celda("Habitaciones", Formato.plural(housing.getNumberOfRooms(), "habitación", "habitaciones")));
-		panel.add(celda("Disponible", housing.isAvailable() ? "Sí" : "No, reservado"));
+		panel.add(celda("Disponible", housingService.isAvailableNow(housing.getId()) ? "Sí" : "No, reservado"));
 		panel.add(celda("Pensión", resumenPension()));
 		panel.add(celda("Titular", housing.getOwner().getUsername()));
 

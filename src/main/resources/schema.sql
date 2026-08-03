@@ -61,7 +61,10 @@ CREATE TABLE IF NOT EXISTS HOUSINGS (
 	airConditioning BOOLEAN DEFAULT FALSE NOT NULL,
 	pets BOOLEAN DEFAULT FALSE NOT NULL,
 	score DOUBLE,
-	available BOOLEAN NOT NULL,
+	-- La disponibilidad ya no es una columna: se calcula a partir de las reservas
+	-- activas de cada alojamiento (Fase 7.5, ver migracion-h2.sql). Un booleano
+	-- guardado no distinguía "reservado hoy" de "reservado en marzo de 2027", así
+	-- que una vez reservado un alojamiento quedaba bloqueado para siempre (B5).
 	location VARCHAR(40) NOT NULL,
 	ownerId BIGINT NOT NULL,
 	CONSTRAINT UniqueHousingCode UNIQUE (housingCode),

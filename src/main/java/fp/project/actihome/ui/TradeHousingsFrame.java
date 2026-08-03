@@ -357,9 +357,10 @@ public class TradeHousingsFrame extends JFrame {
 	private Card tarjeta(Housing housing) {
 
 		Card card = new Card(new MigLayout("wrap 1, " + Space.insets(Space.MD), "[grow,fill]", ""));
+		boolean disponible = housingService.isAvailableNow(housing.getId());
 
-		card.add(new ImagePlaceholder(housing.getType(), housing.isAvailable() ? "Disponible" : "Reservada",
-				housing.isAvailable(), housing.getImage()), "h 84!, growx, gapbottom " + Space.SM);
+		card.add(new ImagePlaceholder(housing.getType(), disponible ? "Disponible" : "Reservada", disponible,
+				housing.getImage()), "h 84!, growx, gapbottom " + Space.SM);
 
 		card.add(Labels.capsAccent("Nº " + housing.getHousingCode()));
 
@@ -372,7 +373,7 @@ public class TradeHousingsFrame extends JFrame {
 		card.add(Labels.priceSmall(Formato.precio(housing.getPricePerNight()) + " / noche"),
 				"gaptop " + Space.XS);
 
-		if (!housing.isAvailable()) {
+		if (!disponible) {
 			// Es la causa exacta por la que el servicio rechazaría el intercambio, dicha
 			// antes de intentarlo.
 			card.add(Labels.error("Está reservado: no se puede intercambiar."), "gaptop " + Space.XS);

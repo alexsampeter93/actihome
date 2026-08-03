@@ -42,3 +42,14 @@ ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS pets BOOLEAN DEFAULT FALSE NOT NUL
 -- a un nombre que tenían ("Casa en la playa"), para que la ficha no salga sin
 -- título. Es reversible: el propietario puede editarlo.
 UPDATE HOUSINGS SET name = type WHERE name = '';
+
+-- Fase 7.5: la disponibilidad deja de ser una columna guardada y pasa a
+-- calcularse desde las reservas activas (ver CLAUDE.md, bug B5). En una base ya
+-- creada, "available" seguía existiendo como BOOLEAN NOT NULL sin valor por
+-- defecto: dejar de mapearla en la entidad no rompe el arranque (ddl-auto:
+-- validate solo mira que lo que la entidad pide exista), pero sí el primer
+-- INSERT que hiciera Hibernate al publicar un alojamiento nuevo, porque esa
+-- columna huérfana seguiría exigiendo un valor. Quien tenga una base MySQL
+-- anterior a esta fase necesita aplicar a mano:
+--     ALTER TABLE HOUSINGS DROP COLUMN available;
+ALTER TABLE HOUSINGS DROP COLUMN IF EXISTS available;

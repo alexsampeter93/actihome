@@ -45,13 +45,15 @@ public class HousingCard extends JPanel {
 	private static final int ALTO_FOTO = 140;
 
 	private final transient Housing housing;
+	private final boolean disponible;
 
-	public HousingCard(Housing housing, int resenas, Runnable alAbrir) {
+	public HousingCard(Housing housing, int resenas, boolean disponible, Runnable alAbrir) {
 
 		super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
 				"[]" + Space.SM + "[]" + Space.XXS + "[]" + Space.XS + "[]" + Space.SM + "[]"));
 
 		this.housing = housing;
+		this.disponible = disponible;
 
 		setOpaque(false);
 		setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -96,8 +98,8 @@ public class HousingCard extends JPanel {
 			capa.add(new ScoreDisc(housing.getScore(), ScoreDisc.Tamano.PEQUENO), "pos (container.x2-42) 12");
 		}
 
-		capa.add(new ImagePlaceholder(housing.getType(), housing.isAvailable() ? "Disponible" : "Reservada",
-				housing.isAvailable(), housing.getImage()), "pos 0 0 container.x2 container.y2");
+		capa.add(new ImagePlaceholder(housing.getType(), disponible ? "Disponible" : "Reservada", disponible,
+				housing.getImage()), "pos 0 0 container.x2 container.y2");
 
 		return capa;
 	}

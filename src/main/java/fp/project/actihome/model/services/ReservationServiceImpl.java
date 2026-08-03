@@ -66,10 +66,6 @@ public class ReservationServiceImpl implements ReservationService {
 			throw new WrongCreditCardNumberException();
 		}
 
-		if (!housing.get().isAvailable()) {
-			throw new AlreadyReservedException();
-		}
-
 		if (checkInDate.isBefore(reservationDate)) {
 			throw new MustBeTodayOrAfterException();
 		}
@@ -78,11 +74,17 @@ public class ReservationServiceImpl implements ReservationService {
 			throw new CheckOutMustBeOneDayAfterException();
 		}
 
+		// La disponibilidad se comprueba aquí, no antes: un solapamiento de fechas
+		// solo tiene sentido sobre un intervalo ya válido (checkIn/checkOut en el
+		// orden correcto), así que este chequeo va después de los dos de arriba.
+		if (reservationDao.existsOverlappingReservation(housingId, checkInDate, checkOutDate)) {
+			throw new AlreadyReservedException();
+		}
+
 		nights = ChronoUnit.DAYS.between(checkInDate.toLocalDate(), checkOutDate.toLocalDate());
 		totalPrice = housing.get().getPricePerNight().multiply(BigDecimal.valueOf(nights));
 		Reservation reservation = new Reservation(reservationCode, checkInDate, checkOutDate, "Tarjeta de crédito",
 				reservationDate, totalPrice, false, customer, housing.get());
-		housing.get().setAvailable(false);
 		return reservationDao.save(reservation);
 	}
 

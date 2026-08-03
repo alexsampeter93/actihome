@@ -1,6 +1,7 @@
 package fp.project.actihome.model.services;
 
 import java.util.ArrayList;
+import java.util.Set;
 
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
@@ -48,4 +49,25 @@ public interface HousingService {
 
 	void tradeHousings(Long ownerId, Long ownersHousingId, Long housingToTradeCode)
 			throws InstanceNotFoundException, AlreadyReservedException;
+
+	/**
+	 * Si el alojamiento tiene una estancia en curso justo ahora.
+	 *
+	 * <p>
+	 * Sustituye al antiguo campo guardado {@code Housing.available} (Fase 7.5,
+	 * bug B5): no es un dato que se lea, es una pregunta que se calcula sobre las
+	 * reservas activas. Para una pantalla que muestra un único alojamiento
+	 * (detalle, ficha de intercambio).
+	 */
+	boolean isAvailableNow(Long housingId);
+
+	/**
+	 * Los ids de los alojamientos con una estancia en curso justo ahora.
+	 *
+	 * <p>
+	 * Para el catálogo: una sola consulta por cada vez que se recarga el listado,
+	 * en vez de una por fila. Mismo criterio ya aceptado en
+	 * {@code ShowHousingsFrame.contarResenas} para el recuento de reseñas.
+	 */
+	Set<Long> currentlyOccupiedHousingIds();
 }

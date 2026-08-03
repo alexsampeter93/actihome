@@ -116,50 +116,50 @@ WHERE housingCode IN (204183, 204184, 204163, 204132, 2042183)
 -- ---------------------------------------------------------------------------
 
 INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
-	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, available, location, ownerId)
+	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
 SELECT 10001, 'Casa Rural El Pinar', 'Casa', 3, 75.00,
 	'Casa de piedra restaurada a media ladera, con chimenea, huerto y vistas abiertas a la sierra. El pueblo queda a diez minutos a pie.',
-	NULL, TRUE, FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE, NULL, TRUE, 'Sierra Nevada, Granada',
+	NULL, TRUE, FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE, NULL, 'Sierra Nevada, Granada',
 	(SELECT id FROM USERS WHERE username = 'Lucia')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10001);
 
 INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
-	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, available, location, ownerId)
+	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
 SELECT 10002, 'Apartamento Playa Centro', 'Apartamento', 2, 95.00,
 	'Segunda línea de playa, con terraza orientada al sur y ascensor. La zona de bares y el paseo marítimo quedan al doblar la esquina.',
-	NULL, TRUE, FALSE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE, FALSE, NULL, TRUE, 'Málaga',
+	NULL, TRUE, FALSE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE, FALSE, NULL, 'Málaga',
 	(SELECT id FROM USERS WHERE username = 'Marcos')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10002);
 
 INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
-	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, available, location, ownerId)
+	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
 SELECT 10003, 'Villa Mediterráneo', 'Villa', 5, 320.00,
 	'Villa encalada con piscina privada, porche de sombra y acceso directo a una cala pequeña. Pensión completa incluida.',
-	NULL, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, NULL, FALSE, 'Ibiza',
+	NULL, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, NULL, 'Ibiza',
 	(SELECT id FROM USERS WHERE username = 'Lucia')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10003);
 
 INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
-	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, available, location, ownerId)
+	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
 SELECT 10004, 'Cabaña del Bosque', 'Cabaña', 1, 48.00,
 	'Cabaña de madera para dos, con estufa de leña y ventanal al hayedo. Sin cobertura y sin vecinos: ese es el plan.',
-	NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, NULL, TRUE, 'Picos de Europa, Asturias',
+	NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, NULL, 'Picos de Europa, Asturias',
 	(SELECT id FROM USERS WHERE username = 'Elena')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10004);
 
 INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
-	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, available, location, ownerId)
+	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
 SELECT 10005, 'Loft Barrio Gótico', 'Apartamento', 2, 130.00,
 	'Loft diáfano en un edificio del XIX, con vigas vistas y techos de cuatro metros. En pleno casco antiguo, a paso de todo.',
-	NULL, TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, FALSE, NULL, TRUE, 'Barcelona',
+	NULL, TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, FALSE, NULL, 'Barcelona',
 	(SELECT id FROM USERS WHERE username = 'Marcos')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10005);
 
 INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
-	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, available, location, ownerId)
+	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
 SELECT 10006, 'Casa Adosada Las Palmas', 'Casa', 4, 110.00,
 	'Adosado con patio, barbacoa y piscina comunitaria, en una urbanización tranquila a quince minutos de la playa de Las Canteras.',
-	NULL, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, NULL, TRUE, 'Gran Canaria',
+	NULL, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, NULL, 'Gran Canaria',
 	(SELECT id FROM USERS WHERE username = 'Elena')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10006);
 

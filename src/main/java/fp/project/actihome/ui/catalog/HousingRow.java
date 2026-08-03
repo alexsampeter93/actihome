@@ -71,20 +71,24 @@ public class HousingRow extends JPanel {
 	private static final int ALTO_FOTO = 190;
 
 	private final transient Housing housing;
+	private final boolean disponible;
 
 	/**
 	 * @param resenas    cuántas reseñas tiene, ya contadas por quien construye la
 	 *                   lista
+	 * @param disponible si el alojamiento tiene una estancia en curso ahora mismo,
+	 *                   ya calculado por quien construye la lista
 	 * @param alAbrir    qué hacer al pulsar la fila
 	 * @param alIntercambiar acción de intercambio, o {@code null} si no procede para
 	 *                   este usuario
 	 */
-	public HousingRow(Housing housing, int resenas, Runnable alAbrir, Runnable alIntercambiar) {
+	public HousingRow(Housing housing, int resenas, boolean disponible, Runnable alAbrir, Runnable alIntercambiar) {
 
 		super(new MigLayout(Space.insets(Space.LG, 0, Space.LG, 0), "[46%:46%:46%]" + Space.HUGE + "[grow,fill]",
 				"[]"));
 
 		this.housing = housing;
+		this.disponible = disponible;
 
 		setOpaque(false);
 		setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -103,8 +107,8 @@ public class HousingRow extends JPanel {
 
 	private ImagePlaceholder foto() {
 
-		return new ImagePlaceholder(housing.getType(), housing.isAvailable() ? "Disponible" : "Reservada",
-				housing.isAvailable(), housing.getImage());
+		return new ImagePlaceholder(housing.getType(), disponible ? "Disponible" : "Reservada", disponible,
+				housing.getImage());
 	}
 
 	private JPanel informacion(int resenas, Runnable alIntercambiar) {

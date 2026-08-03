@@ -184,17 +184,71 @@ public class ReservationServiceTests {
 	}
 
 	@Test
-	public void testReserveUnavailableHousing() throws DuplicateInstanceException, InstanceNotFoundException,
-			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException {
+	public void testReserveUnavailableHousing()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
 
-		User customer = signUpUser("Author", RoleType.CUSTOMER);
+		User customer1 = signUpUser("Author", RoleType.CUSTOMER);
+		User customer2 = signUpUser("Author2", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
-		housing.setAvailable(false);
 
+		reservationService.reserveHousing(customer1.getId(), housing.getId(), "1234567890123456", entrada(),
+				salida());
+
+		// Mismo alojamiento, fechas que se cruzan con la reserva ya hecha (entra un
+		// día antes de que la primera salga): tiene que rechazarse aunque sea otro
+		// cliente quien lo intente.
 		assertThrows(AlreadyReservedException.class,
-				() -> reservationService.reserveHousing(customer.getId(), housing.getId(), "1234567890123456",
-						entrada(), salida()));
+				() -> reservationService.reserveHousing(customer2.getId(), housing.getId(), "1234567890123456",
+						entrada().plusDays(1), salida().plusDays(1)));
+	}
+
+	@Test
+	public void testReserveNonOverlappingDatesAllowed()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+
+		User customer1 = signUpUser("Author", RoleType.CUSTOMER);
+		User customer2 = signUpUser("Author2", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+
+		reservationService.reserveHousing(customer1.getId(), housing.getId(), "1234567890123456", entrada(),
+				salida());
+
+		// Un mes después, sin solape ninguno: dos clientes distintos deben poder
+		// reservar el mismo alojamiento en fechas distintas. Es justo lo que el
+		// booleano available no permitía (bug B5).
+		Reservation segunda = reservationService.reserveHousing(customer2.getId(), housing.getId(),
+				"1234567890123456", entrada().plusMonths(1), salida().plusMonths(1));
+
+		assertTrue(!segunda.isCheckedIn());
+	}
+
+	@Test
+	public void testReserveAdjacentDatesAllowed()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+
+		User customer1 = signUpUser("Author", RoleType.CUSTOMER);
+		User customer2 = signUpUser("Author2", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+
+		reservationService.reserveHousing(customer1.getId(), housing.getId(), "1234567890123456", entrada(),
+				salida());
+
+		// La segunda entra el mismo día en que sale la primera: no se pisan, la
+		// habitación queda libre esa misma mañana. Fija el límite estricto del
+		// solapamiento (checkOut > desde, no >=).
+		Reservation segunda = reservationService.reserveHousing(customer2.getId(), housing.getId(),
+				"1234567890123456", salida(), salida().plusDays(4));
+
+		assertTrue(!segunda.isCheckedIn());
 	}
 
 	@Test
@@ -203,7 +257,6 @@ public class ReservationServiceTests {
 
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
-		housing.setAvailable(false);
 
 		assertThrows(NotAuthorizedUserException.class,
 				() -> reservationService.reserveHousing(owner.getId(), housing.getId(), "1234567890123456",
