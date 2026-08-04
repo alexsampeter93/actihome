@@ -36,6 +36,7 @@ import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
@@ -196,7 +197,7 @@ public class HousingDetailsFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XXS + "[]" + Space.XXS + "[]", ""));
 		fila.setOpaque(false);
 
-		JLabel catalogo = Labels.body("Catálogo");
+		JLabel catalogo = Labels.body(Textos.t("header.nav.catalogo"));
 		catalogo.setFont(Typography.sans(Typography.BODY_SM));
 		catalogo.setForeground(Theme.mut());
 		catalogo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -239,7 +240,8 @@ public class HousingDetailsFrame extends JFrame {
 	private ImagePlaceholder foto() {
 
 		boolean disponible = housingService.isAvailableNow(housing.getId());
-		ImagePlaceholder placeholder = new ImagePlaceholder(housing.getType(), disponible ? "Disponible" : "Reservada",
+		ImagePlaceholder placeholder = new ImagePlaceholder(Textos.tipoDeAlojamiento(housing.getType()),
+				disponible ? Textos.t("catalogo.disponibilidad.disponible") : Textos.t("catalogo.disponibilidad.reservada"),
 				disponible, housing.getImage());
 		placeholder.setMinimumSize(new Dimension(0, 320));
 		return placeholder;
@@ -276,7 +278,7 @@ public class HousingDetailsFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]", ""));
 		fila.setOpaque(false);
 
-		fila.add(Labels.capsAccent("Nº " + housing.getHousingCode()));
+		fila.add(Labels.capsAccent(Textos.t("catalogo.numero") + " " + housing.getHousingCode()));
 		fila.add(Labels.caps(housing.getLocation()));
 
 		return fila;
@@ -303,7 +305,8 @@ public class HousingDetailsFrame extends JFrame {
 	private JLabel enlaceAResenas() {
 
 		int cuantas = contarResenas();
-		String texto = cuantas == 0 ? "Sé el primero en opinar" : Formato.plural(cuantas, "reseña", "reseñas");
+		String texto = cuantas == 0 ? Textos.t("detalle.resenas.primero")
+				: Formato.plural(cuantas, Textos.t("palabra.resena.singular"), Textos.t("palabra.resena.plural"));
 
 		JLabel enlace = Labels.muted(texto);
 		enlace.setFont(Typography.sansSemiBold(Typography.BODY_SM));
@@ -340,10 +343,13 @@ public class HousingDetailsFrame extends JFrame {
 				new MigLayout("wrap 2, gapy " + Space.LG, "[grow,fill]" + Space.XXL + "[grow,fill]", ""));
 		panel.setOpaque(false);
 
-		panel.add(celda("Habitaciones", Formato.plural(housing.getNumberOfRooms(), "habitación", "habitaciones")));
-		panel.add(celda("Disponible", housingService.isAvailableNow(housing.getId()) ? "Sí" : "No, reservado"));
-		panel.add(celda("Pensión", resumenPension()));
-		panel.add(celda("Titular", housing.getOwner().getUsername()));
+		panel.add(celda(Textos.t("detalle.grid.habitaciones"), Formato.plural(housing.getNumberOfRooms(),
+				Textos.t("palabra.habitacion.singular"), Textos.t("palabra.habitacion.plural"))));
+		panel.add(celda(Textos.t("catalogo.disponibilidad.disponible"),
+				housingService.isAvailableNow(housing.getId()) ? Textos.t("detalle.grid.si")
+						: Textos.t("detalle.grid.noReservado")));
+		panel.add(celda(Textos.t("catalogo.row.pension"), resumenPension()));
+		panel.add(celda(Textos.t("detalle.grid.titular"), housing.getOwner().getUsername()));
 
 		return panel;
 	}
@@ -370,16 +376,16 @@ public class HousingDetailsFrame extends JFrame {
 		List<String> incluidas = new ArrayList<>();
 
 		if (housing.isBreakfast()) {
-			incluidas.add("Desayuno");
+			incluidas.add(Textos.t("catalogo.row.desayuno"));
 		}
 		if (housing.isLunch()) {
-			incluidas.add("Comida");
+			incluidas.add(Textos.t("catalogo.row.comida"));
 		}
 		if (housing.isDinner()) {
-			incluidas.add("Cena");
+			incluidas.add(Textos.t("catalogo.row.cena"));
 		}
 
-		return incluidas.isEmpty() ? "Sin comidas incluidas" : String.join(", ", incluidas);
+		return incluidas.isEmpty() ? Textos.t("detalle.pension.sinComidas") : String.join(", ", incluidas);
 	}
 
 	private JPanel precio() {
@@ -391,7 +397,7 @@ public class HousingDetailsFrame extends JFrame {
 		precioLabel.setFont(Typography.serif(Typography.PRICE_LG));
 		fila.add(precioLabel, "aligny bottom");
 
-		fila.add(Labels.muted("por noche"), "aligny bottom, gapbottom 5");
+		fila.add(Labels.muted(Textos.t("catalogo.card.porNoche")), "aligny bottom, gapbottom 5");
 
 		return fila;
 	}
@@ -415,15 +421,16 @@ public class HousingDetailsFrame extends JFrame {
 		boolean esPropietario = usuario != null && usuario.getId().equals(housing.getOwner().getId());
 
 		if (usuario != null && usuario.getRole() == RoleType.CUSTOMER) {
-			izquierda.add(Buttons.primary("Reservar", e -> reservar()), "height 44!");
+			izquierda.add(Buttons.primary(Textos.t("detalle.accion.reservar"), e -> reservar()), "height 44!");
 
 		} else if (usuario != null && usuario.getRole() == RoleType.ADMIN && esPropietario) {
-			izquierda.add(Buttons.secondary("Actualizar alojamiento", e -> actualizar()), "height 44!");
-			izquierda.add(Buttons.linkAccent("Intercambiar →←", e -> intercambiar()), "gapleft " + Space.XL);
+			izquierda.add(Buttons.secondary(Textos.t("detalle.accion.actualizar"), e -> actualizar()), "height 44!");
+			izquierda.add(Buttons.linkAccent(Textos.t("catalogo.row.intercambiar"), e -> intercambiar()),
+					"gapleft " + Space.XL);
 		}
 
 		fila.add(izquierda);
-		fila.add(Buttons.link("Ver reseñas →", e -> verResenas()));
+		fila.add(Buttons.link(Textos.t("detalle.accion.verResenas"), e -> verResenas()));
 
 		return fila;
 	}
