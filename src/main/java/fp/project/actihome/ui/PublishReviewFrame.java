@@ -2,6 +2,7 @@ package fp.project.actihome.ui;
 
 import java.awt.Dimension;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -33,6 +34,7 @@ import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 
 /**
  * Publicar una reseña sobre un alojamiento.
@@ -70,8 +72,11 @@ public class PublishReviewFrame extends JFrame {
 	private transient Housing housing;
 
 	private ReviewForm formulario;
+	private JLabel superTitulo;
 	private JLabel tituloAlojamiento;
 	private JLabel error;
+	private JButton botonPublicar;
+	private JButton botonCancelar;
 
 	public PublishReviewFrame(ReviewService reviewService, HousingService housingService,
 			SessionManager sessionManager, Navigator navigator) {
@@ -93,6 +98,7 @@ public class PublishReviewFrame extends JFrame {
 	public void setVisible(boolean visible) {
 
 		if (visible) {
+			actualizarTextosFijos();
 			recargar();
 		}
 
@@ -146,7 +152,8 @@ public class PublishReviewFrame extends JFrame {
 		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		titulos.setOpaque(false);
 
-		titulos.add(Labels.capsAccent("Publicar reseña"));
+		superTitulo = Labels.capsAccent(Textos.t("resenas.publicar"));
+		titulos.add(superTitulo);
 
 		tituloAlojamiento = Labels.title(" ");
 		titulos.add(tituloAlojamiento, "gaptop " + Space.XXS);
@@ -162,10 +169,20 @@ public class PublishReviewFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
 		fila.setOpaque(false);
 
-		fila.add(Buttons.primary("Publicar reseña", e -> publicar()), "height 44!");
-		fila.add(Buttons.link("Cancelar", e -> volverAlListado()));
+		botonPublicar = Buttons.primary(Textos.t("resenas.publicar"), e -> publicar());
+		fila.add(botonPublicar, "height 44!");
+		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> volverAlListado());
+		fila.add(botonCancelar);
 
 		return fila;
+	}
+
+	private void actualizarTextosFijos() {
+
+		superTitulo.setText(Textos.t("resenas.publicar"));
+		formulario.actualizarTextos();
+		botonPublicar.setText(Textos.t("resenas.publicar"));
+		botonCancelar.setText(Textos.t("ajustes.cancelar"));
 	}
 
 	private void recargar() {
@@ -189,7 +206,7 @@ public class PublishReviewFrame extends JFrame {
 	private void publicar() {
 
 		if (formulario.getTitulo().isEmpty()) {
-			error.setText("Ponle un título a tu reseña.");
+			error.setText(Textos.t("resenaForm.error.sinTitulo"));
 			return;
 		}
 
@@ -201,22 +218,22 @@ public class PublishReviewFrame extends JFrame {
 			volverAlListado();
 
 		} catch (AlreadyPublishedException ex) {
-			error.setText("Ya has publicado una reseña de este alojamiento. Puedes editarla desde el listado.");
+			error.setText(Textos.t("resenaForm.error.yaPublicada"));
 
 		} catch (MustHaveStayedException ex) {
-			error.setText("Solo puedes reseñar un alojamiento en el que te hayas alojado.");
+			error.setText(Textos.t("resenaForm.error.debesHaberteAlojado"));
 
 		} catch (ScoreOutOfBoundsException ex) {
 			// Con el selector de estrellas no debería poder ocurrir —el control solo
 			// produce valores de 0 a 5—, pero la regla la impone el servicio y la
 			// pantalla no debe dar por hecho que la conoce.
-			error.setText("Las valoraciones deben estar entre 0 y 5.");
+			error.setText(Textos.t("resenaForm.error.notasFueraDeRango"));
 
 		} catch (NotAuthorizedUserException ex) {
-			error.setText("Solo los clientes pueden publicar reseñas.");
+			error.setText(Textos.t("resenaForm.error.soloClientesPublican"));
 
 		} catch (InstanceNotFoundException ex) {
-			error.setText("El alojamiento ya no está disponible.");
+			error.setText(Textos.t("resenaForm.error.alojamientoNoDisponible"));
 		}
 	}
 

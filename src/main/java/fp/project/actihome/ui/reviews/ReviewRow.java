@@ -17,6 +17,7 @@ import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Typography;
 
 /**
@@ -37,11 +38,20 @@ public class ReviewRow extends JPanel {
 
 	private static final long serialVersionUID = 1L;
 
-	// El idioma se fija a propósito: sin él, el nombre del mes sale en el idioma
-	// del sistema y la aplicación mezclaría "12 de enero" con "12 de January"
-	// según el equipo donde se abra.
-	private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy",
-			new Locale("es", "ES"));
+	/**
+	 * El patrón cambia con el idioma activo, no solo el {@link Locale}: "d 'de'
+	 * MMMM 'de' yyyy" lleva la palabra "de" escrita a mano, así que ponerle un
+	 * locale inglés habría dejado fechas como "12 de January" — el nombre del mes
+	 * en inglés, pegado a una gramática que sigue siendo española. Se resuelve en
+	 * cada fila, no se guarda: la fila se reconstruye entera en cada visita a la
+	 * pantalla (Fase 7.6), así que no hace falta ningún mecanismo de refresco.
+	 */
+	private static DateTimeFormatter formatoFecha() {
+
+		return Textos.idioma().getLanguage().equals("en")
+				? DateTimeFormatter.ofPattern("MMMM d, yyyy", Textos.idioma())
+				: DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", Textos.idioma());
+	}
 
 	/** Caracteres del extracto. Dos líneas largas aproximadamente. */
 	private static final int LIMITE_EXTRACTO = 180;
@@ -55,7 +65,8 @@ public class ReviewRow extends JPanel {
 		setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
 		add(cabecera(review, alAbrir), "growx");
-		add(Labels.muted("por " + review.getAuthor().getUsername() + " · " + FECHA.format(review.getPublicationDate())));
+		add(Labels.muted(Textos.t("resenas.row.por", review.getAuthor().getUsername()) + " · "
+				+ formatoFecha().format(review.getPublicationDate())));
 		add(new WrappingText(extracto(review.getBody())), "growx");
 		add(subNotas(review), "growx");
 
@@ -84,7 +95,7 @@ public class ReviewRow extends JPanel {
 
 		// La fila entera ya es pinchable; el enlace existe porque una zona pinchable
 		// sin ninguna señal visible no se descubre.
-		panel.add(Buttons.link("Ver reseña →", e -> alAbrir.run()));
+		panel.add(Buttons.link(Textos.t("resenas.verResena"), e -> alAbrir.run()));
 
 		return panel;
 	}
@@ -105,11 +116,11 @@ public class ReviewRow extends JPanel {
 				"[]" + Space.LG + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.LG + "[]", "[]"));
 		panel.setOpaque(false);
 
-		panel.add(subNota("Ubicación", review.getLocationScore()));
-		panel.add(subNota("Servicio", review.getServiceScore()));
-		panel.add(subNota("Wifi", review.getWifiScore()));
-		panel.add(subNota("Comida", review.getFoodScore()));
-		panel.add(subNota("Limpieza", review.getCleaningScore()));
+		panel.add(subNota(Textos.t("resenas.subnota.ubicacion"), review.getLocationScore()));
+		panel.add(subNota(Textos.t("resenas.subnota.servicio"), review.getServiceScore()));
+		panel.add(subNota(Textos.t("resenas.subnota.wifi"), review.getWifiScore()));
+		panel.add(subNota(Textos.t("resenas.subnota.comida"), review.getFoodScore()));
+		panel.add(subNota(Textos.t("resenas.subnota.limpieza"), review.getCleaningScore()));
 
 		return panel;
 	}

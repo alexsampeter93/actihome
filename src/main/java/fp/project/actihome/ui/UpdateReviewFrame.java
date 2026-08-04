@@ -2,6 +2,7 @@ package fp.project.actihome.ui;
 
 import java.awt.Dimension;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -31,6 +32,7 @@ import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 
 /**
  * Editar una reseña propia.
@@ -64,8 +66,11 @@ public class UpdateReviewFrame extends JFrame {
 	private transient Review review;
 
 	private ReviewForm formulario;
+	private JLabel superTitulo;
 	private JLabel tituloAlojamiento;
 	private JLabel error;
+	private JButton botonGuardar;
+	private JButton botonCancelar;
 
 	public UpdateReviewFrame(ReviewService reviewService, SessionManager sessionManager, Navigator navigator) {
 
@@ -85,6 +90,7 @@ public class UpdateReviewFrame extends JFrame {
 	public void setVisible(boolean visible) {
 
 		if (visible) {
+			actualizarTextosFijos();
 			recargar();
 		}
 
@@ -136,7 +142,8 @@ public class UpdateReviewFrame extends JFrame {
 		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		titulos.setOpaque(false);
 
-		titulos.add(Labels.capsAccent("Editar reseña"));
+		superTitulo = Labels.capsAccent(Textos.t("resenaEditar.titulo"));
+		titulos.add(superTitulo);
 
 		tituloAlojamiento = Labels.title(" ");
 		titulos.add(tituloAlojamiento, "gaptop " + Space.XXS);
@@ -152,10 +159,20 @@ public class UpdateReviewFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
 		fila.setOpaque(false);
 
-		fila.add(Buttons.primary("Guardar cambios", e -> guardar()), "height 44!");
-		fila.add(Buttons.link("Cancelar", e -> volverAlDetalle()));
+		botonGuardar = Buttons.primary(Textos.t("ajustes.guardar"), e -> guardar());
+		fila.add(botonGuardar, "height 44!");
+		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> volverAlDetalle());
+		fila.add(botonCancelar);
 
 		return fila;
+	}
+
+	private void actualizarTextosFijos() {
+
+		superTitulo.setText(Textos.t("resenaEditar.titulo"));
+		formulario.actualizarTextos();
+		botonGuardar.setText(Textos.t("ajustes.guardar"));
+		botonCancelar.setText(Textos.t("ajustes.cancelar"));
 	}
 
 	private void recargar() {
@@ -180,7 +197,7 @@ public class UpdateReviewFrame extends JFrame {
 	private void guardar() {
 
 		if (formulario.getTitulo().isEmpty()) {
-			error.setText("La reseña necesita un título.");
+			error.setText(Textos.t("resenaEditar.error.sinTitulo"));
 			return;
 		}
 
@@ -192,16 +209,16 @@ public class UpdateReviewFrame extends JFrame {
 			volverAlDetalle();
 
 		} catch (NotTheAuthorException ex) {
-			error.setText("Solo puedes editar las reseñas que has escrito tú.");
+			error.setText(Textos.t("resenaEditar.error.noEresAutor"));
 
 		} catch (ScoreOutOfBoundsException ex) {
-			error.setText("Las valoraciones deben estar entre 0 y 5.");
+			error.setText(Textos.t("resenaForm.error.notasFueraDeRango"));
 
 		} catch (NotAuthorizedUserException ex) {
-			error.setText("Solo los clientes pueden editar reseñas.");
+			error.setText(Textos.t("resenaEditar.error.soloClientesEditan"));
 
 		} catch (InstanceNotFoundException ex) {
-			error.setText("La reseña ya no existe.");
+			error.setText(Textos.t("resenaEditar.error.yaNoExiste"));
 		}
 	}
 

@@ -1,5 +1,6 @@
 package fp.project.actihome.ui;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -29,6 +30,7 @@ import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 
 /**
  * Dar de alta un alojamiento (rol ADMIN).
@@ -59,6 +61,10 @@ public class UploadHousingFrame extends JFrame {
 
 	private HousingForm formulario;
 	private JLabel error;
+	private JLabel superTitulo;
+	private JLabel titulo;
+	private JButton botonPublicar;
+	private JButton botonCancelar;
 
 	public UploadHousingFrame(HousingService housingService, SessionManager sessionManager, Navigator navigator,
 			HeaderPanel headerPanel) {
@@ -76,6 +82,7 @@ public class UploadHousingFrame extends JFrame {
 
 		if (visible) {
 			headerPanel.refresh();
+			actualizarTextosFijos();
 			formulario.limpiar();
 			error.setText(" ");
 		}
@@ -122,8 +129,10 @@ public class UploadHousingFrame extends JFrame {
 
 		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		titulos.setOpaque(false);
-		titulos.add(Labels.capsAccent("Nuevo alojamiento"));
-		titulos.add(Labels.title("Publica tu estancia"), "gaptop " + Space.XXS);
+		superTitulo = Labels.capsAccent(Textos.t("alojamientoAlta.superTitulo"));
+		titulos.add(superTitulo);
+		titulo = Labels.title(Textos.t("alojamientoAlta.titulo"));
+		titulos.add(titulo, "gaptop " + Space.XXS);
 
 		panel.add(titulos);
 		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "top, w 56!, h 56!");
@@ -136,10 +145,21 @@ public class UploadHousingFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
 		fila.setOpaque(false);
 
-		fila.add(Buttons.primary("Publicar alojamiento", e -> publicar()), "height 44!");
-		fila.add(Buttons.link("Cancelar", e -> navigator.ir(ShowHousingsFrame.class)));
+		botonPublicar = Buttons.primary(Textos.t("alojamientoAlta.publicar"), e -> publicar());
+		fila.add(botonPublicar, "height 44!");
+		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> navigator.ir(ShowHousingsFrame.class));
+		fila.add(botonCancelar);
 
 		return fila;
+	}
+
+	private void actualizarTextosFijos() {
+
+		superTitulo.setText(Textos.t("alojamientoAlta.superTitulo"));
+		titulo.setText(Textos.t("alojamientoAlta.titulo"));
+		formulario.actualizarTextos();
+		botonPublicar.setText(Textos.t("alojamientoAlta.publicar"));
+		botonCancelar.setText(Textos.t("ajustes.cancelar"));
 	}
 
 	private void publicar() {
@@ -154,19 +174,19 @@ public class UploadHousingFrame extends JFrame {
 			error.setText(ex.getMessage());
 
 		} catch (DuplicateInstanceException ex) {
-			error.setText("Ya existe un alojamiento con ese código. Usa otro.");
+			error.setText(Textos.t("alojamientoForm.error.codigoDuplicado"));
 
 		} catch (LessThanOneRoomException ex) {
-			error.setText("El alojamiento debe tener al menos una habitación.");
+			error.setText(Textos.t("alojamientoForm.error.sinHabitaciones"));
 
 		} catch (NegativePrizeException ex) {
-			error.setText("El precio por noche no puede ser negativo.");
+			error.setText(Textos.t("alojamientoForm.error.precioNegativo"));
 
 		} catch (NotAuthorizedUserException ex) {
-			error.setText("Solo los administradores pueden publicar alojamientos.");
+			error.setText(Textos.t("alojamientoAlta.error.soloAdmin"));
 
 		} catch (InstanceNotFoundException ex) {
-			error.setText("Tu sesión ya no es válida. Vuelve a entrar.");
+			error.setText(Textos.t("alojamientoForm.error.sesionNoValida"));
 		}
 	}
 }

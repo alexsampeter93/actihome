@@ -9,6 +9,7 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -81,6 +82,10 @@ public class LoginFrame extends JFrame {
 	private Field usuario;
 	private Field contrasena;
 	private JLabel error;
+	private JLabel superTitulo;
+	private JButton botonEntrar;
+	private JLabel etiquetaPrimeraVez;
+	private JLabel enlaceRegistro;
 
 	/**
 	 * La frase editorial de la estación. Es texto, no color, así que no se resuelve
@@ -122,6 +127,7 @@ public class LoginFrame extends JFrame {
 			contrasena.setText("");
 			error.setText(" ");
 			fraseEstacional.setText(Theme.estacion().frase());
+			actualizarTextosFijos();
 			SwingUtilities.invokeLater(usuario::requestFocus);
 		}
 
@@ -218,8 +224,12 @@ public class LoginFrame extends JFrame {
 		// espacio de los rasgos ascendentes y descendentes, así que dos etiquetas
 		// apiladas dejan más aire del que pide una serif de display: se lee como dos
 		// frases sueltas en vez de como una sola en dos líneas.
-		claimPrimera = claim("Elige dónde");
-		claimSegunda = claim("quieres despertar");
+		// El corte de línea no es el mismo que el titular del catálogo ("Elige dónde
+		// quieres" / "despertar"): aquí el panel es más estrecho y corta antes
+		// ("Elige dónde" / "quieres despertar"), así que lleva sus propias claves en
+		// vez de reutilizar las del catálogo.
+		claimPrimera = claim(Textos.t("login.claim1"));
+		claimSegunda = claim(Textos.t("login.claim2"));
 
 		panel.add(claimPrimera, Layout.ancho(Layout.TEXTO));
 		panel.add(claimSegunda, Layout.ancho(Layout.TEXTO) + ", gaptop -10");
@@ -285,15 +295,16 @@ public class LoginFrame extends JFrame {
 						+ Space.XXL + "[]push"));
 		panel.setOpaque(false);
 
-		panel.add(Labels.capsAccent("Acceso"));
+		superTitulo = Labels.capsAccent(Textos.t("login.acceso"));
+		panel.add(superTitulo);
 
-		titulo = Labels.title("Bienvenido de nuevo");
+		titulo = Labels.title(Textos.t("login.bienvenido"));
 		panel.add(titulo);
 
-		usuario = Field.text("Nombre de usuario");
+		usuario = Field.text(Textos.t("login.usuario"));
 		panel.add(usuario);
 
-		contrasena = Field.password("Contraseña");
+		contrasena = Field.password(Textos.t("login.contrasena"));
 		panel.add(contrasena);
 
 		// Se reserva el hueco del error desde el principio, con un espacio en blanco.
@@ -302,7 +313,8 @@ public class LoginFrame extends JFrame {
 		error = Labels.error(" ");
 		panel.add(error);
 
-		panel.add(Buttons.primary("Entrar", e -> entrar()), "growx, height 44!");
+		botonEntrar = Buttons.primary(Textos.t("login.entrar"), e -> entrar());
+		panel.add(botonEntrar, "growx, height 44!");
 
 		panel.add(enlaceARegistro());
 
@@ -320,9 +332,10 @@ public class LoginFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XXS + "[]", ""));
 		fila.setOpaque(false);
 
-		fila.add(Labels.muted("¿Es tu primera vez aquí?"));
+		etiquetaPrimeraVez = Labels.muted(Textos.t("login.primeraVez"));
+		fila.add(etiquetaPrimeraVez);
 
-		JLabel enlace = Labels.body("Regístrate");
+		JLabel enlace = Labels.body(Textos.t("login.registrate"));
 		enlace.setFont(Typography.sansSemiBold(Typography.BODY_SM));
 		// accText(), no acc(): este enlace se quedó sin migrar al separar los dos
 		// tokens de acento (ADR-008) y en verano pintaba el texto con el amarillo de
@@ -339,6 +352,7 @@ public class LoginFrame extends JFrame {
 		});
 		fila.add(enlace);
 
+		enlaceRegistro = enlace;
 		return fila;
 	}
 
@@ -348,7 +362,7 @@ public class LoginFrame extends JFrame {
 		String clave = contrasena.getText();
 
 		if (nombre.isEmpty() || clave.isEmpty()) {
-			error.setText("Escribe tu usuario y tu contraseña.");
+			error.setText(Textos.t("login.error.camposVacios"));
 			return;
 		}
 
@@ -363,10 +377,29 @@ public class LoginFrame extends JFrame {
 			// Se captura la excepción concreta y no un Exception genérico, y el mensaje
 			// no distingue entre "ese usuario no existe" y "la contraseña no es esa":
 			// decirlo revelaría qué nombres de usuario están registrados.
-			error.setText("Usuario o contraseña incorrectos.");
+			error.setText(Textos.t("login.error.credencialesIncorrectas"));
 			contrasena.setText("");
 			contrasena.requestFocus();
 		}
+	}
+
+	/**
+	 * Vuelve a fijar los textos fijos en el idioma activo (Fase 7.6). Login es
+	 * la pantalla que se ve antes de que exista sesión, así que el idioma que se
+	 * use aquí es el que quedó activo la última vez —global de la JVM, como la
+	 * estación—, no el de ningún usuario concreto.
+	 */
+	private void actualizarTextosFijos() {
+
+		claimPrimera.setText(Textos.t("login.claim1"));
+		claimSegunda.setText(Textos.t("login.claim2"));
+		superTitulo.setText(Textos.t("login.acceso"));
+		titulo.setText(Textos.t("login.bienvenido"));
+		usuario.setEtiqueta(Textos.t("login.usuario"));
+		contrasena.setEtiqueta(Textos.t("login.contrasena"));
+		botonEntrar.setText(Textos.t("login.entrar"));
+		etiquetaPrimeraVez.setText(Textos.t("login.primeraVez"));
+		enlaceRegistro.setText(Textos.t("login.registrate"));
 	}
 
 	/**

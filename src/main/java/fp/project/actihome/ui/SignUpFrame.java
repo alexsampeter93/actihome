@@ -10,6 +10,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -31,6 +32,7 @@ import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.Field;
+import fp.project.actihome.ui.components.FilaFluida;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
@@ -39,6 +41,7 @@ import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
@@ -88,6 +91,17 @@ public class SignUpFrame extends JFrame {
 	private Chip rolAdmin;
 	private JLabel error;
 
+	private JLabel superTitulo;
+	private JLabel titulo;
+	private JLabel subtitulo;
+	private JLabel etiquetaNacimiento;
+	private JLabel etiquetaQuiero;
+	private JLabel textoRolInfo;
+	private JButton botonCrearCuenta;
+	private JButton botonCancelar;
+	private JLabel etiquetaYaTienesCuenta;
+	private JLabel enlaceIniciarSesion;
+
 	public SignUpFrame(UserService userService, Navigator navigator) {
 
 		this.userService = userService;
@@ -100,6 +114,7 @@ public class SignUpFrame extends JFrame {
 	public void setVisible(boolean visible) {
 
 		if (visible) {
+			actualizarTextosFijos();
 			limpiar();
 			SwingUtilities.invokeLater(usuario::requestFocus);
 		}
@@ -156,10 +171,12 @@ public class SignUpFrame extends JFrame {
 
 		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		titulos.setOpaque(false);
-		titulos.add(Labels.capsAccent("Crear cuenta"));
-		titulos.add(Labels.title("Empieza a viajar con ActiHome"), "gaptop " + Space.XXS);
-		titulos.add(Labels.muted("Necesitamos unos pocos datos. Podrás cambiarlos después desde tu perfil."),
-				"gaptop " + Space.XS);
+		superTitulo = Labels.capsAccent(Textos.t("registro.crearCuenta"));
+		titulos.add(superTitulo);
+		titulo = Labels.title(Textos.t("registro.titulo"));
+		titulos.add(titulo, "gaptop " + Space.XXS);
+		subtitulo = Labels.muted(Textos.t("registro.subtitulo"));
+		titulos.add(subtitulo, "gaptop " + Space.XS);
 		panel.add(titulos);
 
 		panel.add(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.BIENVENIDA), "top");
@@ -177,13 +194,13 @@ public class SignUpFrame extends JFrame {
 				"[grow,fill]" + Space.XXL + "[grow,fill]", ""));
 		panel.setOpaque(false);
 
-		usuario = Field.text("Nombre de usuario");
-		contrasena = Field.password("Contraseña");
-		nombre = Field.text("Nombre");
-		apellido = Field.text("Apellido");
-		localidad = Field.text("Localidad");
-		telefono = Field.text("Teléfono");
-		correo = Field.text("Correo electrónico");
+		usuario = Field.text(Textos.t("login.usuario"));
+		contrasena = Field.password(Textos.t("login.contrasena"));
+		nombre = Field.text(Textos.t("registro.nombre"));
+		apellido = Field.text(Textos.t("registro.apellido"));
+		localidad = Field.text(Textos.t("registro.localidad"));
+		telefono = Field.text(Textos.t("registro.telefono"));
+		correo = Field.text(Textos.t("registro.correo"));
 
 		panel.add(usuario);
 		panel.add(contrasena);
@@ -213,21 +230,37 @@ public class SignUpFrame extends JFrame {
 		// mano; empezar en un valor plausible ahorra ese trabajo a casi todos.
 		nacimiento.setValue(Date.from(LocalDate.now().minusYears(30).atStartOfDay(ZoneId.systemDefault()).toInstant()));
 
-		panel.add(Labels.caps("Fecha de nacimiento"));
+		etiquetaNacimiento = Labels.caps(Textos.t("registro.fechaNacimiento"));
+		panel.add(etiquetaNacimiento);
 		panel.add(nacimiento, "gaptop " + Space.XXS + ", height 38!");
 
 		return panel;
 	}
 
+	/**
+	 * "Quiero" + los dos chips en una {@link FilaFluida}, y la frase de ayuda en
+	 * su propia línea debajo.
+	 *
+	 * <p>
+	 * Antes los cuatro compartían una sola fila rígida con la frase empujada al
+	 * extremo derecho ({@code push}). En español cabía; en inglés
+	 * ("You'll be able to list properties if you choose the second option.", más
+	 * larga que su equivalente español) la fila entera no cabía y MigLayout, sin
+	 * más sitio que ceder, aplastaba también la etiqueta "I want to" y los
+	 * chips —el mismo síntoma, ya documentado en el proyecto, de una fila de
+	 * ancho variable que no es {@link FilaFluida}, aquí destapado por un idioma
+	 * más largo en vez de por el escalado de Windows—. Separando la frase en su
+	 * propia línea, ninguna de las dos compite por el mismo ancho.
+	 */
 	private JPanel rol() {
 
-		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.MD + "[]" + Space.SM + "[]push[]", ""));
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XS + "[]"));
 		panel.setOpaque(false);
 
-		panel.add(Labels.caps("Quiero"));
+		etiquetaQuiero = Labels.caps(Textos.t("registro.quiero"));
 
-		rolCliente = new Chip("Reservar alojamientos", true);
-		rolAdmin = new Chip("Publicar alojamientos");
+		rolCliente = new Chip(Textos.t("registro.rol.cliente"), true);
+		rolAdmin = new Chip(Textos.t("registro.rol.admin"));
 
 		// Selección única hecha a mano en lugar de con un ButtonGroup: el grupo de
 		// Swing permite quedarse sin ninguno seleccionado al pulsar el activo, y aquí
@@ -235,10 +268,14 @@ public class SignUpFrame extends JFrame {
 		rolCliente.addActionListener(e -> seleccionarRol(true));
 		rolAdmin.addActionListener(e -> seleccionarRol(false));
 
-		panel.add(rolCliente);
-		panel.add(rolAdmin);
+		FilaFluida fila = new FilaFluida(Space.MD, Space.XS);
+		fila.add(etiquetaQuiero);
+		fila.add(rolCliente);
+		fila.add(rolAdmin);
+		panel.add(fila);
 
-		panel.add(Labels.muted("Podrás publicar alojamientos si eliges la segunda opción."));
+		textoRolInfo = Labels.muted(Textos.t("registro.rol.info"));
+		panel.add(textoRolInfo);
 
 		return panel;
 	}
@@ -249,6 +286,20 @@ public class SignUpFrame extends JFrame {
 		rolAdmin.setSelected(!cliente);
 	}
 
+	/**
+	 * Botones y enlace en dos líneas, no en una.
+	 *
+	 * <p>
+	 * Antes compartían una sola fila rígida con el enlace empujado al extremo
+	 * ({@code push}): "Create account" + "Cancel" + "Already have an account?
+	 * Sign in" en inglés no cabían en el ancho que sí bastaba en español, y sin
+	 * sitio que ceder MigLayout aplastaba los tres, botones incluidos —el
+	 * "Create account" recortado no era el enlace, era el propio botón—. Los
+	 * botones necesitan su alto fijo de 44px (la constante visual de toda la
+	 * aplicación), así que aquí no vale {@link FilaFluida}, que mide por el alto
+	 * natural de cada elemento: la solución es que el enlace baje a su propia
+	 * línea en vez de competir por el mismo ancho.
+	 */
 	private JPanel pie() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
@@ -257,13 +308,15 @@ public class SignUpFrame extends JFrame {
 		error = Labels.error(" ");
 		panel.add(error);
 
-		JPanel acciones = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]push[]", ""));
+		JPanel acciones = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
 		acciones.setOpaque(false);
-		acciones.add(Buttons.primary("Crear cuenta", e -> registrar()), "height 44!");
-		acciones.add(Buttons.secondary("Cancelar", e -> navigator.ir(LoginFrame.class)), "height 44!");
-		acciones.add(enlaceALogin());
+		botonCrearCuenta = Buttons.primary(Textos.t("registro.crearCuenta"), e -> registrar());
+		acciones.add(botonCrearCuenta, "height 44!");
+		botonCancelar = Buttons.secondary(Textos.t("ajustes.cancelar"), e -> navigator.ir(LoginFrame.class));
+		acciones.add(botonCancelar, "height 44!");
 
 		panel.add(acciones, "gaptop " + Space.XS);
+		panel.add(enlaceALogin(), "gaptop " + Space.SM);
 
 		return panel;
 	}
@@ -273,9 +326,10 @@ public class SignUpFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XXS + "[]", ""));
 		fila.setOpaque(false);
 
-		fila.add(Labels.muted("¿Ya tienes cuenta?"));
+		etiquetaYaTienesCuenta = Labels.muted(Textos.t("registro.yaTienesCuenta"));
+		fila.add(etiquetaYaTienesCuenta);
 
-		JLabel enlace = Labels.body("Inicia sesión");
+		JLabel enlace = Labels.body(Textos.t("registro.iniciaSesion"));
 		enlace.setFont(Typography.sansSemiBold(Typography.BODY_SM));
 		// accText(), no acc(): ver la nota gemela en LoginFrame.enlaceARegistro().
 		enlace.setForeground(Theme.accText());
@@ -289,6 +343,7 @@ public class SignUpFrame extends JFrame {
 		});
 		fila.add(enlace);
 
+		enlaceIniciarSesion = enlace;
 		return fila;
 	}
 
@@ -310,7 +365,7 @@ public class SignUpFrame extends JFrame {
 		String faltante = primerCampoVacio();
 
 		if (faltante != null) {
-			error.setText("Falta rellenar: " + faltante + ".");
+			error.setText(Textos.t("registro.error.faltaRellenar", faltante));
 			return;
 		}
 
@@ -320,7 +375,7 @@ public class SignUpFrame extends JFrame {
 		} catch (NumberFormatException ex) {
 			// Antes esto reventaba con una excepción sin capturar y la ventana se
 			// quedaba muerta sin decir nada.
-			error.setText("El teléfono debe ser un número, sin espacios ni guiones.");
+			error.setText(Textos.t("registro.error.telefonoInvalido"));
 			telefono.requestFocus();
 			return;
 		}
@@ -334,37 +389,60 @@ public class SignUpFrame extends JFrame {
 			navigator.ir(LoginFrame.class);
 
 		} catch (DuplicateInstanceException ex) {
-			error.setText("Ese nombre de usuario ya está cogido. Prueba con otro.");
+			error.setText(Textos.t("registro.error.usuarioOcupado"));
 			usuario.requestFocus();
 
 		} catch (DateTimeParseException ex) {
-			error.setText("La fecha de nacimiento no es válida.");
+			error.setText(Textos.t("registro.error.fechaInvalida"));
 		}
+	}
+
+	private void actualizarTextosFijos() {
+
+		superTitulo.setText(Textos.t("registro.crearCuenta"));
+		titulo.setText(Textos.t("registro.titulo"));
+		subtitulo.setText(Textos.t("registro.subtitulo"));
+		usuario.setEtiqueta(Textos.t("login.usuario"));
+		contrasena.setEtiqueta(Textos.t("login.contrasena"));
+		nombre.setEtiqueta(Textos.t("registro.nombre"));
+		apellido.setEtiqueta(Textos.t("registro.apellido"));
+		localidad.setEtiqueta(Textos.t("registro.localidad"));
+		telefono.setEtiqueta(Textos.t("registro.telefono"));
+		correo.setEtiqueta(Textos.t("registro.correo"));
+		etiquetaNacimiento.setText(Textos.t("registro.fechaNacimiento"));
+		etiquetaQuiero.setText(Textos.t("registro.quiero"));
+		rolCliente.setText(Textos.t("registro.rol.cliente"));
+		rolAdmin.setText(Textos.t("registro.rol.admin"));
+		textoRolInfo.setText(Textos.t("registro.rol.info"));
+		botonCrearCuenta.setText(Textos.t("registro.crearCuenta"));
+		botonCancelar.setText(Textos.t("ajustes.cancelar"));
+		etiquetaYaTienesCuenta.setText(Textos.t("registro.yaTienesCuenta"));
+		enlaceIniciarSesion.setText(Textos.t("registro.iniciaSesion"));
 	}
 
 	/** Devuelve el nombre del primer campo obligatorio sin rellenar, o null. */
 	private String primerCampoVacio() {
 
 		if (usuario.getText().trim().isEmpty()) {
-			return "el nombre de usuario";
+			return Textos.t("registro.campo.usuario");
 		}
 		if (contrasena.getText().isEmpty()) {
-			return "la contraseña";
+			return Textos.t("registro.campo.contrasena");
 		}
 		if (nombre.getText().trim().isEmpty()) {
-			return "el nombre";
+			return Textos.t("registro.campo.nombre");
 		}
 		if (apellido.getText().trim().isEmpty()) {
-			return "el apellido";
+			return Textos.t("registro.campo.apellido");
 		}
 		if (localidad.getText().trim().isEmpty()) {
-			return "la localidad";
+			return Textos.t("registro.campo.localidad");
 		}
 		if (telefono.getText().trim().isEmpty()) {
-			return "el teléfono";
+			return Textos.t("registro.campo.telefono");
 		}
 		if (correo.getText().trim().isEmpty()) {
-			return "el correo electrónico";
+			return Textos.t("registro.campo.correo");
 		}
 
 		return null;

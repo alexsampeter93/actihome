@@ -39,6 +39,7 @@ import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
@@ -94,6 +95,15 @@ public class TradeHousingsFrame extends JFrame {
 	private JButton confirmar;
 	private JLabel error;
 
+	private JLabel superTitulo;
+	private JLabel tituloCabecera;
+	private JLabel subtituloCabecera;
+	private JButton botonBuscar;
+	private JButton botonCancelar;
+	private JLabel vacioTitulo;
+	private JLabel vacioCuerpo;
+	private JButton vacioBoton;
+
 	public TradeHousingsFrame(HousingService housingService, SessionManager sessionManager, Navigator navigator,
 			HeaderPanel headerPanel) {
 
@@ -115,6 +125,7 @@ public class TradeHousingsFrame extends JFrame {
 
 		if (visible) {
 			headerPanel.refresh();
+			actualizarTextosFijos();
 			recargar();
 		}
 
@@ -168,11 +179,12 @@ public class TradeHousingsFrame extends JFrame {
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]"));
 		panel.setOpaque(false);
 
-		panel.add(Labels.capsAccent("Intercambio"));
-		panel.add(Labels.title("Cambia tu estancia por otra"));
-		panel.add(Labels.muted(
-				"Los dos alojamientos deben estar disponibles. Al confirmar, se permuta la titularidad de ambos."),
-				"gaptop " + Space.XS);
+		superTitulo = Labels.capsAccent(Textos.t("header.nav.intercambio"));
+		panel.add(superTitulo);
+		tituloCabecera = Labels.title(Textos.t("intercambio.titulo"));
+		panel.add(tituloCabecera);
+		subtituloCabecera = Labels.muted(Textos.t("intercambio.subtitulo"));
+		panel.add(subtituloCabecera, "gaptop " + Space.XS);
 
 		return panel;
 	}
@@ -205,11 +217,12 @@ public class TradeHousingsFrame extends JFrame {
 		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[grow,fill]" + Space.MD + "[]", "[]"));
 		panel.setOpaque(false);
 
-		codigo = Field.text("Código del alojamiento que quieres recibir");
+		codigo = Field.text(Textos.t("intercambio.codigo"));
 		codigo.onEnter(this::buscar);
 
 		panel.add(codigo);
-		panel.add(Buttons.secondary("Buscar", e -> buscar()), "height 38!, gaptop 18");
+		botonBuscar = Buttons.secondary(Textos.t("intercambio.buscar"), e -> buscar());
+		panel.add(botonBuscar, "height 38!, gaptop 18");
 
 		return panel;
 	}
@@ -219,11 +232,26 @@ public class TradeHousingsFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
 		fila.setOpaque(false);
 
-		confirmar = Buttons.primary("Confirmar intercambio", e -> intercambiar());
+		confirmar = Buttons.primary(Textos.t("intercambio.confirmar"), e -> intercambiar());
 		fila.add(confirmar, "height 44!");
-		fila.add(Buttons.link("Cancelar", e -> volverAlDetalle()));
+		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> volverAlDetalle());
+		fila.add(botonCancelar);
 
 		return fila;
+	}
+
+	private void actualizarTextosFijos() {
+
+		superTitulo.setText(Textos.t("header.nav.intercambio"));
+		tituloCabecera.setText(Textos.t("intercambio.titulo"));
+		subtituloCabecera.setText(Textos.t("intercambio.subtitulo"));
+		codigo.setEtiqueta(Textos.t("intercambio.codigo"));
+		botonBuscar.setText(Textos.t("intercambio.buscar"));
+		confirmar.setText(Textos.t("intercambio.confirmar"));
+		botonCancelar.setText(Textos.t("ajustes.cancelar"));
+		vacioTitulo.setText(Textos.t("intercambio.vacio.titulo"));
+		vacioCuerpo.setText(Textos.t("intercambio.vacio.cuerpo"));
+		vacioBoton.setText(Textos.t("intercambio.vacio.boton"));
 	}
 
 	/**
@@ -303,7 +331,7 @@ public class TradeHousingsFrame extends JFrame {
 
 		panelPropio.removeAll();
 		panelPropio.setLayout(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
-		panelPropio.add(Labels.caps("Entregas"), "gapbottom " + Space.XS);
+		panelPropio.add(Labels.caps(Textos.t("intercambio.entregas")), "gapbottom " + Space.XS);
 		panelPropio.add(tarjeta(propio), "growx");
 		panelPropio.revalidate();
 		panelPropio.repaint();
@@ -317,11 +345,12 @@ public class TradeHousingsFrame extends JFrame {
 		panel.setOpaque(false);
 
 		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.ACCION)));
-		panel.add(centrar(Labels.title("Todavía no tienes nada que ofrecer")));
-		panel.add(centrar(Labels.muted(
-				"Publica un alojamiento y podrás intercambiarlo por el de otro anfitrión.")));
-		panel.add(centrar(Buttons.primary("Publicar un alojamiento",
-				e -> navigator.ir(UploadHousingFrame.class))));
+		vacioTitulo = Labels.title(Textos.t("intercambio.vacio.titulo"));
+		panel.add(centrar(vacioTitulo));
+		vacioCuerpo = Labels.muted(Textos.t("intercambio.vacio.cuerpo"));
+		panel.add(centrar(vacioCuerpo));
+		vacioBoton = Buttons.primary(Textos.t("intercambio.vacio.boton"), e -> navigator.ir(UploadHousingFrame.class));
+		panel.add(centrar(vacioBoton));
 
 		return panel;
 	}
@@ -338,7 +367,7 @@ public class TradeHousingsFrame extends JFrame {
 
 		panelCandidato.removeAll();
 		panelCandidato.setLayout(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
-		panelCandidato.add(Labels.caps("Recibes"), "gapbottom " + Space.XS);
+		panelCandidato.add(Labels.caps(Textos.t("intercambio.recibes")), "gapbottom " + Space.XS);
 
 		if (candidato == null) {
 			panelCandidato.add(tarjetaVacia(), "growx");
@@ -359,24 +388,26 @@ public class TradeHousingsFrame extends JFrame {
 		Card card = new Card(new MigLayout("wrap 1, " + Space.insets(Space.MD), "[grow,fill]", ""));
 		boolean disponible = housingService.isAvailableNow(housing.getId());
 
-		card.add(new ImagePlaceholder(housing.getType(), disponible ? "Disponible" : "Reservada", disponible,
-				housing.getImage()), "h 84!, growx, gapbottom " + Space.SM);
+		card.add(new ImagePlaceholder(Textos.tipoDeAlojamiento(housing.getType()),
+				disponible ? Textos.t("catalogo.disponibilidad.disponible") : Textos.t("catalogo.disponibilidad.reservada"),
+				disponible, housing.getImage()), "h 84!, growx, gapbottom " + Space.SM);
 
-		card.add(Labels.capsAccent("Nº " + housing.getHousingCode()));
+		card.add(Labels.capsAccent(Textos.t("catalogo.numero") + " " + housing.getHousingCode()));
 
 		JLabel nombre = Labels.cardTitle(housing.getName());
 		nombre.setFont(Typography.serifMedium(Typography.CARD_TITLE));
 		card.add(nombre, "gaptop " + Space.XXS);
 
 		card.add(Labels.muted(housing.getLocation()), "gaptop " + Space.XXS);
-		card.add(Labels.muted("Titular: " + housing.getOwner().getUsername()), "gaptop " + Space.XXS);
-		card.add(Labels.priceSmall(Formato.precio(housing.getPricePerNight()) + " / noche"),
+		card.add(Labels.muted(Textos.t("intercambio.titular", housing.getOwner().getUsername())),
+				"gaptop " + Space.XXS);
+		card.add(Labels.priceSmall(Textos.t("intercambio.precioPorNoche", Formato.precio(housing.getPricePerNight()))),
 				"gaptop " + Space.XS);
 
 		if (!disponible) {
 			// Es la causa exacta por la que el servicio rechazaría el intercambio, dicha
 			// antes de intentarlo.
-			card.add(Labels.error("Está reservado: no se puede intercambiar."), "gaptop " + Space.XS);
+			card.add(Labels.error(Textos.t("intercambio.error.reservadoNoIntercambiable")), "gaptop " + Space.XS);
 		}
 
 		return card;
@@ -387,8 +418,8 @@ public class TradeHousingsFrame extends JFrame {
 		Card card = new Card(new MigLayout("wrap 1, " + Space.insets(Space.MD), "[grow,fill]", ""));
 
 		card.add(new ImagePlaceholder(), "h 84!, growx, gapbottom " + Space.SM);
-		card.add(Labels.muted("Escribe abajo el código del alojamiento que quieres"), "gaptop " + Space.XXS);
-		card.add(Labels.muted("y pulsa Buscar para verlo aquí antes de confirmar."));
+		card.add(Labels.muted(Textos.t("intercambio.tarjetaVacia.linea1")), "gaptop " + Space.XXS);
+		card.add(Labels.muted(Textos.t("intercambio.tarjetaVacia.linea2")));
 
 		return card;
 	}
@@ -415,7 +446,7 @@ public class TradeHousingsFrame extends JFrame {
 		String texto = codigo.getText().trim();
 
 		if (texto.isEmpty()) {
-			error.setText("Escribe un código de alojamiento.");
+			error.setText(Textos.t("intercambio.error.escribeCodigo"));
 			return;
 		}
 
@@ -425,7 +456,7 @@ public class TradeHousingsFrame extends JFrame {
 			buscado = Long.parseLong(texto);
 
 		} catch (NumberFormatException ex) {
-			error.setText("El código es un número, sin letras ni espacios.");
+			error.setText(Textos.t("intercambio.error.codigoInvalido"));
 			return;
 		}
 
@@ -434,14 +465,17 @@ public class TradeHousingsFrame extends JFrame {
 
 		if (!encontrado.isPresent()) {
 			candidato = null;
-			error.setText("No hay ningún alojamiento con el código " + buscado + ".");
+			// String.valueOf, no el long tal cual: MessageFormat formatea los números con
+			// separador de miles por defecto ("10.001"), y aquí es un código, no una
+			// cantidad.
+			error.setText(Textos.t("intercambio.error.codigoNoEncontrado", String.valueOf(buscado)));
 			pintarCandidato();
 			return;
 		}
 
 		if (encontrado.get().getId().equals(housingId)) {
 			candidato = null;
-			error.setText("Ese es el alojamiento que estás ofreciendo. Busca otro.");
+			error.setText(Textos.t("intercambio.error.esElMismo"));
 			pintarCandidato();
 			return;
 		}
@@ -464,10 +498,10 @@ public class TradeHousingsFrame extends JFrame {
 			navigator.ir(ShowHousingsFrame.class);
 
 		} catch (AlreadyReservedException ex) {
-			error.setText("Alguno de los dos alojamientos está reservado. Los dos deben estar disponibles.");
+			error.setText(Textos.t("intercambio.error.algunoReservado"));
 
 		} catch (InstanceNotFoundException ex) {
-			error.setText("Uno de los alojamientos ya no existe.");
+			error.setText(Textos.t("intercambio.error.unoNoExiste"));
 		}
 	}
 

@@ -17,6 +17,7 @@ import javax.swing.JPanel;
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
@@ -56,6 +57,7 @@ public class StarRating extends JPanel {
 
 	private int valor;
 	private final Estrellas estrellas;
+	private final JLabel etiquetaLabel;
 	private final JLabel lectura;
 
 	public StarRating(String etiqueta, int valorInicial) {
@@ -70,7 +72,8 @@ public class StarRating extends JPanel {
 
 		this.valor = acotar(valorInicial);
 
-		add(Labels.caps(etiqueta), "aligny center");
+		etiquetaLabel = Labels.caps(etiqueta);
+		add(etiquetaLabel, "aligny center");
 
 		estrellas = new Estrellas();
 		add(estrellas, "w " + (LADO * ESTRELLAS) + "!, h " + LADO + "!, aligny center");
@@ -90,8 +93,14 @@ public class StarRating extends JPanel {
 		estrellas.repaint();
 	}
 
+	/** Cambia el rótulo y refresca la lectura en el idioma activo (Fase 7.6). */
+	public void setEtiqueta(String nueva) {
+		etiquetaLabel.setText(nueva);
+		lectura.setText(textoLectura());
+	}
+
 	private String textoLectura() {
-		return valor == 0 ? "sin valorar" : valor + " de " + ESTRELLAS;
+		return valor == 0 ? Textos.t("starrating.sinValorar") : Textos.t("starrating.deCinco", valor, ESTRELLAS);
 	}
 
 	private static int acotar(int n) {

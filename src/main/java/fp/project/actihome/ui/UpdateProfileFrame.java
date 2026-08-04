@@ -2,6 +2,7 @@ package fp.project.actihome.ui;
 
 import java.awt.Dimension;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -28,6 +29,7 @@ import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 
 /**
  * Editar los datos de la cuenta.
@@ -73,6 +75,10 @@ public class UpdateProfileFrame extends JFrame {
 	private Field telefono;
 	private Field correo;
 	private JLabel error;
+	private JLabel superTitulo;
+	private JLabel titulo;
+	private JButton botonGuardar;
+	private JButton botonCancelar;
 
 	public UpdateProfileFrame(UserService userService, SessionManager sessionManager, Navigator navigator,
 			HeaderPanel headerPanel) {
@@ -90,6 +96,7 @@ public class UpdateProfileFrame extends JFrame {
 
 		if (visible) {
 			headerPanel.refresh();
+			actualizarTextosFijos();
 			precargar();
 		}
 
@@ -125,12 +132,12 @@ public class UpdateProfileFrame extends JFrame {
 
 		panel.add(cabecera());
 
-		usuario = Field.text("Nombre de usuario");
-		nombre = Field.text("Nombre");
-		apellido = Field.text("Apellido");
-		localidad = Field.text("Localidad");
-		telefono = Field.text("Teléfono");
-		correo = Field.text("Correo electrónico");
+		usuario = Field.text(Textos.t("login.usuario"));
+		nombre = Field.text(Textos.t("registro.nombre"));
+		apellido = Field.text(Textos.t("registro.apellido"));
+		localidad = Field.text(Textos.t("registro.localidad"));
+		telefono = Field.text(Textos.t("registro.telefono"));
+		correo = Field.text(Textos.t("registro.correo"));
 
 		// Los campos cortos van de dos en dos. Con los seis a ancho completo el
 		// formulario no cabía en la ventana y los botones quedaban bajo el pliegue, que
@@ -167,8 +174,10 @@ public class UpdateProfileFrame extends JFrame {
 
 		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		titulos.setOpaque(false);
-		titulos.add(Labels.capsAccent("Tu cuenta"));
-		titulos.add(Labels.title("Editar perfil"), "gaptop " + Space.XXS);
+		superTitulo = Labels.capsAccent(Textos.t("ajustes.superTitulo"));
+		titulos.add(superTitulo);
+		titulo = Labels.title(Textos.t("perfil.titulo"));
+		titulos.add(titulo, "gaptop " + Space.XXS);
 
 		panel.add(titulos);
 		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "top, w 56!, h 56!");
@@ -181,10 +190,26 @@ public class UpdateProfileFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
 		fila.setOpaque(false);
 
-		fila.add(Buttons.primary("Guardar cambios", e -> guardar()), "height 44!");
-		fila.add(Buttons.link("Cancelar", e -> navigator.ir(ShowHousingsFrame.class)));
+		botonGuardar = Buttons.primary(Textos.t("ajustes.guardar"), e -> guardar());
+		fila.add(botonGuardar, "height 44!");
+		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> navigator.ir(ShowHousingsFrame.class));
+		fila.add(botonCancelar);
 
 		return fila;
+	}
+
+	private void actualizarTextosFijos() {
+
+		superTitulo.setText(Textos.t("ajustes.superTitulo"));
+		titulo.setText(Textos.t("perfil.titulo"));
+		usuario.setEtiqueta(Textos.t("login.usuario"));
+		nombre.setEtiqueta(Textos.t("registro.nombre"));
+		apellido.setEtiqueta(Textos.t("registro.apellido"));
+		localidad.setEtiqueta(Textos.t("registro.localidad"));
+		telefono.setEtiqueta(Textos.t("registro.telefono"));
+		correo.setEtiqueta(Textos.t("registro.correo"));
+		botonGuardar.setText(Textos.t("ajustes.guardar"));
+		botonCancelar.setText(Textos.t("ajustes.cancelar"));
 	}
 
 	/** Vuelca en el formulario los datos que hay ahora mismo en la sesión. */
@@ -211,7 +236,7 @@ public class UpdateProfileFrame extends JFrame {
 	private void guardar() {
 
 		if (usuario.getText().trim().isEmpty()) {
-			error.setText("El nombre de usuario no puede quedar vacío.");
+			error.setText(Textos.t("perfil.error.usuarioVacio"));
 			return;
 		}
 
@@ -224,7 +249,7 @@ public class UpdateProfileFrame extends JFrame {
 			numeroDeTelefono = Integer.parseInt(telefono.getText().trim());
 
 		} catch (NumberFormatException ex) {
-			error.setText("El teléfono debe ser un número, sin espacios ni prefijo.");
+			error.setText(Textos.t("perfil.error.telefonoInvalido"));
 			return;
 		}
 
@@ -240,10 +265,10 @@ public class UpdateProfileFrame extends JFrame {
 			navigator.ir(ShowHousingsFrame.class);
 
 		} catch (DuplicateInstanceException ex) {
-			error.setText("Ya hay alguien con ese nombre de usuario. Prueba con otro.");
+			error.setText(Textos.t("perfil.error.usuarioOcupado"));
 
 		} catch (InstanceNotFoundException ex) {
-			error.setText("Tu sesión ya no es válida. Vuelve a entrar.");
+			error.setText(Textos.t("alojamientoForm.error.sesionNoValida"));
 		}
 	}
 }

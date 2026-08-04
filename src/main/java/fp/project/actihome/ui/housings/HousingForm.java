@@ -4,7 +4,10 @@ import java.math.BigDecimal;
 import java.util.EnumMap;
 import java.util.Map;
 
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
@@ -16,6 +19,7 @@ import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Typography;
 
 /**
@@ -64,10 +68,13 @@ public class HousingForm extends JPanel {
 	private final Field precio;
 	private final Field ubicacion;
 	private final Field descripcion;
+	private JLabel etiquetaTipo;
+	private JLabel etiquetaPension;
+	private JLabel etiquetaComodidades;
 
-	private final Chip desayuno = new Chip("Desayuno");
-	private final Chip comida = new Chip("Comida");
-	private final Chip cena = new Chip("Cena");
+	private final Chip desayuno = new Chip(Textos.t("catalogo.row.desayuno"));
+	private final Chip comida = new Chip(Textos.t("catalogo.row.comida"));
+	private final Chip cena = new Chip(Textos.t("catalogo.row.cena"));
 
 	private final Map<Amenity, Chip> comodidades = new EnumMap<>(Amenity.class);
 
@@ -87,13 +94,26 @@ public class HousingForm extends JPanel {
 		super(new MigLayout(Space.insets(0), "[grow,fill]" + Space.XXL + "[grow,fill]", "[]"));
 		setOpaque(false);
 
-		codigo = Field.text("Código de alojamiento");
-		nombre = Field.text("Nombre");
+		codigo = Field.text(Textos.t("alojamientoForm.codigo"));
+		nombre = Field.text(Textos.t("alojamientoForm.nombre"));
 		tipo = new JComboBox<>(TIPOS);
-		habitaciones = Field.text("Nº de habitaciones");
-		precio = Field.text("Precio por noche (€)");
-		ubicacion = Field.text("Ubicación");
-		descripcion = Field.textArea("Descripción", 4);
+		tipo.setRenderer(new DefaultListCellRenderer() {
+
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public java.awt.Component getListCellRendererComponent(JList<?> list, Object value, int index,
+					boolean isSelected, boolean cellHasFocus) {
+
+				super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+				setText(Textos.tipoDeAlojamiento((String) value));
+				return this;
+			}
+		});
+		habitaciones = Field.text(Textos.t("alojamientoForm.habitaciones"));
+		precio = Field.text(Textos.t("alojamientoForm.precio"));
+		ubicacion = Field.text(Textos.t("alojamientoForm.ubicacion"));
+		descripcion = Field.textArea(Textos.t("alojamientoForm.descripcion"), 4);
 
 		add(columnaIzquierda(conCodigo), "aligny top");
 		add(columnaDerecha(), "aligny top");
@@ -123,10 +143,12 @@ public class HousingForm extends JPanel {
 
 		panel.add(descripcion, "gapbottom " + Space.LG);
 
-		panel.add(Labels.caps("Pensión"), "gapbottom " + Space.XS);
+		etiquetaPension = Labels.caps(Textos.t("catalogo.row.pension"));
+		panel.add(etiquetaPension, "gapbottom " + Space.XS);
 		panel.add(fila(desayuno, comida, cena), "gapbottom " + Space.LG);
 
-		panel.add(Labels.caps("Comodidades"), "gapbottom " + Space.XS);
+		etiquetaComodidades = Labels.caps(Textos.t("catalogo.filtro.comodidades"));
+		panel.add(etiquetaComodidades, "gapbottom " + Space.XS);
 		panel.add(filaDeComodidades());
 
 		return panel;
@@ -139,7 +161,8 @@ public class HousingForm extends JPanel {
 
 		tipo.setFont(Typography.sans(Typography.BODY));
 
-		panel.add(Labels.caps("Tipo"));
+		etiquetaTipo = Labels.caps(Textos.t("catalogo.filtro.tipo"));
+		panel.add(etiquetaTipo);
 		panel.add(tipo, "gaptop " + Space.XXS + ", height 38!");
 
 		return panel;
@@ -187,12 +210,38 @@ public class HousingForm extends JPanel {
 				continue;
 			}
 
-			Chip chip = new Chip(amenity.etiqueta());
+			Chip chip = new Chip(Textos.etiquetaDe(amenity));
 			comodidades.put(amenity, chip);
 			panel.add(chip, "gapright " + Space.XS + ", gapbottom " + Space.XS);
 		}
 
 		return panel;
+	}
+
+	/**
+	 * Vuelve a fijar los textos fijos del formulario en el idioma activo (Fase
+	 * 7.6). Lo llaman {@code UploadHousingFrame}/{@code UpdateHousingFrame} desde
+	 * su propio {@code setVisible(true)}: este formulario es un campo de esas
+	 * pantallas singleton, así que no se reconstruye solo con el idioma. El
+	 * desplegable de tipo no necesita nada aquí: su renderer ya traduce el valor
+	 * seleccionado en cada repintado.
+	 */
+	public void actualizarTextos() {
+
+		codigo.setEtiqueta(Textos.t("alojamientoForm.codigo"));
+		nombre.setEtiqueta(Textos.t("alojamientoForm.nombre"));
+		etiquetaTipo.setText(Textos.t("catalogo.filtro.tipo"));
+		habitaciones.setEtiqueta(Textos.t("alojamientoForm.habitaciones"));
+		precio.setEtiqueta(Textos.t("alojamientoForm.precio"));
+		ubicacion.setEtiqueta(Textos.t("alojamientoForm.ubicacion"));
+		descripcion.setEtiqueta(Textos.t("alojamientoForm.descripcion"));
+		etiquetaPension.setText(Textos.t("catalogo.row.pension"));
+		etiquetaComodidades.setText(Textos.t("catalogo.filtro.comodidades"));
+		desayuno.setText(Textos.t("catalogo.row.desayuno"));
+		comida.setText(Textos.t("catalogo.row.comida"));
+		cena.setText(Textos.t("catalogo.row.cena"));
+		comodidades.forEach((amenity, chip) -> chip.setText(Textos.etiquetaDe(amenity)));
+		tipo.repaint();
 	}
 
 	/** Vuelca en el formulario los datos de un alojamiento existente, para editarlo. */
@@ -245,9 +294,9 @@ public class HousingForm extends JPanel {
 	public HousingData datos() throws DatosInvalidos {
 
 		HousingData data = HousingData
-				.basico(entero(codigo.getText(), "el código de alojamiento").longValue(), nombre.getText().trim(),
-						(String) tipo.getSelectedItem(),
-						entero(habitaciones.getText(), "el número de habitaciones").intValue(),
+				.basico(entero(codigo.getText(), Textos.t("alojamientoForm.campo.codigo")).longValue(),
+						nombre.getText().trim(), (String) tipo.getSelectedItem(),
+						entero(habitaciones.getText(), Textos.t("alojamientoForm.campo.habitaciones")).intValue(),
 						decimal(precio.getText()), ubicacion.getText().trim())
 				.description(descripcion.getText().trim())
 				.breakfast(desayuno.isSelected())
@@ -275,7 +324,7 @@ public class HousingForm extends JPanel {
 			return Long.valueOf(texto.trim());
 
 		} catch (NumberFormatException ex) {
-			throw new DatosInvalidos("Revisa " + queEs + ": tiene que ser un número entero.");
+			throw new DatosInvalidos(Textos.t("alojamientoForm.error.revisaEntero", queEs));
 		}
 	}
 
@@ -287,7 +336,7 @@ public class HousingForm extends JPanel {
 			return new BigDecimal(texto.trim().replace(',', '.'));
 
 		} catch (NumberFormatException ex) {
-			throw new DatosInvalidos("Revisa el precio por noche: tiene que ser un número.");
+			throw new DatosInvalidos(Textos.t("alojamientoForm.error.revisaPrecio"));
 		}
 	}
 

@@ -1,5 +1,6 @@
 package fp.project.actihome.ui;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -30,6 +31,7 @@ import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 
 /**
  * Editar un alojamiento propio.
@@ -65,8 +67,11 @@ public class UpdateHousingFrame extends JFrame {
 	private transient Housing housing;
 
 	private HousingForm formulario;
+	private JLabel superTitulo;
 	private JLabel subtitulo;
 	private JLabel error;
+	private JButton botonGuardar;
+	private JButton botonCancelar;
 
 	public UpdateHousingFrame(HousingService housingService, SessionManager sessionManager, Navigator navigator,
 			HeaderPanel headerPanel) {
@@ -89,6 +94,7 @@ public class UpdateHousingFrame extends JFrame {
 
 		if (visible) {
 			headerPanel.refresh();
+			actualizarTextosFijos();
 			recargar();
 		}
 
@@ -132,7 +138,8 @@ public class UpdateHousingFrame extends JFrame {
 
 		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		titulos.setOpaque(false);
-		titulos.add(Labels.capsAccent("Editar alojamiento"));
+		superTitulo = Labels.capsAccent(Textos.t("alojamientoEditar.titulo"));
+		titulos.add(superTitulo);
 
 		subtitulo = Labels.title(" ");
 		titulos.add(subtitulo, "gaptop " + Space.XXS);
@@ -148,10 +155,20 @@ public class UpdateHousingFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
 		fila.setOpaque(false);
 
-		fila.add(Buttons.primary("Guardar cambios", e -> guardar()), "height 44!");
-		fila.add(Buttons.link("Cancelar", e -> volverAlDetalle()));
+		botonGuardar = Buttons.primary(Textos.t("ajustes.guardar"), e -> guardar());
+		fila.add(botonGuardar, "height 44!");
+		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> volverAlDetalle());
+		fila.add(botonCancelar);
 
 		return fila;
+	}
+
+	private void actualizarTextosFijos() {
+
+		superTitulo.setText(Textos.t("alojamientoEditar.titulo"));
+		formulario.actualizarTextos();
+		botonGuardar.setText(Textos.t("ajustes.guardar"));
+		botonCancelar.setText(Textos.t("ajustes.cancelar"));
 	}
 
 	/**
@@ -190,19 +207,19 @@ public class UpdateHousingFrame extends JFrame {
 			error.setText(ex.getMessage());
 
 		} catch (LessThanOneRoomException ex) {
-			error.setText("El alojamiento debe tener al menos una habitación.");
+			error.setText(Textos.t("alojamientoForm.error.sinHabitaciones"));
 
 		} catch (NegativePrizeException ex) {
-			error.setText("El precio por noche no puede ser negativo.");
+			error.setText(Textos.t("alojamientoForm.error.precioNegativo"));
 
 		} catch (NotTheOwnerException ex) {
-			error.setText("Solo puedes editar los alojamientos de los que eres titular.");
+			error.setText(Textos.t("alojamientoEditar.error.noEresTitular"));
 
 		} catch (NotAuthorizedUserException ex) {
-			error.setText("Solo los administradores pueden editar alojamientos.");
+			error.setText(Textos.t("alojamientoEditar.error.soloAdmin"));
 
 		} catch (InstanceNotFoundException ex) {
-			error.setText("El alojamiento ya no existe.");
+			error.setText(Textos.t("alojamientoEditar.error.yaNoExiste"));
 		}
 	}
 

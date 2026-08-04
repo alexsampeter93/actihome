@@ -6,6 +6,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.time.format.DateTimeFormatter;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -35,6 +36,7 @@ import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
@@ -79,10 +81,13 @@ public class DoCheckInFrame extends JFrame {
 
 	private transient Reservation reservation;
 
+	private JLabel superTitulo;
 	private JLabel tituloAlojamiento;
 	private JLabel subtituloFechas;
 	private Field codigo;
 	private JLabel error;
+	private JButton botonConfirmar;
+	private JLabel enlaceVolver;
 
 	public DoCheckInFrame(ReservationService reservationService, SessionManager sessionManager, Navigator navigator,
 			HeaderPanel headerPanel) {
@@ -105,6 +110,7 @@ public class DoCheckInFrame extends JFrame {
 
 		if (visible) {
 			headerPanel.refresh();
+			actualizarTextosFijos();
 			cargarResumen();
 			limpiar();
 		}
@@ -122,6 +128,14 @@ public class DoCheckInFrame extends JFrame {
 		subtituloFechas.setText(
 				FECHA.format(reservation.getCheckIn()) + " – " + FECHA.format(reservation.getCheckOut()) + " · "
 						+ reservation.getHousing().getLocation());
+	}
+
+	private void actualizarTextosFijos() {
+
+		superTitulo.setText(Textos.t("checkin.titulo"));
+		codigo.setEtiqueta(Textos.t("checkin.codigo"));
+		botonConfirmar.setText(Textos.t("checkin.confirmar"));
+		enlaceVolver.setText(Textos.t("checkin.volver"));
 	}
 
 	private void limpiar() {
@@ -160,7 +174,7 @@ public class DoCheckInFrame extends JFrame {
 
 		panel.add(cabecera());
 
-		codigo = Field.text("Código de la reserva");
+		codigo = Field.text(Textos.t("checkin.codigo"));
 		codigo.onEnter(this::confirmar);
 		panel.add(codigo);
 
@@ -180,7 +194,8 @@ public class DoCheckInFrame extends JFrame {
 		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		titulos.setOpaque(false);
 
-		titulos.add(Labels.capsAccent("Check-in"));
+		superTitulo = Labels.capsAccent(Textos.t("checkin.titulo"));
+		titulos.add(superTitulo);
 
 		tituloAlojamiento = Labels.title(" ");
 		titulos.add(tituloAlojamiento, "gaptop " + Space.XXS);
@@ -199,7 +214,8 @@ public class DoCheckInFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
 		fila.setOpaque(false);
 
-		fila.add(Buttons.primary("Confirmar check-in", e -> confirmar()), "height 44!");
+		botonConfirmar = Buttons.primary(Textos.t("checkin.confirmar"), e -> confirmar());
+		fila.add(botonConfirmar, "height 44!");
 		fila.add(volver());
 
 		return fila;
@@ -207,7 +223,7 @@ public class DoCheckInFrame extends JFrame {
 
 	private JLabel volver() {
 
-		JLabel enlace = Labels.body("Volver a mis reservas");
+		JLabel enlace = Labels.body(Textos.t("checkin.volver"));
 		enlace.setFont(Typography.sansSemiBold(Typography.BODY_SM));
 		enlace.setForeground(Theme.mut());
 		enlace.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -219,6 +235,7 @@ public class DoCheckInFrame extends JFrame {
 			}
 		});
 
+		enlaceVolver = enlace;
 		return enlace;
 	}
 
@@ -230,7 +247,7 @@ public class DoCheckInFrame extends JFrame {
 			reservationCode = Long.parseLong(codigo.getText().trim());
 
 		} catch (NumberFormatException ex) {
-			error.setText("El código debe ser un número.");
+			error.setText(Textos.t("checkin.error.codigoNumero"));
 			codigo.requestFocus();
 			return;
 		}
@@ -242,21 +259,21 @@ public class DoCheckInFrame extends JFrame {
 			navigator.ir(ShowMyReservationsFrame.class);
 
 		} catch (CodeDoesNotMatchException ex) {
-			error.setText("El código no coincide con esta reserva.");
+			error.setText(Textos.t("checkin.error.noCoincide"));
 			codigo.setText("");
 			codigo.requestFocus();
 
 		} catch (CannotCheckInException ex) {
-			error.setText("Todavía no ha llegado la fecha de entrada.");
+			error.setText(Textos.t("checkin.error.fechaNoLlegada"));
 
 		} catch (AlreadyCheckedInException ex) {
-			error.setText("Esta reserva ya tiene el check-in hecho.");
+			error.setText(Textos.t("checkin.error.yaHecho"));
 
 		} catch (NotMyReservationException ex) {
-			error.setText("Esta reserva no te pertenece.");
+			error.setText(Textos.t("checkin.error.noTuya"));
 
 		} catch (InstanceNotFoundException ex) {
-			error.setText("No se ha encontrado la reserva.");
+			error.setText(Textos.t("checkin.error.noEncontrada"));
 		}
 	}
 }

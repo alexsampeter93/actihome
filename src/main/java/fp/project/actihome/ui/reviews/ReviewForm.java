@@ -1,5 +1,6 @@
 package fp.project.actihome.ui.reviews;
 
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
@@ -9,6 +10,7 @@ import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.StarRating;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 
 /**
  * Los campos de una reseña: título, cuerpo y las cinco valoraciones.
@@ -27,6 +29,7 @@ public class ReviewForm extends JPanel {
 
 	private final Field titulo;
 	private final Field cuerpo;
+	private final JLabel nota;
 	private final StarRating ubicacion;
 	private final StarRating servicio;
 	private final StarRating wifi;
@@ -40,23 +43,43 @@ public class ReviewForm extends JPanel {
 						+ Space.SM + "[]" + Space.SM + "[]"));
 		setOpaque(false);
 
-		titulo = Field.text("Título");
-		cuerpo = Field.textArea("Tu reseña", 4);
+		titulo = Field.text(Textos.t("resenaForm.titulo"));
+		cuerpo = Field.textArea(Textos.t("resenaForm.cuerpo"), 4);
 
-		ubicacion = new StarRating("Ubicación", 0);
-		servicio = new StarRating("Servicio", 0);
-		wifi = new StarRating("Wifi", 0);
-		comida = new StarRating("Comida", 0);
-		limpieza = new StarRating("Limpieza", 0);
+		ubicacion = new StarRating(Textos.t("resenas.subnota.ubicacion"), 0);
+		servicio = new StarRating(Textos.t("resenas.subnota.servicio"), 0);
+		wifi = new StarRating(Textos.t("resenas.subnota.wifi"), 0);
+		comida = new StarRating(Textos.t("resenas.subnota.comida"), 0);
+		limpieza = new StarRating(Textos.t("resenas.subnota.limpieza"), 0);
+
+		nota = Labels.muted(Textos.t("resenaForm.notaAutomatica"));
 
 		add(titulo);
 		add(cuerpo);
-		add(Labels.muted("La nota total se calcula automáticamente a partir de estas cinco."));
+		add(nota);
 		add(ubicacion);
 		add(servicio);
 		add(wifi);
 		add(comida);
 		add(limpieza);
+	}
+
+	/**
+	 * Vuelve a fijar los textos fijos del formulario en el idioma activo (Fase
+	 * 7.6). Lo llaman {@code PublishReviewFrame}/{@code UpdateReviewFrame} desde
+	 * su propio {@code setVisible(true)}: este formulario es un campo de esas
+	 * pantallas singleton, así que no se reconstruye solo con el idioma.
+	 */
+	public void actualizarTextos() {
+
+		titulo.setEtiqueta(Textos.t("resenaForm.titulo"));
+		cuerpo.setEtiqueta(Textos.t("resenaForm.cuerpo"));
+		nota.setText(Textos.t("resenaForm.notaAutomatica"));
+		ubicacion.setEtiqueta(Textos.t("resenas.subnota.ubicacion"));
+		servicio.setEtiqueta(Textos.t("resenas.subnota.servicio"));
+		wifi.setEtiqueta(Textos.t("resenas.subnota.wifi"));
+		comida.setEtiqueta(Textos.t("resenas.subnota.comida"));
+		limpieza.setEtiqueta(Textos.t("resenas.subnota.limpieza"));
 	}
 
 	/**

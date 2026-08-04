@@ -34,6 +34,7 @@ import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.reservations.ReservationRow;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 
 /**
  * Mis reservas: el historial de un CUSTOMER, más reciente primero.
@@ -58,6 +59,7 @@ public class ShowMyReservationsFrame extends JFrame {
 
 	private JPanel lista;
 	private JScrollPane scroll;
+	private JLabel titulo;
 	private JLabel error;
 
 	public ShowMyReservationsFrame(ReservationService reservationService, SessionManager sessionManager,
@@ -76,9 +78,10 @@ public class ShowMyReservationsFrame extends JFrame {
 
 		if (visible) {
 			headerPanel.refresh();
+			titulo.setText(Textos.t("header.nav.misReservas"));
 			cargarReservas();
-				volverArriba();
-	}
+			volverArriba();
+		}
 
 		super.setVisible(visible);
 	}
@@ -106,7 +109,8 @@ public class ShowMyReservationsFrame extends JFrame {
 				"[grow,fill]", "[]" + Space.XXS + "[]"));
 		panel.setOpaque(false);
 
-		panel.add(Labels.title("Mis reservas"));
+		titulo = Labels.title(" ");
+		panel.add(titulo);
 
 		error = Labels.error(" ");
 		panel.add(error);
@@ -220,10 +224,9 @@ public class ShowMyReservationsFrame extends JFrame {
 	 */
 	private void cancelar(Reservation reserva) {
 
-		boolean confirmado = Confirmacion.preguntar(this, "Cancelar la reserva",
-				"¿Seguro que quieres cancelar la reserva de \"" + reserva.getHousing().getName()
-						+ "\"? Las fechas quedarán libres para cualquiera que quiera reservarlas.",
-				"Cancelar reserva");
+		boolean confirmado = Confirmacion.preguntar(this, Textos.t("reservas.cancelar.titulo"),
+				Textos.t("reservas.cancelar.mensaje", reserva.getHousing().getName()),
+				Textos.t("reservas.cancelar.confirmar"));
 
 		if (!confirmado) {
 			return;
@@ -234,21 +237,21 @@ public class ShowMyReservationsFrame extends JFrame {
 			cargarReservas();
 
 		} catch (InstanceNotFoundException ex) {
-			error.setText("Esta reserva ya no existe.");
+			error.setText(Textos.t("reservas.error.noExiste"));
 
 		} catch (NotMyReservationException ex) {
-			error.setText("Esta reserva no es tuya.");
+			error.setText(Textos.t("reservas.error.noEsTuya"));
 
 		} catch (AlreadyCancelledException ex) {
 			// cargarReservas() limpia el error al principio (para la carga normal), así
 			// que aquí va después: primero se refresca la lista con el estado real, luego
 			// se deja el mensaje puesto encima.
 			cargarReservas();
-			error.setText("Esta reserva ya estaba cancelada.");
+			error.setText(Textos.t("reservas.error.yaCancelada"));
 
 		} catch (CannotCancelException ex) {
 			cargarReservas();
-			error.setText("Ya no se puede cancelar: la estancia ya ha empezado, o ya has hecho el check-in.");
+			error.setText(Textos.t("reservas.error.noSePuedeCancelar"));
 		}
 	}
 
@@ -259,9 +262,9 @@ public class ShowMyReservationsFrame extends JFrame {
 		panel.setOpaque(false);
 
 		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.ACCION)));
-		panel.add(centrar(Labels.title("Todavía no tienes reservas")));
-		panel.add(centrar(Labels.muted("Cuando reserves un alojamiento, aparecerá aquí.")));
-		panel.add(centrar(Buttons.link("Ir al catálogo →", e -> navigator.ir(ShowHousingsFrame.class))));
+		panel.add(centrar(Labels.title(Textos.t("reservas.vacio.titulo"))));
+		panel.add(centrar(Labels.muted(Textos.t("reservas.vacio.cuerpo"))));
+		panel.add(centrar(Buttons.link(Textos.t("reservas.vacio.irCatalogo"), e -> navigator.ir(ShowHousingsFrame.class))));
 
 		return panel;
 	}

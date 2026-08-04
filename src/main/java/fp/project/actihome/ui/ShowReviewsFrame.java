@@ -37,6 +37,7 @@ import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Typography;
 
 /**
@@ -203,7 +204,7 @@ public class ShowReviewsFrame extends JFrame {
 				"[grow,fill]", "[]" + Space.XS + "[]" + Space.MD + "[]"));
 
 		titular.add(migaDePan(), "growx");
-		titular.add(Labels.title("Reseñas · " + housing.getName()));
+		titular.add(Labels.title(Textos.t("resenas.titulo", housing.getName())));
 		titular.add(notaMedia(resenas), "growx");
 
 		titular.revalidate();
@@ -215,7 +216,7 @@ public class ShowReviewsFrame extends JFrame {
 		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XS + "[]" + Space.XS + "[]", "[]"));
 		panel.setOpaque(false);
 
-		panel.add(Buttons.link("Catálogo", e -> navigator.ir(ShowHousingsFrame.class)));
+		panel.add(Buttons.link(Textos.t("header.nav.catalogo"), e -> navigator.ir(ShowHousingsFrame.class)));
 		panel.add(Labels.muted("›"));
 		panel.add(Buttons.link(housing.getName(),
 				e -> navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(housing))));
@@ -241,11 +242,12 @@ public class ShowReviewsFrame extends JFrame {
 		media.setFont(Typography.serifMedium(40f));
 		panel.add(media, "aligny center");
 
-		panel.add(Labels.muted(resenas.isEmpty() ? "sin reseñas"
-				: Formato.plural(resenas.size(), "reseña", "reseñas")), "aligny center");
+		panel.add(Labels.muted(resenas.isEmpty() ? Textos.t("catalogo.sinResenas")
+				: Formato.plural(resenas.size(), Textos.t("palabra.resena.singular"), Textos.t("palabra.resena.plural"))),
+				"aligny center");
 
 		if (esCliente() && !yaOpino(resenas)) {
-			panel.add(Buttons.primary("Publicar reseña", e -> publicar()), "aligny center");
+			panel.add(Buttons.primary(Textos.t("resenas.publicar"), e -> publicar()), "aligny center");
 		}
 
 		return panel;
@@ -320,9 +322,9 @@ public class ShowReviewsFrame extends JFrame {
 		panel.setOpaque(false);
 
 		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.ACCION)));
-		panel.add(centrar(Labels.title("Todavía no hay reseñas")));
-		panel.add(centrar(Labels.muted(esCliente() ? "Si te has alojado aquí, cuéntalo: serás la primera persona."
-				: "Cuando alguien se aloje y opine, aparecerá aquí.")));
+		panel.add(centrar(Labels.title(Textos.t("resenas.vacio.titulo"))));
+		panel.add(centrar(Labels.muted(esCliente() ? Textos.t("resenas.vacio.cuerpoCliente")
+				: Textos.t("resenas.vacio.cuerpoOtros"))));
 
 		return panel;
 	}

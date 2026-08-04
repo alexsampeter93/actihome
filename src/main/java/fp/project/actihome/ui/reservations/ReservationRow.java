@@ -19,6 +19,7 @@ import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Typography;
 
 /**
@@ -118,7 +119,8 @@ public class ReservationRow extends JPanel {
 				reservation.getCheckOut().toLocalDate());
 
 		String meta = FECHA.format(reservation.getCheckIn()) + " – " + FECHA.format(reservation.getCheckOut()) + " · "
-				+ Formato.plural((int) noches, "noche", "noches") + " · " + reservation.getHousing().getLocation();
+				+ Formato.plural((int) noches, Textos.t("palabra.noche.singular"), Textos.t("palabra.noche.plural"))
+				+ " · " + reservation.getHousing().getLocation();
 
 		panel.add(Labels.muted(meta), "gaptop " + Space.XXS);
 
@@ -147,20 +149,20 @@ public class ReservationRow extends JPanel {
 	private JLabel estado(Reservation reservation) {
 
 		if (reservation.isCancelled()) {
-			return Labels.caps("Cancelada");
+			return Labels.caps(Textos.t("reservas.estado.cancelada"));
 		}
 
 		boolean completada = LocalDateTime.now().isAfter(reservation.getCheckOut());
 
 		if (completada) {
-			return Labels.caps("Completada");
+			return Labels.caps(Textos.t("reservas.estado.completada"));
 		}
 
 		if (reservation.isCheckedIn()) {
-			return Labels.caps("Check-in realizado");
+			return Labels.caps(Textos.t("reservas.estado.checkinRealizado"));
 		}
 
-		return Labels.capsAccent("Check-in pendiente");
+		return Labels.capsAccent(Textos.t("reservas.estado.checkinPendiente"));
 	}
 
 	/**
@@ -171,6 +173,6 @@ public class ReservationRow extends JPanel {
 	 * columna vive fuera de esa zona clicable en el resto de casos.
 	 */
 	private JButton cancelar(Runnable alCancelar) {
-		return Buttons.link("Cancelar", e -> alCancelar.run());
+		return Buttons.link(Textos.t("reservas.cancelar"), e -> alCancelar.run());
 	}
 }

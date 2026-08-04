@@ -30,6 +30,7 @@ import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Typography;
 
 /**
@@ -55,8 +56,13 @@ public class ReviewDetailsFrame extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy",
-			new Locale("es", "ES"));
+	/** Ver la nota gemela en {@code ReviewRow.formatoFecha()}: no basta con el {@link Locale}. */
+	private static DateTimeFormatter formatoFecha() {
+
+		return Textos.idioma().getLanguage().equals("en")
+				? DateTimeFormatter.ofPattern("MMMM d, yyyy", Textos.idioma())
+				: DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", Textos.idioma());
+	}
 
 	private final transient ReviewService reviewService;
 	private final transient SessionManager sessionManager;
@@ -170,7 +176,7 @@ public class ReviewDetailsFrame extends JFrame {
 		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XS + "[]" + Space.XS + "[]", "[]"));
 		panel.setOpaque(false);
 
-		panel.add(Buttons.link("Reseñas de " + review.getHousing().getName(),
+		panel.add(Buttons.link(Textos.t("detalleResena.migaDePan", review.getHousing().getName()),
 				e -> navigator.ir(ShowReviewsFrame.class, frame -> frame.setHousingId(review.getHousing().getId()))));
 		panel.add(Labels.muted("›"));
 		panel.add(Labels.muted(review.getTitle()));
@@ -193,8 +199,8 @@ public class ReviewDetailsFrame extends JFrame {
 		titulo.setFont(Typography.serifMedium(28f));
 		texto.add(titulo);
 
-		texto.add(Labels.muted("por " + review.getAuthor().getUsername() + " · "
-				+ FECHA.format(review.getPublicationDate())));
+		texto.add(Labels.muted(Textos.t("resenas.row.por", review.getAuthor().getUsername()) + " · "
+				+ formatoFecha().format(review.getPublicationDate())));
 
 		panel.add(texto, "aligny center");
 
@@ -207,11 +213,11 @@ public class ReviewDetailsFrame extends JFrame {
 				"[]" + Space.SM + "[]" + Space.SM + "[]" + Space.SM + "[]" + Space.SM + "[]"));
 		panel.setOpaque(false);
 
-		panel.add(new ScoreBar("Ubicación", review.getLocationScore()), "growx");
-		panel.add(new ScoreBar("Servicio", review.getServiceScore()), "growx");
-		panel.add(new ScoreBar("Wifi", review.getWifiScore()), "growx");
-		panel.add(new ScoreBar("Comida", review.getFoodScore()), "growx");
-		panel.add(new ScoreBar("Limpieza", review.getCleaningScore()), "growx");
+		panel.add(new ScoreBar(Textos.t("resenas.subnota.ubicacion"), review.getLocationScore()), "growx");
+		panel.add(new ScoreBar(Textos.t("resenas.subnota.servicio"), review.getServiceScore()), "growx");
+		panel.add(new ScoreBar(Textos.t("resenas.subnota.wifi"), review.getWifiScore()), "growx");
+		panel.add(new ScoreBar(Textos.t("resenas.subnota.comida"), review.getFoodScore()), "growx");
+		panel.add(new ScoreBar(Textos.t("resenas.subnota.limpieza"), review.getCleaningScore()), "growx");
 
 		return panel;
 	}
@@ -223,11 +229,11 @@ public class ReviewDetailsFrame extends JFrame {
 		panel.setOpaque(false);
 
 		if (esSuya()) {
-			panel.add(Buttons.secondary("Actualizar reseña",
+			panel.add(Buttons.secondary(Textos.t("detalleResena.actualizar"),
 					e -> navigator.ir(UpdateReviewFrame.class, frame -> frame.setReviewId(review.getId()))));
 		}
 
-		panel.add(Buttons.link("Volver a las reseñas →",
+		panel.add(Buttons.link(Textos.t("detalleResena.volver"),
 				e -> navigator.ir(ShowReviewsFrame.class, frame -> frame.setHousingId(review.getHousing().getId()))));
 
 		return panel;

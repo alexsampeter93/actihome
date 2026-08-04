@@ -2,6 +2,7 @@ package fp.project.actihome.ui;
 
 import java.awt.Dimension;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -27,6 +28,7 @@ import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 
 /**
  * Cambiar la contraseña.
@@ -62,6 +64,10 @@ public class ChangePasswordFrame extends JFrame {
 	private Field nueva;
 	private Field repetida;
 	private JLabel error;
+	private JLabel superTitulo;
+	private JLabel titulo;
+	private JButton botonCambiar;
+	private JButton botonCancelar;
 
 	public ChangePasswordFrame(UserService userService, SessionManager sessionManager, Navigator navigator,
 			HeaderPanel headerPanel) {
@@ -79,6 +85,7 @@ public class ChangePasswordFrame extends JFrame {
 
 		if (visible) {
 			headerPanel.refresh();
+			actualizarTextosFijos();
 			limpiar();
 		}
 
@@ -113,9 +120,9 @@ public class ChangePasswordFrame extends JFrame {
 
 		panel.add(cabecera());
 
-		actual = Field.password("Contraseña actual");
-		nueva = Field.password("Nueva contraseña");
-		repetida = Field.password("Repite la nueva contraseña");
+		actual = Field.password(Textos.t("contrasena.actual"));
+		nueva = Field.password(Textos.t("contrasena.nueva"));
+		repetida = Field.password(Textos.t("contrasena.repite"));
 
 		panel.add(actual);
 		panel.add(nueva);
@@ -140,8 +147,10 @@ public class ChangePasswordFrame extends JFrame {
 
 		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		titulos.setOpaque(false);
-		titulos.add(Labels.capsAccent("Tu cuenta"));
-		titulos.add(Labels.title("Cambiar contraseña"), "gaptop " + Space.XXS);
+		superTitulo = Labels.capsAccent(Textos.t("ajustes.superTitulo"));
+		titulos.add(superTitulo);
+		titulo = Labels.title(Textos.t("contrasena.titulo"));
+		titulos.add(titulo, "gaptop " + Space.XXS);
 
 		panel.add(titulos);
 		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "top, w 56!, h 56!");
@@ -154,10 +163,23 @@ public class ChangePasswordFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
 		fila.setOpaque(false);
 
-		fila.add(Buttons.primary("Cambiar contraseña", e -> cambiar()), "height 44!");
-		fila.add(Buttons.link("Cancelar", e -> navigator.ir(ShowHousingsFrame.class)));
+		botonCambiar = Buttons.primary(Textos.t("contrasena.titulo"), e -> cambiar());
+		fila.add(botonCambiar, "height 44!");
+		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> navigator.ir(ShowHousingsFrame.class));
+		fila.add(botonCancelar);
 
 		return fila;
+	}
+
+	private void actualizarTextosFijos() {
+
+		superTitulo.setText(Textos.t("ajustes.superTitulo"));
+		titulo.setText(Textos.t("contrasena.titulo"));
+		actual.setEtiqueta(Textos.t("contrasena.actual"));
+		nueva.setEtiqueta(Textos.t("contrasena.nueva"));
+		repetida.setEtiqueta(Textos.t("contrasena.repite"));
+		botonCambiar.setText(Textos.t("contrasena.titulo"));
+		botonCancelar.setText(Textos.t("ajustes.cancelar"));
 	}
 
 	/**
@@ -180,12 +202,12 @@ public class ChangePasswordFrame extends JFrame {
 	private void cambiar() {
 
 		if (nueva.getText().isEmpty()) {
-			error.setText("La nueva contraseña no puede estar vacía.");
+			error.setText(Textos.t("contrasena.error.nuevaVacia"));
 			return;
 		}
 
 		if (!nueva.getText().equals(repetida.getText())) {
-			error.setText("Las dos contraseñas nuevas no coinciden.");
+			error.setText(Textos.t("contrasena.error.noCoinciden"));
 			repetida.requestFocus();
 			return;
 		}
@@ -196,11 +218,11 @@ public class ChangePasswordFrame extends JFrame {
 			navigator.ir(ShowHousingsFrame.class);
 
 		} catch (WrongPasswordException ex) {
-			error.setText("La contraseña actual no es correcta.");
+			error.setText(Textos.t("contrasena.error.actualIncorrecta"));
 			actual.requestFocus();
 
 		} catch (InstanceNotFoundException ex) {
-			error.setText("Tu sesión ya no es válida. Vuelve a entrar.");
+			error.setText(Textos.t("alojamientoForm.error.sesionNoValida"));
 		}
 	}
 }
