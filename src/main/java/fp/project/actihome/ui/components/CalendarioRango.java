@@ -12,7 +12,6 @@ import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -22,6 +21,7 @@ import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Reservation;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
@@ -85,11 +85,12 @@ public class CalendarioRango extends JPanel {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final Locale ES = new Locale("es", "ES");
-	private static final String[] DIAS_SEMANA = { "L", "M", "X", "J", "V", "S", "D" };
+	/** Cuántos días tiene una semana. El texto de cada uno se traduce, esto no. */
+	private static final int DIAS_SEMANA = 7;
+
 	private static final int LADO_CELDA = 36;
 	private static final int FILAS_REJILLA = 6;
-	private static final int ANCHO_MES = DIAS_SEMANA.length * LADO_CELDA;
+	private static final int ANCHO_MES = DIAS_SEMANA * LADO_CELDA;
 	private static final int ANCHO_FLECHA = 28;
 	private static final int MESES_VISIBLES = 2;
 
@@ -108,6 +109,7 @@ public class CalendarioRango extends JPanel {
 	private JButton botonAnterior;
 	private final JLabel[] etiquetasMes = new JLabel[MESES_VISIBLES];
 	private final JPanel[] rejillas = new JPanel[MESES_VISIBLES];
+	private final JLabel[][] etiquetasDia = new JLabel[MESES_VISIBLES][DIAS_SEMANA];
 
 	public CalendarioRango(Runnable alCambiar) {
 
@@ -179,7 +181,7 @@ public class CalendarioRango extends JPanel {
 		etiquetasMes[indice] = etiqueta;
 		bloque.add(etiqueta, "alignx center");
 
-		bloque.add(diasDeLaSemana());
+		bloque.add(diasDeLaSemana(indice));
 
 		JPanel rejilla = new JPanel();
 		rejilla.setOpaque(false);
@@ -189,23 +191,46 @@ public class CalendarioRango extends JPanel {
 		return bloque;
 	}
 
-	private JPanel diasDeLaSemana() {
+	/**
+	 * Las claves i18n de los siete días, lunes primero (la rejilla empieza en
+	 * lunes, no en domingo).
+	 */
+	private static final String[] CLAVES_DIA = { "calendario.dia.lun", "calendario.dia.mar", "calendario.dia.mie",
+			"calendario.dia.jue", "calendario.dia.vie", "calendario.dia.sab", "calendario.dia.dom" };
+
+	private JPanel diasDeLaSemana(int indiceBloque) {
 
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]0[]0[]0[]0[]0[]0[]", "[]"));
 		fila.setOpaque(false);
 
-		for (String dia : DIAS_SEMANA) {
+		for (int i = 0; i < DIAS_SEMANA; i++) {
 
-			JLabel etiqueta = Labels.caps(dia);
+			JLabel etiqueta = Labels.caps(Textos.t(CLAVES_DIA[i]));
 			Dimension tamano = new Dimension(LADO_CELDA, etiqueta.getPreferredSize().height);
 			etiqueta.setPreferredSize(tamano);
 			etiqueta.setMinimumSize(tamano);
 			etiqueta.setHorizontalAlignment(JLabel.CENTER);
 
+			etiquetasDia[indiceBloque][i] = etiqueta;
 			fila.add(etiqueta);
 		}
 
 		return fila;
+	}
+
+	/**
+	 * Vuelve a fijar el nombre de los días de la semana en el idioma activo.
+	 * Se llama desde {@link #pintarMeses()}, que ya se invoca en cada visita a
+	 * la pantalla (vía {@code setOcupacion}/{@code seleccionar}), así que no
+	 * hace falta ningún gancho aparte para el idioma.
+	 */
+	private void actualizarDiasDeLaSemana() {
+
+		for (JLabel[] bloque : etiquetasDia) {
+			for (int i = 0; i < DIAS_SEMANA; i++) {
+				bloque[i].setText(Textos.t(CLAVES_DIA[i]));
+			}
+		}
 	}
 
 	private void cambiarMes(int delta) {
@@ -218,6 +243,7 @@ public class CalendarioRango extends JPanel {
 	private void pintarMeses() {
 
 		botonAnterior.setEnabled(mesVisible.isAfter(YearMonth.from(minimoSeleccionable())));
+		actualizarDiasDeLaSemana();
 
 		for (int i = 0; i < MESES_VISIBLES; i++) {
 			pintarMes(mesVisible.plusMonths(i), etiquetasMes[i], rejillas[i]);
@@ -226,7 +252,7 @@ public class CalendarioRango extends JPanel {
 
 	private void pintarMes(YearMonth mes, JLabel etiquetaMes, JPanel rejilla) {
 
-		String nombreMes = mes.getMonth().getDisplayName(TextStyle.FULL, ES);
+		String nombreMes = mes.getMonth().getDisplayName(TextStyle.FULL, Textos.idioma());
 		etiquetaMes.setText(Character.toUpperCase(nombreMes.charAt(0)) + nombreMes.substring(1) + " " + mes.getYear());
 
 		rejilla.removeAll();
@@ -245,7 +271,7 @@ public class CalendarioRango extends JPanel {
 		}
 
 		int celdasUsadas = huecosIniciales + diasEnMes;
-		for (int i = celdasUsadas; i < FILAS_REJILLA * DIAS_SEMANA.length; i++) {
+		for (int i = celdasUsadas; i < FILAS_REJILLA * DIAS_SEMANA; i++) {
 			rejilla.add(relleno());
 		}
 

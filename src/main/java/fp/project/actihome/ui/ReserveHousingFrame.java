@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -42,6 +43,7 @@ import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
@@ -82,12 +84,16 @@ public class ReserveHousingFrame extends JFrame {
 	private Long housingId;
 	private transient Housing housing;
 
+	private JLabel superTitulo;
 	private JLabel tituloAlojamiento;
 	private JLabel subtituloUbicacion;
+	private JLabel etiquetaFechas;
 	private CalendarioRango calendario;
 	private Field tarjeta;
 	private JLabel resumen;
 	private JLabel error;
+	private JButton botonConfirmar;
+	private JLabel enlaceCancelar;
 
 	public ReserveHousingFrame(ReservationService reservationService, HousingService housingService,
 			SessionManager sessionManager, Navigator navigator) {
@@ -108,11 +114,27 @@ public class ReserveHousingFrame extends JFrame {
 	public void setVisible(boolean visible) {
 
 		if (visible) {
+			actualizarTextosFijos();
 			cargarAlojamiento();
 			limpiar();
 		}
 
 		super.setVisible(visible);
+	}
+
+	/**
+	 * Vuelve a fijar los textos fijos de la pantalla en el idioma activo
+	 * (Fase 7.6). Hace falta porque es un frame singleton: {@code initUI()} solo
+	 * se ejecuta una vez en toda la sesión, así que estos textos, fijados en la
+	 * construcción, no se enterarían solos de un cambio de idioma posterior.
+	 */
+	private void actualizarTextosFijos() {
+
+		superTitulo.setText(Textos.t("reservar.titulo"));
+		etiquetaFechas.setText(Textos.t("reservar.entradaYSalida"));
+		tarjeta.setEtiqueta(Textos.t("reservar.tarjeta"));
+		botonConfirmar.setText(Textos.t("reservar.confirmar"));
+		enlaceCancelar.setText(Textos.t("reservar.cancelar"));
 	}
 
 	private void cargarAlojamiento() {
@@ -180,7 +202,7 @@ public class ReserveHousingFrame extends JFrame {
 
 		// A diferencia del calendario, esto sí es texto: mantiene el ancho cómodo de
 		// lectura de un formulario aunque el panel que lo contiene sea más ancho.
-		tarjeta = Field.text("Tarjeta de crédito");
+		tarjeta = Field.text(Textos.t("reservar.tarjeta"));
 		panel.add(tarjeta, Layout.ancho(Layout.FORMULARIO));
 
 		resumen = Labels.body(" ");
@@ -202,7 +224,8 @@ public class ReserveHousingFrame extends JFrame {
 		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		titulos.setOpaque(false);
 
-		titulos.add(Labels.capsAccent("Reservar"));
+		superTitulo = Labels.capsAccent(Textos.t("reservar.titulo"));
+		titulos.add(superTitulo);
 
 		tituloAlojamiento = Labels.title(" ");
 		titulos.add(tituloAlojamiento, "gaptop " + Space.XXS);
@@ -221,7 +244,8 @@ public class ReserveHousingFrame extends JFrame {
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		panel.setOpaque(false);
 
-		panel.add(Labels.caps("Entrada y salida"));
+		etiquetaFechas = Labels.caps(Textos.t("reservar.entradaYSalida"));
+		panel.add(etiquetaFechas);
 
 		calendario = new CalendarioRango(this::actualizarResumen);
 		panel.add(calendario, "gaptop " + Space.XS);
@@ -234,15 +258,16 @@ public class ReserveHousingFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
 		fila.setOpaque(false);
 
-		fila.add(Buttons.primary("Confirmar reserva", e -> reservar()), "height 44!");
-		fila.add(cancelar());
+		botonConfirmar = Buttons.primary(Textos.t("reservar.confirmar"), e -> reservar());
+		fila.add(botonConfirmar, "height 44!");
+		fila.add(enlaceCancelar());
 
 		return fila;
 	}
 
-	private JLabel cancelar() {
+	private JLabel enlaceCancelar() {
 
-		JLabel enlace = Labels.body("Cancelar");
+		JLabel enlace = Labels.body(Textos.t("reservar.cancelar"));
 		enlace.setFont(Typography.sansSemiBold(Typography.BODY_SM));
 		enlace.setForeground(Theme.mut());
 		enlace.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -254,6 +279,7 @@ public class ReserveHousingFrame extends JFrame {
 			}
 		});
 
+		enlaceCancelar = enlace;
 		return enlace;
 	}
 
@@ -281,21 +307,22 @@ public class ReserveHousingFrame extends JFrame {
 		LocalDate salida = calendario.getFin();
 
 		if (entrada == null || salida == null) {
-			resumen.setText("Elige la entrada y la salida en el calendario.");
+			resumen.setText(Textos.t("reservar.resumen.eligeFechas"));
 			return;
 		}
 
 		long noches = ChronoUnit.DAYS.between(entrada, salida);
 
 		if (noches <= 0) {
-			resumen.setText("La salida debe ser al menos un día después de la entrada.");
+			resumen.setText(Textos.t("reservar.resumen.salidaInvalida"));
 			return;
 		}
 
 		BigDecimal total = housing.getPricePerNight().multiply(BigDecimal.valueOf(noches));
 
-		resumen.setText(Formato.precio(housing.getPricePerNight()) + " × " + Formato.plural((int) noches, "noche", "noches")
-				+ " = " + Formato.precio(total));
+		resumen.setText(Textos.t("reservar.resumen.formula", Formato.precio(housing.getPricePerNight()),
+				Formato.plural((int) noches, Textos.t("palabra.noche.singular"), Textos.t("palabra.noche.plural")),
+				Formato.precio(total)));
 	}
 
 	private void reservar() {
@@ -304,7 +331,7 @@ public class ReserveHousingFrame extends JFrame {
 		LocalDate salida = calendario.getFin();
 
 		if (entrada == null || salida == null) {
-			error.setText("Elige la entrada y la salida en el calendario.");
+			error.setText(Textos.t("reservar.resumen.eligeFechas"));
 			return;
 		}
 
@@ -319,24 +346,24 @@ public class ReserveHousingFrame extends JFrame {
 			navigator.ir(ShowMyReservationsFrame.class);
 
 		} catch (WrongCreditCardNumberException ex) {
-			error.setText("La tarjeta debe tener 16 dígitos.");
+			error.setText(Textos.t("reservar.error.tarjetaInvalida"));
 			tarjeta.requestFocus();
 
 		} catch (MustBeTodayOrAfterException ex) {
-			error.setText("La fecha de entrada no puede ser anterior a hoy.");
+			error.setText(Textos.t("reservar.error.entradaPasada"));
 
 		} catch (CheckOutMustBeOneDayAfterException ex) {
-			error.setText("La salida debe ser al menos un día después de la entrada.");
+			error.setText(Textos.t("reservar.resumen.salidaInvalida"));
 
 		} catch (AlreadyReservedException ex) {
-			error.setText("Este alojamiento ya no está disponible: alguien se ha adelantado.");
+			error.setText(Textos.t("reservar.error.disponibilidadPerdida"));
 
 		} catch (InstanceNotFoundException | NotAuthorizedUserException ex) {
 			// InstanceNotFoundException no debería darse: se llega aquí siempre desde un
 			// alojamiento que se acaba de cargar. NotAuthorizedUserException tampoco: solo
 			// un CUSTOMER ve el botón "Reservar". Cubrirlas igual evita una pantalla muda
 			// si algún día cambia esa garantía.
-			error.setText("No se ha podido completar la reserva. Vuelve a intentarlo.");
+			error.setText(Textos.t("reservar.error.generico"));
 		}
 	}
 }

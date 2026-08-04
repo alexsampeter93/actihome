@@ -46,6 +46,7 @@ public class Field extends JPanel {
 	private static final long serialVersionUID = 1L;
 
 	private final JTextComponent input;
+	private final javax.swing.JLabel etiqueta;
 
 	private Field(String etiqueta, JTextComponent input) {
 		this(etiqueta, input, 38);
@@ -61,7 +62,8 @@ public class Field extends JPanel {
 		input.setFont(Typography.sans(Typography.BODY));
 		input.setForeground(Theme.txt());
 
-		add(Labels.caps(etiqueta));
+		this.etiqueta = Labels.caps(etiqueta);
+		add(this.etiqueta);
 
 		// Un JTextArea no trae barras de desplazamiento propias: hay que envolverlo.
 		// El resto de campos son de una línea y no las necesitan.
@@ -150,6 +152,11 @@ public class Field extends JPanel {
 	/** El control de Swing subyacente, para poner el foco o escuchar eventos. */
 	public JTextComponent getInput() {
 		return input;
+	}
+
+	/** Cambia el rótulo del campo (idioma, Fase 7.6). */
+	public void setEtiqueta(String nueva) {
+		etiqueta.setText(nueva);
 	}
 
 	/**
