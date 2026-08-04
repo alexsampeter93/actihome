@@ -52,6 +52,7 @@ import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
@@ -202,11 +203,13 @@ public class ShowHousingsFrame extends JFrame {
 
 		if (visible) {
 			headerPanel.refresh();
+			filtros.actualizarTextos();
 			refrescarAccionAdmin();
 			cargarAlojamientos();
 			actualizarTextosEstacionales();
-				volverArriba();
-	}
+			actualizarTextosFijos();
+			volverArriba();
+		}
 
 		super.setVisible(visible);
 	}
@@ -339,7 +342,8 @@ public class ShowHousingsFrame extends JFrame {
 	private void actualizarHeroCompacto() {
 
 		resumenCompacto.setText(Theme.estacion().nombre().toUpperCase());
-		tituloCompacto.setText(Formato.plural(catalogo.size(), "estancia", "estancias") + " para elegir");
+		tituloCompacto.setText(Formato.plural(catalogo.size(), Textos.t("palabra.estancia.singular"),
+				Textos.t("palabra.estancia.plural")) + " " + Textos.t("catalogo.compacto.paraElegir"));
 	}
 
 	private JPanel hero() {
@@ -394,10 +398,10 @@ public class ShowHousingsFrame extends JFrame {
 		JPanel linea = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]push", "[]"));
 		linea.setOpaque(false);
 
-		tituloPrimera = Labels.hero("Elige dónde quieres");
+		tituloPrimera = Labels.hero(Textos.t("catalogo.hero.titulo1"));
 		tituloPrimera.setFont(Typography.serifMedium(TITULAR));
 
-		tituloSegunda = Labels.hero("despertar");
+		tituloSegunda = Labels.hero(Textos.t("catalogo.hero.titulo2"));
 		tituloSegunda.setFont(Typography.serifMedium(TITULAR));
 
 		linea.add(tituloPrimera, "aligny bottom");
@@ -445,9 +449,9 @@ public class ShowHousingsFrame extends JFrame {
 				new MigLayout(Space.insets(0), "push[]" + aire + "[1!]" + aire + "[]" + aire + "[1!]" + aire + "[]", "[]"));
 		panel.setOpaque(false);
 
-		enCatalogo = new Stat("0", "en catálogo");
-		disponibles = new Stat("0", "disponibles");
-		media = new Stat("—", "media", true);
+		enCatalogo = new Stat("0", Textos.t("catalogo.stat.enCatalogo"));
+		disponibles = new Stat("0", Textos.t("catalogo.stat.disponibles"));
+		media = new Stat("—", Textos.t("catalogo.stat.media"), true);
 
 		panel.add(enCatalogo);
 		panel.add(Hairline.vertical(), "growy");
@@ -691,12 +695,12 @@ public class ShowHousingsFrame extends JFrame {
 		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.ACCION)));
 
 		if (catalogoVacio) {
-			panel.add(centrar(Labels.title("Todavía no hay estancias")));
-			panel.add(centrar(Labels.muted("Cuando un anfitrión publique la primera, aparecerá aquí.")));
+			panel.add(centrar(Labels.title(Textos.t("catalogo.vacio.catalogoVacio.titulo"))));
+			panel.add(centrar(Labels.muted(Textos.t("catalogo.vacio.catalogoVacio.cuerpo"))));
 
 		} else {
-			panel.add(centrar(Labels.title("Ninguna estancia encaja")));
-			panel.add(centrar(Labels.muted("Prueba a quitar algún filtro o a buscar otra cosa.")));
+			panel.add(centrar(Labels.title(Textos.t("catalogo.vacio.sinResultados.titulo"))));
+			panel.add(centrar(Labels.muted(Textos.t("catalogo.vacio.sinResultados.cuerpo"))));
 		}
 
 		return panel;
@@ -771,7 +775,7 @@ public class ShowHousingsFrame extends JFrame {
 			// error de maquetación. La explicación pasa al tooltip, que es donde va la
 			// ayuda de un botón que ya se entiende por su icono y su posición.
 			BotonMas boton = new BotonMas(() -> navigator.ir(UploadHousingFrame.class));
-			boton.setToolTipText("Registrar un alojamiento nuevo");
+			boton.setToolTipText(Textos.t("catalogo.publicar.tooltip"));
 			accionAdmin.add(boton, "w 52!, h 52!");
 		}
 
@@ -811,6 +815,33 @@ public class ShowHousingsFrame extends JFrame {
 
 		fraseEstacional.setText(Theme.estacion().etiqueta());
 		repaint();
+	}
+
+	/**
+	 * Vuelve a fijar los textos fijos que no dependen de la estación, sino solo
+	 * del idioma (Fase 7.6): el titular, las tres cifras y —si la lista está
+	 * desplazada— el resumen compacto.
+	 *
+	 * <p>
+	 * El titular puede pasar a medir distinto (el inglés no ocupa lo mismo que el
+	 * español), así que se reajusta la escala después de cambiarlo — el mismo
+	 * mecanismo que ya usa {@code ajustarEscalaDeDisplay()} al redimensionar la
+	 * ventana.
+	 */
+	private void actualizarTextosFijos() {
+
+		tituloPrimera.setText(Textos.t("catalogo.hero.titulo1"));
+		tituloSegunda.setText(Textos.t("catalogo.hero.titulo2"));
+
+		enCatalogo.setRotulo(Textos.t("catalogo.stat.enCatalogo"));
+		disponibles.setRotulo(Textos.t("catalogo.stat.disponibles"));
+		media.setRotulo(Textos.t("catalogo.stat.media"));
+
+		if (heroContraido) {
+			actualizarHeroCompacto();
+		}
+
+		ajustarEscalaDeDisplay();
 	}
 
 	/** Los titulares crecen con la ventana; el cuerpo de texto nunca. */
@@ -889,7 +920,7 @@ public class ShowHousingsFrame extends JFrame {
 			setPreferredSize(new Dimension(44, 44));
 			setMinimumSize(new Dimension(44, 44));
 			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-			setToolTipText("Registrar alojamiento");
+			setToolTipText(Textos.t("catalogo.publicar.tooltipCorto"));
 
 			addMouseListener(new MouseAdapter() {
 

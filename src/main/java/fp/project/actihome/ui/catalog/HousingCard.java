@@ -15,6 +15,7 @@ import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.ScoreDisc;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Typography;
 
 /**
@@ -59,7 +60,7 @@ public class HousingCard extends JPanel {
 		setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
 		add(foto(), "h " + ALTO_FOTO + "!, growx");
-		add(Labels.caps("Nº " + housing.getHousingCode() + " · " + housing.getLocation()));
+		add(Labels.caps(Textos.t("catalogo.numero") + " " + housing.getHousingCode() + " · " + housing.getLocation()));
 		add(nombre());
 		add(Labels.muted(datos(resenas)));
 		add(pie());
@@ -98,8 +99,9 @@ public class HousingCard extends JPanel {
 			capa.add(new ScoreDisc(housing.getScore(), ScoreDisc.Tamano.PEQUENO), "pos (container.x2-42) 12");
 		}
 
-		capa.add(new ImagePlaceholder(housing.getType(), disponible ? "Disponible" : "Reservada", disponible,
-				housing.getImage()), "pos 0 0 container.x2 container.y2");
+		capa.add(new ImagePlaceholder(Textos.tipoDeAlojamiento(housing.getType()),
+				disponible ? Textos.t("catalogo.disponibilidad.disponible") : Textos.t("catalogo.disponibilidad.reservada"),
+				disponible, housing.getImage()), "pos 0 0 container.x2 container.y2");
 
 		return capa;
 	}
@@ -113,9 +115,11 @@ public class HousingCard extends JPanel {
 
 	private String datos(int resenas) {
 
-		String notas = resenas == 0 ? "sin reseñas" : Formato.plural(resenas, "reseña", "reseñas");
+		String notas = resenas == 0 ? Textos.t("catalogo.sinResenas")
+				: Formato.plural(resenas, Textos.t("palabra.resena.singular"), Textos.t("palabra.resena.plural"));
 
-		return notas + " · " + Formato.plural(housing.getNumberOfRooms(), "habitación", "habitaciones");
+		return notas + " · " + Formato.plural(housing.getNumberOfRooms(), Textos.t("palabra.habitacion.singular"),
+				Textos.t("palabra.habitacion.plural"));
 	}
 
 	private JPanel pie() {
@@ -127,8 +131,8 @@ public class HousingCard extends JPanel {
 		precio.setFont(Typography.serif(Typography.PRICE));
 		fila.add(precio, "aligny bottom");
 
-		fila.add(Labels.muted("por noche"), "aligny bottom, gapbottom 3");
-		fila.add(Labels.caps("Ver →"), "aligny bottom, gapbottom 3");
+		fila.add(Labels.muted(Textos.t("catalogo.card.porNoche")), "aligny bottom, gapbottom 3");
+		fila.add(Labels.caps(Textos.t("catalogo.card.ver")), "aligny bottom, gapbottom 3");
 
 		return fila;
 	}

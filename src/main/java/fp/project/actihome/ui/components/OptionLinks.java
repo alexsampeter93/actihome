@@ -81,6 +81,19 @@ public class OptionLinks extends JPanel {
 		return activo;
 	}
 
+	/**
+	 * Cambia el texto de cada opción, en el mismo orden en que se pasaron al
+	 * constructor (idioma, Fase 7.6). No toca cuál está activa.
+	 */
+	public void actualizarTextos(String... nuevas) {
+
+		java.awt.Component[] hijos = getComponents();
+
+		for (int i = 0; i < hijos.length && i < nuevas.length; i++) {
+			((Opcion) hijos[i]).setTexto(nuevas[i]);
+		}
+	}
+
 	private void seleccionar(int indice) {
 
 		if (indice != activo) {
@@ -151,6 +164,10 @@ public class OptionLinks extends JPanel {
 			etiqueta.addMouseListener(interaccion);
 
 			actualizarColores();
+		}
+
+		void setTexto(String texto) {
+			etiqueta.setText(texto.toUpperCase());
 		}
 
 		private void actualizarColores() {

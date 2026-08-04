@@ -4,6 +4,8 @@ import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
+import fp.project.actihome.model.entities.Amenity;
+
 /**
  * El idioma activo de la interfaz (Fase 7.6).
  *
@@ -59,5 +61,72 @@ public final class Textos {
 	/** Igual que {@link #t(String)}, con sustitución de parámetros al estilo {@link MessageFormat}. */
 	public static String t(String clave, Object... args) {
 		return MessageFormat.format(bundle.getString(clave), args);
+	}
+
+	/**
+	 * Traduce un tipo de alojamiento <b>para mostrarlo</b>, sin tocar el valor
+	 * guardado.
+	 *
+	 * <p>
+	 * "Casa", "Villa"... no son solo texto de pantalla: son el valor real de
+	 * {@code Housing.type}, guardado en la base de datos y comparado tal cual al
+	 * filtrar (`CatalogFilters.aplicar`). Traducir el chip sin más desincronizaría
+	 * lo que se ve de lo que se guarda y de lo que se compara. Esta traducción es
+	 * solo de <b>presentación</b>: quien la llama sigue guardando y comparando el
+	 * valor original en español; solo cambia lo que el usuario lee.
+	 *
+	 * <p>
+	 * Es un {@code switch} explícito y no una clave derivada del texto
+	 * ({@code "tipo." + valor.toLowerCase()}) a propósito: es una lista cerrada de
+	 * cuatro valores (ver {@code HousingForm.TIPOS}), y un valor que no encaje en
+	 * ninguna clave se devuelve tal cual en vez de lanzar una excepción de
+	 * `ResourceBundle` en mitad de un catálogo.
+	 */
+	public static String tipoDeAlojamiento(String valorAlmacenado) {
+
+		switch (valorAlmacenado) {
+
+			case "Todos":
+				return t("tipo.todos");
+			case "Casa":
+				return t("tipo.casa");
+			case "Apartamento":
+				return t("tipo.apartamento");
+			case "Villa":
+				return t("tipo.villa");
+			case "Cabaña":
+				return t("tipo.cabana");
+			default:
+				return valorAlmacenado;
+		}
+	}
+
+	/**
+	 * Traduce una comodidad para mostrarla. Mismo motivo que
+	 * {@link #tipoDeAlojamiento(String)}: {@link Amenity#etiqueta()} vive en
+	 * {@code model/entities} y no puede depender de este paquete, así que la
+	 * traducción de presentación vive aquí, no allí.
+	 */
+	public static String etiquetaDe(Amenity amenity) {
+
+		switch (amenity) {
+
+			case POOL:
+				return t("amenity.pool");
+			case WIFI:
+				return t("amenity.wifi");
+			case TV:
+				return t("amenity.tv");
+			case PARKING:
+				return t("amenity.parking");
+			case AIR_CONDITIONING:
+				return t("amenity.airConditioning");
+			case BREAKFAST:
+				return t("amenity.breakfast");
+			case PETS:
+				return t("amenity.pets");
+			default:
+				return amenity.etiqueta();
+		}
 	}
 }

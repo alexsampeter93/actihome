@@ -25,6 +25,7 @@ import fp.project.actihome.ui.components.SearchField;
 import fp.project.actihome.ui.components.Segmented;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 
 /**
  * Los filtros del catálogo: el estado y los dos controles que lo manejan.
@@ -64,10 +65,16 @@ public class CatalogFilters extends JPanel {
 	/** El valor del chip de tipo que no filtra nada. */
 	public static final String TODOS = "Todos";
 
-	/** Las categorías de alojamiento, en el orden del diseño. */
+	/**
+	 * Las categorías de alojamiento, en el orden del diseño.
+	 *
+	 * <p>
+	 * <b>Son el valor real de {@code Housing.type}, no solo texto de chip.</b> Se
+	 * guardan y se comparan tal cual, siempre en español: lo único que cambia con
+	 * el idioma es la etiqueta que se muestra, vía {@link Textos#tipoDeAlojamiento}.
+	 * Ver la nota de esa clase.
+	 */
 	private static final String[] TIPOS = { TODOS, "Casa", "Apartamento", "Villa", "Cabaña" };
-
-	private static final String[] ORDENES = { "Mejor valorados", "Precio · menor", "Precio · mayor" };
 
 	private static final int ORDEN_PUNTUACION = 0;
 	private static final int ORDEN_PRECIO_ASC = 1;
@@ -90,7 +97,11 @@ public class CatalogFilters extends JPanel {
 	private final transient Runnable alCambiar;
 
 	private SearchField buscador;
+	private JLabel etiquetaTipo;
 	private JSpinner minimoHabitaciones;
+	private JLabel etiquetaMinHab;
+	private JLabel etiquetaOrdenar;
+	private JLabel etiquetaComodidades;
 	private JLabel recuento;
 	private Segmented vista;
 	private OptionLinks orden;
@@ -98,6 +109,7 @@ public class CatalogFilters extends JPanel {
 	private Chip masFiltros;
 	private JPanel comodidadesVisibles;
 	private final transient java.util.Map<Amenity, Chip> chipsPorComodidad = new java.util.EnumMap<>(Amenity.class);
+	private final transient java.util.Map<String, Chip> chipsPorTipo = new java.util.LinkedHashMap<>();
 
 	private String tipo = TODOS;
 	private final EnumSet<Amenity> comodidades = EnumSet.noneOf(Amenity.class);
@@ -116,7 +128,7 @@ public class CatalogFilters extends JPanel {
 
 		// Se construye el buscador aunque no se añada aquí: se lo lleva el hero con
 		// extraerBuscador(). El estado sigue viviendo en esta clase, que es quien filtra.
-		buscador = new SearchField("Buscar por nombre, ubicación o tipo", this::notificar);
+		buscador = new SearchField(Textos.t("catalogo.buscador.placeholder"), this::notificar);
 
 		add(Hairline.horizontal(), "growx, h 1!");
 		add(bandaDeClasificado(), "growx");
@@ -170,13 +182,15 @@ public class CatalogFilters extends JPanel {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]push[]" + Space.LG + "[]", "[]"));
 		fila.setOpaque(false);
 
-		fila.add(Labels.caps("Tipo"), "aligny center");
+		etiquetaTipo = Labels.caps(Textos.t("catalogo.filtro.tipo"));
+		fila.add(etiquetaTipo, "aligny center");
 		fila.add(chipsDeTipo(), "aligny center");
 
 		recuento = Labels.muted("");
 		fila.add(recuento, "aligny center");
 
-		vista = new Segmented(0, indice -> notificar(), "Lista", "Cuadrícula");
+		vista = new Segmented(0, indice -> notificar(), Textos.t("catalogo.vista.lista"),
+				Textos.t("catalogo.vista.cuadricula"));
 		fila.add(vista, "aligny center");
 
 		return fila;
@@ -189,7 +203,8 @@ public class CatalogFilters extends JPanel {
 				"[]" + Space.XS + "[]" + Space.MD + "[]push[]" + Space.SM + "[]", "[]"));
 		fila.setOpaque(false);
 
-		fila.add(Labels.caps("Mín. hab."), "aligny center");
+		etiquetaMinHab = Labels.caps(Textos.t("catalogo.filtro.minHab"));
+		fila.add(etiquetaMinHab, "aligny center");
 
 		// Un contador numérico y no un campo de texto libre: el valor solo puede ser un
 		// entero positivo pequeño, y un control que impide escribir algo inválido
@@ -198,13 +213,14 @@ public class CatalogFilters extends JPanel {
 		minimoHabitaciones.addChangeListener(e -> notificar());
 		fila.add(minimoHabitaciones, "w 62!, h 32!, aligny center");
 
-		masFiltros = new Chip("Más filtros");
+		masFiltros = new Chip(Textos.t("catalogo.filtro.masFiltros"));
 		masFiltros.addActionListener(e -> alternarComodidades());
 		fila.add(masFiltros, "aligny center");
 
-		fila.add(Labels.caps("Ordenar"), "aligny center");
+		etiquetaOrdenar = Labels.caps(Textos.t("catalogo.filtro.ordenar"));
+		fila.add(etiquetaOrdenar, "aligny center");
 
-		orden = new OptionLinks(ORDEN_PUNTUACION, indice -> notificar(), ORDENES);
+		orden = new OptionLinks(ORDEN_PUNTUACION, indice -> notificar(), ordenesTraducidos());
 		fila.add(orden, "aligny center");
 
 		return fila;
@@ -227,7 +243,8 @@ public class CatalogFilters extends JPanel {
 		banda.setOpaque(false);
 		banda.setVisible(false);
 
-		banda.add(Labels.caps("Comodidades"), "aligny top, gaptop 6");
+		etiquetaComodidades = Labels.caps(Textos.t("catalogo.filtro.comodidades"));
+		banda.add(etiquetaComodidades, "aligny top, gaptop 6");
 		banda.add(chipsDeComodidad(), "growx");
 
 		comodidadesVisibles = banda;
@@ -251,7 +268,14 @@ public class CatalogFilters extends JPanel {
 	 */
 	private void refrescarEtiquetaDeMasFiltros() {
 
-		masFiltros.setText(comodidades.isEmpty() ? "Más filtros" : "Más filtros (" + comodidades.size() + ")");
+		String base = Textos.t("catalogo.filtro.masFiltros");
+		masFiltros.setText(comodidades.isEmpty() ? base : base + " (" + comodidades.size() + ")");
+	}
+
+	/** Los tres rótulos de orden, ya traducidos, en el orden de {@link #ORDEN_PUNTUACION} etc. */
+	private String[] ordenesTraducidos() {
+		return new String[] { Textos.t("catalogo.orden.mejorValorados"), Textos.t("catalogo.orden.precioMenor"),
+				Textos.t("catalogo.orden.precioMayor") };
 	}
 
 	/**
@@ -277,7 +301,7 @@ public class CatalogFilters extends JPanel {
 
 		for (String valor : TIPOS) {
 
-			Chip chip = new Chip(valor, valor.equals(tipo));
+			Chip chip = new Chip(Textos.tipoDeAlojamiento(valor), valor.equals(tipo));
 
 			chip.addActionListener(e -> {
 				tipo = valor;
@@ -286,6 +310,7 @@ public class CatalogFilters extends JPanel {
 
 			grupo.add(chip);
 			fila.add(chip);
+			chipsPorTipo.put(valor, chip);
 		}
 
 		return fila;
@@ -298,7 +323,7 @@ public class CatalogFilters extends JPanel {
 
 		for (Amenity amenity : Amenity.values()) {
 
-			Chip chip = new Chip(amenity.etiqueta());
+			Chip chip = new Chip(Textos.etiquetaDe(amenity));
 
 			chip.addActionListener(e -> {
 
@@ -341,7 +366,7 @@ public class CatalogFilters extends JPanel {
 
 			long cuantos = catalogo.stream().filter(amenity::presenteEn).count();
 
-			chip.setText(amenity.etiqueta() + " (" + cuantos + ")");
+			chip.setText(Textos.etiquetaDe(amenity) + " (" + cuantos + ")");
 
 			// Un chip que no encontraría nada se deja visible pero apagado: enseñar que
 			// existe y que hoy está vacío informa más que esconderlo.
@@ -351,6 +376,29 @@ public class CatalogFilters extends JPanel {
 
 	private void notificar() {
 		alCambiar.run();
+	}
+
+	/**
+	 * Vuelve a fijar todos los textos fijos en el idioma activo (Fase 7.6).
+	 *
+	 * <p>
+	 * Los recuentos (chip de "Más filtros", comodidades, resultados) no hace
+	 * falta tocarlos aquí: los recalcula {@code aplicarFiltros()}, que
+	 * {@code ShowHousingsFrame} ya llama en cada {@code setVisible(true)}.
+	 */
+	public void actualizarTextos() {
+
+		buscador.setMarcador(Textos.t("catalogo.buscador.placeholder"));
+		etiquetaTipo.setText(Textos.t("catalogo.filtro.tipo"));
+		etiquetaMinHab.setText(Textos.t("catalogo.filtro.minHab"));
+		etiquetaOrdenar.setText(Textos.t("catalogo.filtro.ordenar"));
+		etiquetaComodidades.setText(Textos.t("catalogo.filtro.comodidades"));
+
+		vista.actualizarTextos(Textos.t("catalogo.vista.lista"), Textos.t("catalogo.vista.cuadricula"));
+		orden.actualizarTextos(ordenesTraducidos());
+
+		chipsPorTipo.forEach((valor, chip) -> chip.setText(Textos.tipoDeAlojamiento(valor)));
+		refrescarEtiquetaDeMasFiltros();
 	}
 
 	// ------------------------------------------------------------------
@@ -364,7 +412,8 @@ public class CatalogFilters extends JPanel {
 
 	/** Escribe el recuento de resultados. */
 	public void setResultado(int cuantos) {
-		recuento.setText(Formato.plural(cuantos, "estancia", "estancias"));
+		recuento.setText(
+				Formato.plural(cuantos, Textos.t("palabra.estancia.singular"), Textos.t("palabra.estancia.plural")));
 	}
 
 	/**

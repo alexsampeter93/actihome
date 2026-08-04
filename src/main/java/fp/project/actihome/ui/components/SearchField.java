@@ -92,6 +92,11 @@ public class SearchField extends JPanel {
 		return campo.getText().trim();
 	}
 
+	/** Cambia el texto de ayuda (idioma, Fase 7.6). */
+	public void setMarcador(String marcador) {
+		campo.putClientProperty("JTextField.placeholderText", marcador);
+	}
+
 	public void limpiar() {
 		campo.setText("");
 	}

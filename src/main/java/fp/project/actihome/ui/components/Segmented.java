@@ -89,6 +89,21 @@ public class Segmented extends JPanel {
 	}
 
 	/**
+	 * Cambia el texto de cada opción, en el mismo orden en que se pasaron al
+	 * constructor (idioma, Fase 7.6). El ancho de cada segmento depende del
+	 * texto, así que hace falta revalidar después de cambiarlo.
+	 */
+	public void actualizarTextos(String... nuevas) {
+
+		for (int i = 0; i < segmentos.size() && i < nuevas.length; i++) {
+			segmentos.get(i).setTexto(nuevas[i]);
+		}
+
+		revalidate();
+		repaint();
+	}
+
+	/**
 	 * Selecciona una opción por código, avisando igual que si se hubiera pulsado.
 	 *
 	 * <p>
@@ -124,7 +139,7 @@ public class Segmented extends JPanel {
 
 		private static final long serialVersionUID = 1L;
 
-		private final String texto;
+		private String texto;
 		private final int indice;
 
 		Segmento(String texto, int indice) {
@@ -134,6 +149,10 @@ public class Segmented extends JPanel {
 
 			setFont(Typography.label(11f));
 			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		}
+
+		void setTexto(String texto) {
+			this.texto = texto.toUpperCase();
 		}
 
 		@Override

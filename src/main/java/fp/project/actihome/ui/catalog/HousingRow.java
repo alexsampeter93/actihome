@@ -21,6 +21,7 @@ import fp.project.actihome.ui.components.InlineScore;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
@@ -107,8 +108,9 @@ public class HousingRow extends JPanel {
 
 	private ImagePlaceholder foto() {
 
-		return new ImagePlaceholder(housing.getType(), disponible ? "Disponible" : "Reservada", disponible,
-				housing.getImage());
+		return new ImagePlaceholder(Textos.tipoDeAlojamiento(housing.getType()),
+				disponible ? Textos.t("catalogo.disponibilidad.disponible") : Textos.t("catalogo.disponibilidad.reservada"),
+				disponible, housing.getImage());
 	}
 
 	private JPanel informacion(int resenas, Runnable alIntercambiar) {
@@ -133,7 +135,7 @@ public class HousingRow extends JPanel {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]" + Space.SM + "[]", ""));
 		fila.setOpaque(false);
 
-		JLabel numero = Labels.capsAccent("Nº " + housing.getHousingCode());
+		JLabel numero = Labels.capsAccent(Textos.t("catalogo.numero") + " " + housing.getHousingCode());
 		fila.add(numero);
 
 		// El guion largo doble separa la referencia de la ubicación sin gritar. Es un
@@ -161,9 +163,11 @@ public class HousingRow extends JPanel {
 
 		fila.add(new InlineScore(housing.getScore(), 19f, 64));
 
-		fila.add(Labels.muted(resenas == 0 ? "sin reseñas" : Formato.plural(resenas, "reseña", "reseñas")));
-		fila.add(Labels.muted(Formato.plural(housing.getNumberOfRooms(), "habitación", "habitaciones")));
-		fila.add(Labels.muted("de " + housing.getOwner().getUsername()));
+		fila.add(Labels.muted(resenas == 0 ? Textos.t("catalogo.sinResenas")
+				: Formato.plural(resenas, Textos.t("palabra.resena.singular"), Textos.t("palabra.resena.plural"))));
+		fila.add(Labels.muted(Formato.plural(housing.getNumberOfRooms(), Textos.t("palabra.habitacion.singular"),
+				Textos.t("palabra.habitacion.plural"))));
+		fila.add(Labels.muted(Textos.t("catalogo.row.de", housing.getOwner().getUsername())));
 
 		return fila;
 	}
@@ -183,10 +187,10 @@ public class HousingRow extends JPanel {
 				""));
 		fila.setOpaque(false);
 
-		fila.add(Labels.caps("Pensión"));
-		fila.add(comida("Desayuno", housing.isBreakfast()));
-		fila.add(comida("Comida", housing.isLunch()));
-		fila.add(comida("Cena", housing.isDinner()));
+		fila.add(Labels.caps(Textos.t("catalogo.row.pension")));
+		fila.add(comida(Textos.t("catalogo.row.desayuno"), housing.isBreakfast()));
+		fila.add(comida(Textos.t("catalogo.row.comida"), housing.isLunch()));
+		fila.add(comida(Textos.t("catalogo.row.cena"), housing.isDinner()));
 
 		return fila;
 	}
@@ -216,12 +220,12 @@ public class HousingRow extends JPanel {
 		for (Amenity amenity : Amenity.values()) {
 
 			if (amenity.presenteEn(housing)) {
-				fila.add(Chip.informativo(amenity.etiqueta()), "gapright " + Space.XS);
+				fila.add(Chip.informativo(Textos.etiquetaDe(amenity)), "gapright " + Space.XS);
 			}
 		}
 
 		if (fila.getComponentCount() == 0) {
-			fila.add(Labels.muted("Sin comodidades declaradas"));
+			fila.add(Labels.muted(Textos.t("catalogo.row.sinComodidades")));
 		}
 
 		return fila;
@@ -238,10 +242,10 @@ public class HousingRow extends JPanel {
 		precio.setFont(Typography.serif(28f));
 		fila.add(precio, "aligny bottom");
 
-		fila.add(Labels.muted("por noche"), "aligny bottom, gapbottom 4");
+		fila.add(Labels.muted(Textos.t("catalogo.card.porNoche")), "aligny bottom, gapbottom 4");
 
 		if (alIntercambiar != null) {
-			fila.add(enlace("Intercambiar →←", true, alIntercambiar), "aligny bottom, gapbottom 4");
+			fila.add(enlace(Textos.t("catalogo.row.intercambiar"), true, alIntercambiar), "aligny bottom, gapbottom 4");
 		}
 
 		return fila;

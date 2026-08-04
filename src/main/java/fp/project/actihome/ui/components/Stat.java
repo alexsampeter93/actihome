@@ -29,6 +29,7 @@ public class Stat extends JPanel {
 	private static final long serialVersionUID = 1L;
 
 	private final JLabel valor;
+	private final JLabel etiqueta;
 
 	public Stat(String valorInicial, String rotulo) {
 		this(valorInicial, rotulo, false);
@@ -51,7 +52,7 @@ public class Stat extends JPanel {
 		valor.setFont(Typography.serif(26f));
 		valor.setHorizontalAlignment(SwingConstants.RIGHT);
 
-		JLabel etiqueta = Labels.caps(rotulo);
+		etiqueta = Labels.caps(rotulo);
 		etiqueta.setHorizontalAlignment(SwingConstants.RIGHT);
 
 		add(valor);
@@ -61,5 +62,10 @@ public class Stat extends JPanel {
 	/** Actualiza la cifra sin reconstruir el componente. */
 	public void setValor(String nuevo) {
 		valor.setText(nuevo);
+	}
+
+	/** Actualiza el rótulo sin reconstruir el componente (idioma, Fase 7.6). */
+	public void setRotulo(String nuevo) {
+		etiqueta.setText(nuevo);
 	}
 }
