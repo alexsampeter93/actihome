@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import fp.project.actihome.model.entities.User;
+import fp.project.actihome.model.entities.User.EstacionPreferida;
+import fp.project.actihome.model.entities.User.Idioma;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.entities.UserDao;
 import fp.project.actihome.model.exceptions.DuplicateInstanceException;
@@ -107,6 +109,19 @@ public class UserServiceImpl implements UserService {
 		// No hace falta llamar a save: dentro de la transacción, JPA detecta que la
 		// entidad ha cambiado y lanza el UPDATE al terminar. Es el mismo dirty
 		// checking en el que se apoyan updateProfile y changePassword aquí arriba.
+		return user;
+	}
+
+	@Override
+	public User updatePreferences(Long userId, EstacionPreferida defaultSeason, boolean particlesEnabled,
+			Idioma language) throws InstanceNotFoundException {
+
+		User user = permissionChecker.checkUser(userId);
+
+		user.setDefaultSeason(defaultSeason);
+		user.setParticlesEnabled(particlesEnabled);
+		user.setLanguage(language);
+
 		return user;
 	}
 }

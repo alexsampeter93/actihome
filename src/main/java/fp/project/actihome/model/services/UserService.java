@@ -1,6 +1,8 @@
 package fp.project.actihome.model.services;
 
 import fp.project.actihome.model.entities.User;
+import fp.project.actihome.model.entities.User.EstacionPreferida;
+import fp.project.actihome.model.entities.User.Idioma;
 import fp.project.actihome.model.exceptions.DuplicateInstanceException;
 import fp.project.actihome.model.exceptions.IncorrectLoginException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
@@ -38,4 +40,12 @@ public interface UserService {
 	 * y tendría que autorizarlo otra persona.
 	 */
 	User changeRole(Long userId) throws InstanceNotFoundException;
+
+	/**
+	 * Guarda las preferencias de Ajustes (Fase 7.6). {@code defaultSeason} puede
+	 * ser {@code null}: significa "sin preferencia guardada, usa la estación real
+	 * de hoy".
+	 */
+	User updatePreferences(Long userId, EstacionPreferida defaultSeason, boolean particlesEnabled, Idioma language)
+			throws InstanceNotFoundException;
 }

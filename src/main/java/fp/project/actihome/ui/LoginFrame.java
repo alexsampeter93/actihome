@@ -20,6 +20,9 @@ import org.springframework.stereotype.Component;
 
 import net.miginfocom.swing.MigLayout;
 
+import java.util.Locale;
+
+import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.exceptions.IncorrectLoginException;
 import fp.project.actihome.model.services.UserService;
 import fp.project.actihome.ui.components.Buttons;
@@ -31,7 +34,10 @@ import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Layout;
+import fp.project.actihome.ui.theme.Particulas;
+import fp.project.actihome.ui.theme.Season;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
@@ -347,7 +353,9 @@ public class LoginFrame extends JFrame {
 		}
 
 		try {
-			sessionManager.login(userService.login(nombre, clave));
+			User usuarioLogueado = userService.login(nombre, clave);
+			sessionManager.login(usuarioLogueado);
+			aplicarPreferencias(usuarioLogueado);
 			navigator.ir(ShowHousingsFrame.class);
 
 		} catch (IncorrectLoginException ex) {
@@ -359,5 +367,21 @@ public class LoginFrame extends JFrame {
 			contrasena.setText("");
 			contrasena.requestFocus();
 		}
+	}
+
+	/**
+	 * Aplica al arrancar la sesión lo que la cuenta tenga guardado en Ajustes
+	 * (Fase 7.6). Si {@code getDefaultSeason()} es {@code null} —cuenta que nunca
+	 * ha abierto Ajustes— la estación no se toca: se queda como estuviera, que es
+	 * el comportamiento de siempre ({@link Season#actual()}, calculada por fecha).
+	 */
+	private void aplicarPreferencias(User usuario) {
+
+		if (usuario.getDefaultSeason() != null) {
+			Theme.cambiarA(Season.valueOf(usuario.getDefaultSeason().name()));
+		}
+
+		Particulas.activar(usuario.isParticlesEnabled());
+		Textos.cambiarA(usuario.getLanguage() == User.Idioma.EN ? Locale.ENGLISH : new Locale("es"));
 	}
 }

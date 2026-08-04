@@ -26,6 +26,7 @@ import fp.project.actihome.ui.LoginFrame;
 import fp.project.actihome.ui.PublishReviewFrame;
 import fp.project.actihome.ui.ReserveHousingFrame;
 import fp.project.actihome.ui.ReviewDetailsFrame;
+import fp.project.actihome.ui.SettingsFrame;
 import fp.project.actihome.ui.ShowHousingsFrame;
 import fp.project.actihome.ui.ShowMyReservationsFrame;
 import fp.project.actihome.ui.ShowReviewsFrame;
@@ -131,6 +132,7 @@ public class MedirResponsive {
 					f -> ((TradeHousingsFrame) f).setHousingId(propio.getId())));
 			pantallas.add(new Pantalla("Perfil", c.getBean(UpdateProfileFrame.class), null));
 			pantallas.add(new Pantalla("Contrasena", c.getBean(ChangePasswordFrame.class), null));
+			pantallas.add(new Pantalla("Ajustes", c.getBean(SettingsFrame.class), null));
 			pantallas.add(new Pantalla("Login", c.getBean(LoginFrame.class), null));
 			pantallas.add(new Pantalla("Registro", c.getBean(SignUpFrame.class), null));
 

@@ -28,6 +28,13 @@ CREATE TABLE IF NOT EXISTS USERS (
 	-- un valor en el enum convierte silenciosamente a todos los administradores
 	-- en clientes: un fallo invisible hasta que es grave.
 	role VARCHAR(20) NOT NULL,
+	-- Ajustes (Fase 7.6). Las tres son preferencias personales, no datos de
+	-- negocio. defaultSeason es nula a propósito: nulo significa "sin
+	-- preferencia guardada, usa la estación real de hoy", que es el
+	-- comportamiento de siempre antes de que existiera esta pantalla.
+	defaultSeason VARCHAR(20),
+	particlesEnabled BOOLEAN DEFAULT TRUE NOT NULL,
+	language VARCHAR(5) DEFAULT 'ES' NOT NULL,
 	-- La unicidad del nombre de usuario se comprobaba solo en Java. Eso no es una
 	-- garantía, es una comprobación optimista: con dos peticiones simultáneas las
 	-- dos pueden pasar el "¿existe ya?" antes de que ninguna haya insertado. La

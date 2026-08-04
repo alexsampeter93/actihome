@@ -31,8 +31,7 @@ public enum Season {
 	// 4,5 que exige un texto de 11px— y se oscureció lo mínimo, manteniendo matiz y
 	// saturación, hasta 4,50:1. mut daba 3,39:1 sobre bg, muy por debajo del 4,5 que
 	// exige un texto de 14px; incluso sobre las fichas blancas se quedaba en 3,85:1.
-	PRIMAVERA("Primavera", "Estancias de primavera — Brotes, campo verde y días largos",
-			0x4E7A3E, 0x4D793D, 0xF3F1E6, 0x2A3A20, 0x232A1B, 0x696F5E, 0xE4E6D5, new Color(120, 150, 80, 41),
+	PRIMAVERA(0x4E7A3E, 0x4D793D, 0xF3F1E6, 0x2A3A20, 0x232A1B, 0x696F5E, 0xE4E6D5, new Color(120, 150, 80, 41),
 			new Color(0xD9, 0x6A, 0x96)),
 
 	// Verano se aparta del handoff (ADR-008). Ver la nota extensa sobre accText más
@@ -42,8 +41,7 @@ public enum Season {
 	//
 	// mut ajustado en la Fase 7 (entrada 032): daba 3,57:1 sobre bg, por debajo del
 	// 4,5 que exige un texto de 14px. Oscurecido manteniendo matiz y saturación.
-	VERANO("Verano", "Estancias de verano — Sol alto, luz dorada y sombra fresca",
-			0xE0AC1B, 0x806210, 0xFBF3E1, 0x33291A, 0x2B2513, 0x796E53, 0xF2E6C2, new Color(245, 195, 70, 46),
+	VERANO(0xE0AC1B, 0x806210, 0xFBF3E1, 0x33291A, 0x2B2513, 0x796E53, 0xF2E6C2, new Color(245, 195, 70, 46),
 			new Color(0xD9, 0xA6, 0x2A)),
 
 	// Otoño se aparta del handoff a propósito (ADR-005). Los valores originales
@@ -59,18 +57,13 @@ public enum Season {
 	//
 	// mut ajustado en la Fase 7 (entrada 032): 3,65:1 sobre bg y 4,36:1 sobre las
 	// fichas blancas, los dos por debajo del 4,5 que exige un texto de 14px.
-	OTONO("Otoño", "Estancias de otoño — Hojas, viñedos y tardes doradas",
-			0xA34526, 0xA34526, 0xF1EAE0, 0x3D2820, 0x2E211A, 0x79675A, 0xE6DACB, new Color(150, 85, 45, 51),
+	OTONO(0xA34526, 0xA34526, 0xF1EAE0, 0x3D2820, 0x2E211A, 0x79675A, 0xE6DACB, new Color(150, 85, 45, 51),
 			new Color(0xB5, 0x4E, 0x2A)),
 
 	// mut ajustado en la Fase 7 (entrada 032): 3,46:1 sobre bg, por debajo del 4,5
 	// que exige un texto de 14px.
-	INVIERNO("Invierno", "Estancias de invierno — Nieve, chimenea y luz de dusk",
-			0x5A5B86, 0x5A5B86, 0xECECF1, 0x242539, 0x22233A, 0x69697C, 0xDDDCE6, new Color(96, 98, 150, 38),
+	INVIERNO(0x5A5B86, 0x5A5B86, 0xECECF1, 0x242539, 0x22233A, 0x69697C, 0xDDDCE6, new Color(96, 98, 150, 38),
 			new Color(0xAE, 0xB2, 0xCC));
-
-	private final String nombre;
-	private final String etiqueta;
 
 	private final Color acc;
 	private final Color accText;
@@ -82,10 +75,7 @@ public enum Season {
 	private final Color imgTint;
 	private final Color particula;
 
-	Season(String nombre, String etiqueta, int acc, int accText, int bg, int hdr, int txt, int mut, int img,
-			Color imgTint, Color particula) {
-		this.nombre = nombre;
-		this.etiqueta = etiqueta;
+	Season(int acc, int accText, int bg, int hdr, int txt, int mut, int img, Color imgTint, Color particula) {
 		this.acc = new Color(acc);
 		this.accText = new Color(accText);
 		this.bg = new Color(bg);
@@ -97,14 +87,30 @@ public enum Season {
 		this.particula = particula;
 	}
 
-	/** Nombre corto para el selector de estación ("Primavera"). */
+	/**
+	 * Clave i18n de esta estación, en minúsculas ("primavera", "verano"...). Es la
+	 * raíz de las claves {@code season.<clave>.nombre} y
+	 * {@code season.<clave>.etiqueta} de {@code Textos} (Fase 7.6).
+	 */
+	private String clave() {
+		return name().toLowerCase(java.util.Locale.ROOT);
+	}
+
+	/**
+	 * Nombre corto para el selector de estación ("Primavera"/"Spring").
+	 *
+	 * <p>
+	 * Se resuelve en cada llamada contra {@link Textos#t(String)}, no se guarda:
+	 * misma regla del sistema que ya siguen los colores ("no se guarda, se
+	 * resuelve al pintar"), aplicada aquí al idioma en vez de a la estación.
+	 */
 	public String nombre() {
-		return nombre;
+		return Textos.t("season." + clave() + ".nombre");
 	}
 
 	/** Frase editorial completa: "Estancias de verano — Sol alto, luz dorada y sombra fresca". */
 	public String etiqueta() {
-		return etiqueta;
+		return Textos.t("season." + clave() + ".etiqueta");
 	}
 
 	/**
@@ -119,6 +125,7 @@ public enum Season {
 	 */
 	public String frase() {
 
+		String etiqueta = etiqueta();
 		int guion = etiqueta.indexOf('—');
 		return guion < 0 ? etiqueta : etiqueta.substring(guion + 1).trim();
 	}

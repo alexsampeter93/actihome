@@ -13,6 +13,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import fp.project.actihome.model.entities.User;
+import fp.project.actihome.model.entities.User.EstacionPreferida;
+import fp.project.actihome.model.entities.User.Idioma;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.DuplicateInstanceException;
 import fp.project.actihome.model.exceptions.IncorrectLoginException;
@@ -173,5 +175,59 @@ public class UserServiceTests {
 	public void testChangeRoleUserNotFound() {
 
 		assertThrows(InstanceNotFoundException.class, () -> userService.changeRole(Long.valueOf(9999)));
+	}
+
+	@Test
+	public void testUpdatePreferencesNuevaCuenta() throws DuplicateInstanceException {
+
+		User user = createUser("Sampi");
+		userService.signUp(user);
+
+		// Una cuenta recién creada, antes de pasar por Ajustes, se comporta como
+		// siempre: sin estación guardada, con partículas activas y en español.
+		assertEquals(null, user.getDefaultSeason());
+		assertEquals(true, user.isParticlesEnabled());
+		assertEquals(Idioma.ES, user.getLanguage());
+	}
+
+	@Test
+	public void testUpdatePreferences() throws DuplicateInstanceException, InstanceNotFoundException {
+
+		User user = createUser("Sampi");
+		userService.signUp(user);
+
+		User actualizado = userService.updatePreferences(user.getId(), EstacionPreferida.INVIERNO, false, Idioma.EN);
+
+		assertEquals(EstacionPreferida.INVIERNO, actualizado.getDefaultSeason());
+		assertEquals(false, actualizado.isParticlesEnabled());
+		assertEquals(Idioma.EN, actualizado.getLanguage());
+
+		// Se vuelve a leer desde el servicio, no se mira el objeto devuelto: es lo
+		// que de verdad importa, que quedó guardado y no solo en memoria.
+		User releido = userService.loginFromId(user.getId());
+		assertEquals(EstacionPreferida.INVIERNO, releido.getDefaultSeason());
+		assertEquals(false, releido.isParticlesEnabled());
+		assertEquals(Idioma.EN, releido.getLanguage());
+	}
+
+	@Test
+	public void testUpdatePreferencesSinEstacionGuardada()
+			throws DuplicateInstanceException, InstanceNotFoundException {
+
+		User user = createUser("Sampi");
+		userService.signUp(user);
+
+		// defaultSeason nulo es un valor válido y distinto de "no lo toques": significa
+		// "sin preferencia guardada, usa la estación real de hoy".
+		User actualizado = userService.updatePreferences(user.getId(), null, true, Idioma.ES);
+
+		assertEquals(null, actualizado.getDefaultSeason());
+	}
+
+	@Test
+	public void testUpdatePreferencesUserNotFound() {
+
+		assertThrows(InstanceNotFoundException.class,
+				() -> userService.updatePreferences(Long.valueOf(9999), EstacionPreferida.VERANO, true, Idioma.ES));
 	}
 }

@@ -18,6 +18,25 @@ public class User {
 		ADMIN, CUSTOMER;
 	}
 
+	/**
+	 * Idioma de la interfaz. Vive aquí, no en {@code ui.theme}, porque el modelo
+	 * no puede depender de la capa de UI (regla de capas de CLAUDE.md): esta
+	 * clase solo necesita saber que hay dos idiomas posibles, no cómo se pintan.
+	 */
+	public enum Idioma {
+		ES, EN;
+	}
+
+	/**
+	 * Estación preferida al iniciar sesión. Deliberadamente distinto de
+	 * {@code ui.theme.Season} por la misma razón que {@link Idioma}: son los
+	 * mismos cuatro nombres, pero en dos capas que no pueden depender la una de
+	 * la otra. La conversión entre ambos (los nombres coinciden) vive en la UI.
+	 */
+	public enum EstacionPreferida {
+		PRIMAVERA, VERANO, OTONO, INVIERNO;
+	}
+
 	private Long id;
 
 	private String username;
@@ -37,6 +56,19 @@ public class User {
 	private LocalDateTime birthDate;
 
 	private RoleType role;
+
+	/**
+	 * Preferencias de Ajustes (Fase 7.6). El valor por defecto va en el campo, no
+	 * en un constructor, para que ninguna de las llamadas ya existentes a los dos
+	 * constructores de abajo tenga que cambiar: cualquier {@code User} nuevo
+	 * arranca exactamente con el comportamiento de siempre (estación real por
+	 * fecha, partículas activas, español) hasta que alguien pase por Ajustes.
+	 */
+	private EstacionPreferida defaultSeason;
+
+	private boolean particlesEnabled = true;
+
+	private Idioma language = Idioma.ES;
 
 	public User() {
 
@@ -168,11 +200,38 @@ public class User {
 		this.role = role;
 	}
 
+	@Enumerated(EnumType.STRING)
+	public EstacionPreferida getDefaultSeason() {
+		return defaultSeason;
+	}
+
+	public void setDefaultSeason(EstacionPreferida defaultSeason) {
+		this.defaultSeason = defaultSeason;
+	}
+
+	public boolean isParticlesEnabled() {
+		return particlesEnabled;
+	}
+
+	public void setParticlesEnabled(boolean particlesEnabled) {
+		this.particlesEnabled = particlesEnabled;
+	}
+
+	@Enumerated(EnumType.STRING)
+	public Idioma getLanguage() {
+		return language;
+	}
+
+	public void setLanguage(Idioma language) {
+		this.language = language;
+	}
+
 	@Override
 	public String toString() {
 		return "User [id=" + id + ", username=" + username + ", name=" + name + ", surname=" + surname + ", locality="
 				+ locality + ", phoneNumber=" + phoneNumber + ", email=" + email + ", birthDate=" + birthDate
-				+ ", role=" + role + "]";
+				+ ", role=" + role + ", defaultSeason=" + defaultSeason + ", particlesEnabled=" + particlesEnabled
+				+ ", language=" + language + "]";
 	}
 
 }

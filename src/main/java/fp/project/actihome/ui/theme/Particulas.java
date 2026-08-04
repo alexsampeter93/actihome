@@ -52,6 +52,22 @@ public final class Particulas {
 	public static final int CUANTAS = 70;
 
 	/**
+	 * Si las partículas se animan. Apagable desde Ajustes (Fase 7.6); por defecto
+	 * activas, que es el comportamiento de siempre.
+	 */
+	private static boolean activas = true;
+
+	/** Si las partículas están activas ahora mismo. */
+	public static boolean activas() {
+		return activas;
+	}
+
+	/** Activa o desactiva las partículas para toda la aplicación. */
+	public static void activar(boolean valor) {
+		activas = valor;
+	}
+
+	/**
 	 * Cuánto se atenúan según bajan por la pantalla.
 	 *
 	 * <p>

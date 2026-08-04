@@ -145,9 +145,8 @@ public class SeasonSelector extends JPanel {
 
 			setOpaque(false);
 			setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-			setToolTipText(estacion.etiqueta());
 
-			etiqueta = new javax.swing.JLabel(estacion.nombre().toUpperCase());
+			etiqueta = new javax.swing.JLabel();
 			etiqueta.setFont(Typography.label(sobreCabecera ? 10f : 12f));
 
 			// El relleno sí se dibuja a mano, pero es un color plano sin texto: no hay
@@ -212,6 +211,12 @@ public class SeasonSelector extends JPanel {
 		 * discrepar de un repintado a otro.
 		 */
 		private void actualizarColores() {
+
+			// El nombre y la etiqueta de la estación se traducen (Fase 7.6), así que se
+			// vuelven a pedir aquí en vez de fijarse una vez en el constructor — mismo
+			// principio que ya sigue el color: no se guarda, se resuelve al pintar.
+			etiqueta.setText(estacion.nombre().toUpperCase());
+			setToolTipText(estacion.etiqueta());
 
 			boolean activa = esActiva();
 

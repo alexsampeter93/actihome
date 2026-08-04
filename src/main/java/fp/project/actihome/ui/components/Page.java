@@ -117,7 +117,7 @@ public class Page extends JPanel {
 
 	private void avanzar() {
 
-		if (!isShowing() || getWidth() <= 0) {
+		if (!isShowing() || getWidth() <= 0 || !Particulas.activas()) {
 			return;
 		}
 
@@ -159,6 +159,14 @@ public class Page extends JPanel {
 	public void paint(Graphics g) {
 
 		super.paint(g);
+
+		// Apagadas desde Ajustes (Fase 7.6): ni se siembran ni se pintan. Al
+		// comprobarse aquí y no solo en el temporizador, un repaint disparado por
+		// cualquier otra cosa (redimensionar, pasar el ratón por un botón) también
+		// borra las que ya hubiera pintadas de antes de apagarlas.
+		if (!Particulas.activas()) {
+			return;
+		}
 
 		// Se siembra también aquí y no solo en el temporizador. Sin esto, el primer
 		// fotograma sale sin partículas —el temporizador todavía no ha llegado a

@@ -37,6 +37,7 @@ import fp.project.actihome.ui.components.SeasonSelector;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
@@ -200,12 +201,12 @@ public class HeaderPanel extends JPanel {
 	 */
 	private void construirNavegacion() {
 
-		anadirDestino(navegacion, "Catálogo", ShowHousingsFrame.class);
+		anadirDestino(navegacion, Textos.t("header.nav.catalogo"), ShowHousingsFrame.class);
 
 		if (esCliente()) {
-			anadirDestino(navegacion, "Mis reservas", ShowMyReservationsFrame.class);
+			anadirDestino(navegacion, Textos.t("header.nav.misReservas"), ShowMyReservationsFrame.class);
 		} else {
-			anadirDestino(navegacion, "Intercambio", TradeHousingsFrame.class);
+			anadirDestino(navegacion, Textos.t("header.nav.intercambio"), TradeHousingsFrame.class);
 		}
 	}
 
@@ -274,7 +275,8 @@ public class HeaderPanel extends JPanel {
 
 		JLabel nombre = Labels.capsOnHeader(usuario.getUsername());
 		nombre.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-		nombre.setToolTipText(usuario.getRole() == RoleType.ADMIN ? "Administrador" : "Cliente");
+		nombre.setToolTipText(usuario.getRole() == RoleType.ADMIN ? Textos.t("header.usuario.tooltip.admin")
+				: Textos.t("header.usuario.tooltip.cliente"));
 		nombre.addMouseListener(new MouseAdapter() {
 
 			@Override
@@ -299,19 +301,22 @@ public class HeaderPanel extends JPanel {
 
 		JPopupMenu menu = new JPopupMenu();
 
-		JMenuItem perfil = new JMenuItem("Editar perfil");
+		JMenuItem perfil = new JMenuItem(Textos.t("header.menu.perfil"));
 		perfil.addActionListener(e -> navigator.ir(UpdateProfileFrame.class));
 
-		JMenuItem contrasena = new JMenuItem("Cambiar contraseña");
+		JMenuItem contrasena = new JMenuItem(Textos.t("header.menu.contrasena"));
 		contrasena.addActionListener(e -> navigator.ir(ChangePasswordFrame.class));
 
-		JMenuItem rol = new JMenuItem(esCliente() ? "Cambiar a administrador" : "Cambiar a cliente");
+		JMenuItem ajustes = new JMenuItem(Textos.t("header.menu.ajustes"));
+		ajustes.addActionListener(e -> navigator.ir(SettingsFrame.class));
+
+		JMenuItem rol = new JMenuItem(esCliente() ? Textos.t("header.menu.rol.aAdmin") : Textos.t("header.menu.rol.aCliente"));
 		rol.addActionListener(e -> cambiarRol());
 
-		JMenuItem acerca = new JMenuItem("Acerca de ActiHome");
+		JMenuItem acerca = new JMenuItem(Textos.t("header.menu.acercaDe"));
 		acerca.addActionListener(e -> AboutDialog.mostrar(SwingUtilities.getWindowAncestor(this)));
 
-		JMenuItem salir = new JMenuItem("Cerrar sesión");
+		JMenuItem salir = new JMenuItem(Textos.t("header.menu.cerrarSesion"));
 		salir.addActionListener(e -> {
 			sessionManager.logout();
 			navigator.ir(LoginFrame.class);
@@ -319,6 +324,7 @@ public class HeaderPanel extends JPanel {
 
 		menu.add(perfil);
 		menu.add(contrasena);
+		menu.add(ajustes);
 		menu.addSeparator();
 		menu.add(rol);
 		menu.addSeparator();
