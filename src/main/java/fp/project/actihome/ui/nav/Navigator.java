@@ -108,6 +108,18 @@ public class Navigator {
 		mostrar(ventana);
 	}
 
+	/**
+	 * La ventana que el usuario está viendo ahora mismo.
+	 *
+	 * <p>
+	 * Pensada para {@link fp.project.actihome.ui.components.Toast}: necesita
+	 * saber sobre qué ventana anclarse <b>después</b> de navegar, y el navegador
+	 * es el único que lo sabe con certeza en cada momento.
+	 */
+	public JFrame ventanaVisible() {
+		return visible;
+	}
+
 	private void mostrar(JFrame ventana) {
 
 		JFrame anterior = visible;

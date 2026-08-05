@@ -22,12 +22,15 @@ import fp.project.actihome.model.entities.User.EstacionPreferida;
 import fp.project.actihome.model.entities.User.Idioma;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.services.UserService;
+import fp.project.actihome.ui.catalog.CatalogFilters;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.Rescate;
+import fp.project.actihome.ui.components.Segmented;
+import fp.project.actihome.ui.components.Toast;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
@@ -41,7 +44,7 @@ import fp.project.actihome.ui.theme.Typography;
 
 /**
  * Ajustes de la cuenta: estación por defecto, partículas decorativas e idioma
- * (Fase 7.6).
+ * (Fase 7.6), y vista de catálogo por defecto (Fase 7.11).
  *
  * <p>
  * <b>Es la pantalla piloto del idioma.</b> Todo su texto pasa por
@@ -55,9 +58,13 @@ import fp.project.actihome.ui.theme.Typography;
  * recargar sus datos.
  *
  * <p>
- * Los tres cambios se aplican <b>en caliente</b> al guardar, sin esperar a la
- * próxima sesión: son las mismas tres líneas que {@code LoginFrame} ejecuta al
- * entrar.
+ * Los cuatro cambios se notan <b>en caliente</b> al guardar, sin esperar a la
+ * próxima sesión: estación, partículas e idioma son las mismas tres líneas que
+ * {@code LoginFrame} ejecuta al entrar, y la vista de catálogo se nota en
+ * cuanto se vuelve al catálogo justo después de guardar —
+ * {@code ShowHousingsFrame.olvidarVistaAplicada()}, llamado antes de navegar,
+ * es lo que hace que se vuelva a aplicar aunque ya se hubiera aplicado antes
+ * en esta sesión.
  */
 @Component
 @Profile("!test")
@@ -78,6 +85,8 @@ public class SettingsFrame extends JFrame {
 	private JCheckBox particulas;
 	private JLabel etiquetaIdioma;
 	private JComboBox<Idioma> idioma;
+	private JLabel etiquetaVista;
+	private Segmented vistaPorDefecto;
 	private JButton guardar;
 	private JButton cancelar;
 	private JLabel error;
@@ -128,13 +137,15 @@ public class SettingsFrame extends JFrame {
 	private JPanel formulario() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.XXL + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.LG + "[]"));
+				"[]" + Space.XXL + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.LG + "[]"
+						+ Space.LG + "[]"));
 		panel.setOpaque(false);
 
 		panel.add(cabecera());
 		panel.add(campoEstacion());
 		panel.add(campoParticulas());
 		panel.add(campoIdioma());
+		panel.add(campoVistaPorDefecto());
 
 		error = Labels.error(" ");
 		panel.add(error);
@@ -236,6 +247,33 @@ public class SettingsFrame extends JFrame {
 		return panel;
 	}
 
+	/**
+	 * Con qué vista arranca el catálogo la primera vez que se abre en la sesión
+	 * (Fase 7.11). Reutiliza {@link Segmented}, el mismo control con el que ya se
+	 * cambia de vista dentro del propio catálogo, para que elegir aquí se sienta
+	 * como el mismo gesto.
+	 */
+	private JPanel campoVistaPorDefecto() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		panel.setOpaque(false);
+
+		etiquetaVista = Labels.caps(" ");
+
+		// El texto real se fija en actualizarTextos(): aquí solo hace falta que las
+		// dos opciones existan, en el mismo orden que CatalogFilters.VISTA_CUADRICULA
+		// espera (0 lista, 1 cuadrícula).
+		vistaPorDefecto = new Segmented(0, indice -> {
+			// Sin acción: es un ajuste que se guarda al pulsar "Guardar cambios", no un
+			// filtro que se aplique al vuelo como en el catálogo.
+		}, " ", " ");
+
+		panel.add(etiquetaVista);
+		panel.add(vistaPorDefecto, "gaptop " + Space.XXS + ", w 220!");
+
+		return panel;
+	}
+
 	private JPanel acciones() {
 
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
@@ -264,6 +302,8 @@ public class SettingsFrame extends JFrame {
 		etiquetaEstacion.setText(Textos.t("ajustes.estacion.label"));
 		particulas.setText(Textos.t("ajustes.particulas.label"));
 		etiquetaIdioma.setText(Textos.t("ajustes.idioma.label"));
+		etiquetaVista.setText(Textos.t("ajustes.vista.label"));
+		vistaPorDefecto.actualizarTextos(Textos.t("catalogo.vista.lista"), Textos.t("catalogo.vista.cuadricula"));
 		guardar.setText(Textos.t("ajustes.guardar"));
 		cancelar.setText(Textos.t("ajustes.cancelar"));
 
@@ -294,6 +334,7 @@ public class SettingsFrame extends JFrame {
 		estacion.setSelectedItem(estacionInicial);
 		particulas.setSelected(actual.isParticlesEnabled());
 		idioma.setSelectedItem(actual.getLanguage());
+		vistaPorDefecto.setActivo(actual.isDefaultGridView() ? CatalogFilters.VISTA_CUADRICULA : 0);
 
 		error.setText(" ");
 	}
@@ -304,9 +345,12 @@ public class SettingsFrame extends JFrame {
 		Idioma idiomaElegido = (Idioma) idioma.getSelectedItem();
 		boolean particulasActivas = particulas.isSelected();
 
+		boolean vistaCuadricula = vistaPorDefecto.getActivo() == CatalogFilters.VISTA_CUADRICULA;
+
 		try {
 			User actualizado = userService.updatePreferences(sessionManager.getLoggedInUser().getId(),
-					EstacionPreferida.valueOf(estacionElegida.name()), particulasActivas, idiomaElegido);
+					EstacionPreferida.valueOf(estacionElegida.name()), particulasActivas, idiomaElegido,
+					vistaCuadricula);
 
 			// La sesión guarda el User en memoria: sin esto, la próxima vez que se
 			// abriera esta pantalla precargaría los valores viejos.
@@ -316,7 +360,8 @@ public class SettingsFrame extends JFrame {
 			Particulas.activar(particulasActivas);
 			Textos.cambiarA(idiomaElegido == Idioma.EN ? Locale.ENGLISH : new Locale("es"));
 
-			navigator.ir(ShowHousingsFrame.class);
+			navigator.ir(ShowHousingsFrame.class, ShowHousingsFrame::olvidarVistaAplicada);
+			Toast.mostrar(navigator.ventanaVisible(), Textos.t("ajustes.confirmacion.guardado"));
 
 		} catch (InstanceNotFoundException ex) {
 			error.setText(Textos.t("ajustes.error.usuarioNoExiste"));

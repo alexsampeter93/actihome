@@ -98,16 +98,28 @@ public final class BrandAssets {
 	/**
 	 * La foto de un alojamiento, o {@code null} si no tiene.
 	 *
+	 * <p>
+	 * Se busca primero en {@link HousingPhotos}, la carpeta donde caen las fotos
+	 * que sube un usuario real (Fase 7.9), y solo si no hay ninguna se cae al jar
+	 * empaquetado — que es donde viven las de los seis alojamientos de ejemplo.
+	 * Es justo la extensión que ya anticipaba este método antes de que existiera:
+	 * "pasar mañana a servirlas desde disco... sin tocar la base de datos".
+	 *
 	 * @param nombre lo que guarda {@code Housing.image}: solo el nombre del
 	 *               archivo, nunca una ruta. Que la entidad no sepa dónde viven las
-	 *               imágenes es lo que permite cambiar la carpeta —o pasar mañana a
-	 *               servirlas desde disco o desde una URL— sin tocar la base de
-	 *               datos
+	 *               imágenes es lo que permite tener dos orígenes distintos sin que
+	 *               ni el modelo ni quien pinta la foto tengan que saberlo
 	 */
 	public static BufferedImage fotoDeAlojamiento(String nombre) {
 
 		if (nombre == null || nombre.trim().isEmpty()) {
 			return null;
+		}
+
+		BufferedImage subida = HousingPhotos.cargar(nombre.trim());
+
+		if (subida != null) {
+			return subida;
 		}
 
 		return cargar("/images/housings/" + nombre.trim());

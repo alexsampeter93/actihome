@@ -370,7 +370,16 @@ public class LoginFrame extends JFrame {
 			User usuarioLogueado = userService.login(nombre, clave);
 			sessionManager.login(usuarioLogueado);
 			aplicarPreferencias(usuarioLogueado);
-			navigator.ir(ShowHousingsFrame.class);
+
+			// Fase 7.8: la bienvenida se enseña una sola vez por cuenta, en el primer
+			// inicio de sesión que la encuentra sin marcar — puede ser una cuenta
+			// recién registrada o una ya existente en una base creada antes de esta
+			// fase, y las dos entran por aquí igual.
+			if (usuarioLogueado.isOnboardingSeen()) {
+				navigator.ir(ShowHousingsFrame.class);
+			} else {
+				navigator.ir(OnboardingFrame.class);
+			}
 
 		} catch (IncorrectLoginException ex) {
 

@@ -9,6 +9,7 @@ import javax.swing.JPanel;
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 
 /**
  * Un diálogo modal de sí/no antes de una acción que no se puede deshacer.
@@ -81,7 +82,7 @@ public final class Confirmacion {
 			dialogo.dispose();
 		}), "height 44!");
 
-		fila.add(Buttons.link("Cancelar", e -> dialogo.dispose()));
+		fila.add(Buttons.link(Textos.t("confirmacion.cancelar"), e -> dialogo.dispose()));
 
 		return fila;
 	}

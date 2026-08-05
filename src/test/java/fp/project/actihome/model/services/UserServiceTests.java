@@ -196,11 +196,13 @@ public class UserServiceTests {
 		User user = createUser("Sampi");
 		userService.signUp(user);
 
-		User actualizado = userService.updatePreferences(user.getId(), EstacionPreferida.INVIERNO, false, Idioma.EN);
+		User actualizado = userService.updatePreferences(user.getId(), EstacionPreferida.INVIERNO, false, Idioma.EN,
+				true);
 
 		assertEquals(EstacionPreferida.INVIERNO, actualizado.getDefaultSeason());
 		assertEquals(false, actualizado.isParticlesEnabled());
 		assertEquals(Idioma.EN, actualizado.getLanguage());
+		assertEquals(true, actualizado.isDefaultGridView());
 
 		// Se vuelve a leer desde el servicio, no se mira el objeto devuelto: es lo
 		// que de verdad importa, que quedó guardado y no solo en memoria.
@@ -208,6 +210,7 @@ public class UserServiceTests {
 		assertEquals(EstacionPreferida.INVIERNO, releido.getDefaultSeason());
 		assertEquals(false, releido.isParticlesEnabled());
 		assertEquals(Idioma.EN, releido.getLanguage());
+		assertEquals(true, releido.isDefaultGridView());
 	}
 
 	@Test
@@ -219,7 +222,7 @@ public class UserServiceTests {
 
 		// defaultSeason nulo es un valor válido y distinto de "no lo toques": significa
 		// "sin preferencia guardada, usa la estación real de hoy".
-		User actualizado = userService.updatePreferences(user.getId(), null, true, Idioma.ES);
+		User actualizado = userService.updatePreferences(user.getId(), null, true, Idioma.ES, false);
 
 		assertEquals(null, actualizado.getDefaultSeason());
 	}
@@ -227,7 +230,31 @@ public class UserServiceTests {
 	@Test
 	public void testUpdatePreferencesUserNotFound() {
 
-		assertThrows(InstanceNotFoundException.class,
-				() -> userService.updatePreferences(Long.valueOf(9999), EstacionPreferida.VERANO, true, Idioma.ES));
+		assertThrows(InstanceNotFoundException.class, () -> userService.updatePreferences(Long.valueOf(9999),
+				EstacionPreferida.VERANO, true, Idioma.ES, false));
+	}
+
+	@Test
+	public void testCompleteOnboarding() throws DuplicateInstanceException, InstanceNotFoundException {
+
+		User user = createUser("Sampi");
+		userService.signUp(user);
+
+		// Antes de completarla, cualquier cuenta nueva empieza sin haberla visto.
+		assertEquals(false, user.isOnboardingSeen());
+
+		User actualizado = userService.completeOnboarding(user.getId());
+		assertEquals(true, actualizado.isOnboardingSeen());
+
+		// Releído desde el servicio y no desde el objeto en memoria: lo que importa
+		// es que quedó guardado, no solo devuelto.
+		User releido = userService.loginFromId(user.getId());
+		assertEquals(true, releido.isOnboardingSeen());
+	}
+
+	@Test
+	public void testCompleteOnboardingUserNotFound() {
+
+		assertThrows(InstanceNotFoundException.class, () -> userService.completeOnboarding(Long.valueOf(9999)));
 	}
 }

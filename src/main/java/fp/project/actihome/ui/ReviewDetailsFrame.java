@@ -17,6 +17,7 @@ import net.miginfocom.swing.MigLayout;
 import fp.project.actihome.model.entities.Review;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.exceptions.TranslationNotConfiguredException;
 import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Foco;
@@ -154,13 +155,14 @@ public class ReviewDetailsFrame extends JFrame {
 		// diferencia entre un margen izquierdo recto y uno dentado: si cada bloque se
 		// centrase por su cuenta según su propio ancho máximo, el cuerpo del texto
 		// arrancaría más adentro que el título.
-		JPanel columna = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.LG + "[]" + Space.MD + "[]" + Space.XXL + "[]" + Space.XXL + "[]push[]"));
+		JPanel columna = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.LG + "[]"
+				+ Space.MD + "[]" + Space.SM + "[]" + Space.XXL + "[]" + Space.XXL + "[]push[]"));
 		columna.setOpaque(false);
 
 		columna.add(migaDePan(), "growx");
 		columna.add(cabecera(), "growx");
 		columna.add(new WrappingText(review.getBody()), "growx, " + Layout.ancho(Layout.TEXTO));
+		columna.add(traduccion(), "growx, " + Layout.ancho(Layout.TEXTO));
 		columna.add(Hairline.horizontal(), "growx, h 1!");
 		columna.add(subNotas(), "growx, " + Layout.ancho(Layout.TEXTO));
 		columna.add(acciones(), "growx");
@@ -203,6 +205,38 @@ public class ReviewDetailsFrame extends JFrame {
 				+ formatoFecha().format(review.getPublicationDate())));
 
 		panel.add(texto, "aligny center");
+
+		return panel;
+	}
+
+	/**
+	 * Enlace "Traducir" junto a un mensaje de estado, vacío hasta que se pulsa.
+	 *
+	 * <p>
+	 * Fase 7.7: no hay todavía proveedor de traducción elegido, así que el
+	 * servicio siempre responde {@link TranslationNotConfiguredException} — lo
+	 * que sí queda montado es el hueco en la pantalla y la captura de esa
+	 * excepción como un error de negocio más, igual que el resto de la UI.
+	 */
+	private JPanel traduccion() {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]", "[]"));
+		panel.setOpaque(false);
+
+		JLabel mensaje = Labels.muted(" ");
+
+		panel.add(Buttons.link(Textos.t("detalleResena.traducir"), e -> {
+			try {
+				reviewService.translateReview(review.getId(), Textos.idioma().getLanguage());
+
+			} catch (TranslationNotConfiguredException ex) {
+				mensaje.setText(Textos.t("detalleResena.error.traduccionNoConfigurada"));
+
+			} catch (InstanceNotFoundException ex) {
+				navigator.ir(ShowHousingsFrame.class);
+			}
+		}));
+		panel.add(mensaje);
 
 		return panel;
 	}

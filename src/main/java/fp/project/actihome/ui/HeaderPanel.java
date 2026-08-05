@@ -297,9 +297,50 @@ public class HeaderPanel extends JPanel {
 	 * acumulándolas. Construirlo al vuelo cuesta microsegundos y no deja estado que
 	 * mantener.
 	 */
+	/**
+	 * Avatar, nombre de usuario y rol, en la parte de arriba del menú.
+	 *
+	 * <p>
+	 * El avatar es {@link Avatar#relleno}, el disco de acento con las iniciales en
+	 * blanco — la variante pensada para fondos claros, que es lo que hay dentro de
+	 * un {@code JPopupMenu}. El de la barra de navegación usa {@link
+	 * Avatar#contorno} porque ahí el fondo es la cabecera oscura; son casos
+	 * distintos del mismo componente, no una inconsistencia.
+	 */
+	private JPanel cabeceraDelMenu(User usuario) {
+
+		JPanel panel = new JPanel(
+				new MigLayout(Space.insets(Space.SM, Space.MD, Space.SM, Space.MD), "[]" + Space.SM + "[grow,fill]", "[]"));
+		panel.setOpaque(false);
+
+		panel.add(Avatar.relleno(usuario.getName(), usuario.getSurname(), 34), "w 34!, h 34!");
+
+		JPanel texto = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]"));
+		texto.setOpaque(false);
+		texto.add(Labels.body(usuario.getUsername()));
+		texto.add(Labels.muted(usuario.getRole() == RoleType.ADMIN ? Textos.t("header.usuario.tooltip.admin")
+				: Textos.t("header.usuario.tooltip.cliente")));
+
+		panel.add(texto);
+
+		return panel;
+	}
+
 	private JPopupMenu menuDeUsuario() {
 
 		JPopupMenu menu = new JPopupMenu();
+
+		// Cabecera del menú (Fase 7.11): antes el menú era una lista desnuda de
+		// acciones sin decir de quién. Es un JPanel normal, no un JMenuItem — Swing
+		// permite añadir cualquier componente a un JPopupMenu, y uno sin
+		// ActionListener no cierra el menú ni se pinta como opción clicable, que es
+		// justo lo que hace falta para una cabecera puramente informativa.
+		User usuarioActual = sessionManager.getLoggedInUser();
+
+		if (usuarioActual != null) {
+			menu.add(cabeceraDelMenu(usuarioActual));
+			menu.addSeparator();
+		}
 
 		JMenuItem perfil = new JMenuItem(Textos.t("header.menu.perfil"));
 		perfil.addActionListener(e -> navigator.ir(UpdateProfileFrame.class));
@@ -309,6 +350,16 @@ public class HeaderPanel extends JPanel {
 
 		JMenuItem ajustes = new JMenuItem(Textos.t("header.menu.ajustes"));
 		ajustes.addActionListener(e -> navigator.ir(SettingsFrame.class));
+
+		// Solo para ADMIN (Fase 7.9): es quien puede tener alojamientos propios que
+		// mostrar aquí. Mismo criterio de visibilidad que ya usa "Cambiar rol", justo
+		// debajo.
+		JMenuItem panelPropietario = null;
+
+		if (!esCliente()) {
+			panelPropietario = new JMenuItem(Textos.t("header.menu.panelPropietario"));
+			panelPropietario.addActionListener(e -> navigator.ir(OwnerPanelFrame.class));
+		}
 
 		JMenuItem rol = new JMenuItem(esCliente() ? Textos.t("header.menu.rol.aAdmin") : Textos.t("header.menu.rol.aCliente"));
 		rol.addActionListener(e -> cambiarRol());
@@ -325,6 +376,11 @@ public class HeaderPanel extends JPanel {
 		menu.add(perfil);
 		menu.add(contrasena);
 		menu.add(ajustes);
+
+		if (panelPropietario != null) {
+			menu.add(panelPropietario);
+		}
+
 		menu.addSeparator();
 		menu.add(rol);
 		menu.addSeparator();

@@ -114,13 +114,24 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public User updatePreferences(Long userId, EstacionPreferida defaultSeason, boolean particlesEnabled,
-			Idioma language) throws InstanceNotFoundException {
+			Idioma language, boolean defaultGridView) throws InstanceNotFoundException {
 
 		User user = permissionChecker.checkUser(userId);
 
 		user.setDefaultSeason(defaultSeason);
 		user.setParticlesEnabled(particlesEnabled);
 		user.setLanguage(language);
+		user.setDefaultGridView(defaultGridView);
+
+		return user;
+	}
+
+	@Override
+	public User completeOnboarding(Long userId) throws InstanceNotFoundException {
+
+		User user = permissionChecker.checkUser(userId);
+
+		user.setOnboardingSeen(true);
 
 		return user;
 	}

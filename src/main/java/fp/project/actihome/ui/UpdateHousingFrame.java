@@ -1,5 +1,7 @@
 package fp.project.actihome.ui;
 
+import java.io.IOException;
+
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -17,6 +19,7 @@ import fp.project.actihome.model.exceptions.LessThanOneRoomException;
 import fp.project.actihome.model.exceptions.NegativePrizeException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.exceptions.NotTheOwnerException;
+import fp.project.actihome.model.services.HousingData;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Foco;
@@ -198,13 +201,18 @@ public class UpdateHousingFrame extends JFrame {
 	private void guardar() {
 
 		try {
-			housingService.updateHousing(housingId, sessionManager.getLoggedInUser().getId(),
-					formulario.datosCon(housing.getHousingCode()));
+			HousingData datos = formulario.datosCon(housing.getHousingCode());
+			formulario.guardarFotoSiHaceFalta(housing.getHousingCode());
+
+			housingService.updateHousing(housingId, sessionManager.getLoggedInUser().getId(), datos);
 
 			volverAlDetalle();
 
 		} catch (DatosInvalidos ex) {
 			error.setText(ex.getMessage());
+
+		} catch (IOException ex) {
+			error.setText(Textos.t("alojamientoForm.foto.error.noSeGuarda"));
 
 		} catch (LessThanOneRoomException ex) {
 			error.setText(Textos.t("alojamientoForm.error.sinHabitaciones"));

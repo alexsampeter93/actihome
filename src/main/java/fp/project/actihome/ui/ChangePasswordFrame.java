@@ -23,6 +23,7 @@ import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.Rescate;
+import fp.project.actihome.ui.components.Toast;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
@@ -216,6 +217,7 @@ public class ChangePasswordFrame extends JFrame {
 			userService.changePassword(sessionManager.getLoggedInUser().getId(), actual.getText(), nueva.getText());
 
 			navigator.ir(ShowHousingsFrame.class);
+			Toast.mostrar(navigator.ventanaVisible(), Textos.t("contrasena.confirmacion.guardado"));
 
 		} catch (WrongPasswordException ex) {
 			error.setText(Textos.t("contrasena.error.actualIncorrecta"));

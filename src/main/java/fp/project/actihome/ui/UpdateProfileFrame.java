@@ -24,6 +24,7 @@ import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.Rescate;
+import fp.project.actihome.ui.components.Toast;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
@@ -263,6 +264,7 @@ public class UpdateProfileFrame extends JFrame {
 			sessionManager.setLoggedInUser(actualizado);
 
 			navigator.ir(ShowHousingsFrame.class);
+			Toast.mostrar(navigator.ventanaVisible(), Textos.t("perfil.confirmacion.guardado"));
 
 		} catch (DuplicateInstanceException ex) {
 			error.setText(Textos.t("perfil.error.usuarioOcupado"));

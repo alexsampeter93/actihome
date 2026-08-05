@@ -35,6 +35,11 @@ CREATE TABLE IF NOT EXISTS USERS (
 	defaultSeason VARCHAR(20),
 	particlesEnabled BOOLEAN DEFAULT TRUE NOT NULL,
 	language VARCHAR(5) DEFAULT 'ES' NOT NULL,
+	-- Bienvenida (Fase 7.8): FALSE hasta que se cierra la pantalla de
+	-- onboarding, una sola vez por cuenta.
+	onboardingSeen BOOLEAN DEFAULT FALSE NOT NULL,
+	-- Vista de catálogo por defecto (Fase 7.11): FALSE lista, TRUE cuadrícula.
+	defaultGridView BOOLEAN DEFAULT FALSE NOT NULL,
 	-- La unicidad del nombre de usuario se comprobaba solo en Java. Eso no es una
 	-- garantía, es una comprobación optimista: con dos peticiones simultáneas las
 	-- dos pueden pasar el "¿existe ya?" antes de que ninguna haya insertado. La

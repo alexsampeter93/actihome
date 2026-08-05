@@ -1,23 +1,34 @@
 package fp.project.actihome.ui.housings;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.EnumMap;
 import java.util.Map;
 
+import javax.imageio.ImageIO;
 import javax.swing.DefaultListCellRenderer;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Amenity;
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.services.HousingData;
+import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.Field;
+import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
+import fp.project.actihome.ui.theme.BrandAssets;
+import fp.project.actihome.ui.theme.HousingPhotos;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Typography;
@@ -78,6 +89,18 @@ public class HousingForm extends JPanel {
 
 	private final Map<Amenity, Chip> comodidades = new EnumMap<>(Amenity.class);
 
+	private final ImagePlaceholder previsualizacion = new ImagePlaceholder();
+	private JLabel etiquetaFoto;
+	private JButton botonElegirFoto;
+	private JButton botonQuitarFoto;
+	private JLabel errorFoto;
+
+	/** La foto recién elegida en esta sesión de edición, o {@code null} si no se ha tocado. */
+	private File fotoElegida;
+
+	/** El nombre que ya tenía guardado {@code Housing.image}, o {@code null} en un alojamiento nuevo. */
+	private String imagenExistente;
+
 	/**
 	 * @param conCodigo si se pide el código del alojamiento. Al dar de alta sí; al
 	 *                  editar no, porque el código es el identificador público del
@@ -131,9 +154,86 @@ public class HousingForm extends JPanel {
 		panel.add(nombre, "gapbottom " + Space.MD);
 		panel.add(campoTipo(), "gapbottom " + Space.MD);
 		panel.add(dosColumnas(habitaciones, precio), "gapbottom " + Space.MD);
-		panel.add(ubicacion);
+		panel.add(ubicacion, "gapbottom " + Space.MD);
+		panel.add(campoFoto());
 
 		return panel;
+	}
+
+	/**
+	 * Elegir foto (Fase 7.9), con una previsualización a la izquierda.
+	 *
+	 * <p>
+	 * Sin este campo, la foto de un alojamiento publicado desde la aplicación
+	 * solo podía ser el placeholder tintado: no había ningún flujo de subida (ver
+	 * decisión #7 de {@code PLAN.md}, reabierta en la Fase 7.9). Se lee el
+	 * archivo elegido al momento —solo para la previsualización, con
+	 * {@code ImageIO.read} tal cual— y la reducción de verdad ({@link
+	 * HousingPhotos#guardar}) se pospone a {@link #guardarFotoSiHaceFalta}, que
+	 * llama quien tiene la pantalla: solo entonces se sabe que el resto del
+	 * formulario es válido y merece la pena escribir el archivo.
+	 */
+	private JPanel campoFoto() {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.MD + "[grow,fill]", ""));
+		panel.setOpaque(false);
+
+		panel.add(previsualizacion, "w 150!, h 104!, aligny top");
+
+		JPanel acciones = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		acciones.setOpaque(false);
+
+		etiquetaFoto = Labels.caps(Textos.t("alojamientoForm.foto.label"));
+		acciones.add(etiquetaFoto, "gapbottom " + Space.XS);
+
+		botonElegirFoto = Buttons.secondary(Textos.t("alojamientoForm.foto.elegir"), e -> elegirFoto());
+		acciones.add(botonElegirFoto, "gapbottom " + Space.XXS);
+
+		botonQuitarFoto = Buttons.link(Textos.t("alojamientoForm.foto.quitar"), e -> quitarFoto());
+		acciones.add(botonQuitarFoto);
+
+		errorFoto = Labels.error(" ");
+		acciones.add(errorFoto, "gaptop " + Space.XXS);
+
+		panel.add(acciones, "aligny top");
+
+		return panel;
+	}
+
+	private void elegirFoto() {
+
+		JFileChooser selector = new JFileChooser();
+		selector.setFileFilter(
+				new FileNameExtensionFilter(Textos.t("alojamientoForm.foto.filtro"), "jpg", "jpeg", "png"));
+
+		if (selector.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
+			return;
+		}
+
+		File elegido = selector.getSelectedFile();
+
+		try {
+			BufferedImage leida = ImageIO.read(elegido);
+
+			if (leida == null) {
+				throw new IOException("formato no reconocido");
+			}
+
+			fotoElegida = elegido;
+			previsualizacion.setFoto(leida);
+			errorFoto.setText(" ");
+
+		} catch (IOException ex) {
+			errorFoto.setText(Textos.t("alojamientoForm.foto.error.noSeLee"));
+		}
+	}
+
+	private void quitarFoto() {
+
+		fotoElegida = null;
+		imagenExistente = null;
+		previsualizacion.setFoto(null);
+		errorFoto.setText(" ");
 	}
 
 	private JPanel columnaDerecha() {
@@ -242,6 +342,10 @@ public class HousingForm extends JPanel {
 		cena.setText(Textos.t("catalogo.row.cena"));
 		comodidades.forEach((amenity, chip) -> chip.setText(Textos.etiquetaDe(amenity)));
 		tipo.repaint();
+
+		etiquetaFoto.setText(Textos.t("alojamientoForm.foto.label"));
+		botonElegirFoto.setText(Textos.t("alojamientoForm.foto.elegir"));
+		botonQuitarFoto.setText(Textos.t("alojamientoForm.foto.quitar"));
 	}
 
 	/** Vuelca en el formulario los datos de un alojamiento existente, para editarlo. */
@@ -260,6 +364,11 @@ public class HousingForm extends JPanel {
 		cena.setSelected(housing.isDinner());
 
 		comodidades.forEach((amenity, chip) -> chip.setSelected(amenity.presenteEn(housing)));
+
+		fotoElegida = null;
+		imagenExistente = housing.getImage();
+		previsualizacion.setFoto(BrandAssets.fotoDeAlojamiento(imagenExistente));
+		errorFoto.setText(" ");
 	}
 
 	/** Deja el formulario en blanco, para dar de alta uno nuevo. */
@@ -278,6 +387,11 @@ public class HousingForm extends JPanel {
 		cena.setSelected(false);
 
 		comodidades.values().forEach(chip -> chip.setSelected(false));
+
+		fotoElegida = null;
+		imagenExistente = null;
+		previsualizacion.setFoto(null);
+		errorFoto.setText(" ");
 	}
 
 	/**
@@ -293,15 +407,17 @@ public class HousingForm extends JPanel {
 	 */
 	public HousingData datos() throws DatosInvalidos {
 
+		Long housingCode = entero(codigo.getText(), Textos.t("alojamientoForm.campo.codigo"));
+
 		HousingData data = HousingData
-				.basico(entero(codigo.getText(), Textos.t("alojamientoForm.campo.codigo")).longValue(),
-						nombre.getText().trim(), (String) tipo.getSelectedItem(),
+				.basico(housingCode, nombre.getText().trim(), (String) tipo.getSelectedItem(),
 						entero(habitaciones.getText(), Textos.t("alojamientoForm.campo.habitaciones")).intValue(),
 						decimal(precio.getText()), ubicacion.getText().trim())
 				.description(descripcion.getText().trim())
 				.breakfast(desayuno.isSelected())
 				.lunch(comida.isSelected())
-				.dinner(cena.isSelected());
+				.dinner(cena.isSelected())
+				.image(fotoElegida != null ? nombreParaFotoNueva(housingCode) : imagenExistente);
 
 		comodidades.forEach((amenity, chip) -> data.amenity(amenity, chip.isSelected()));
 
@@ -316,6 +432,31 @@ public class HousingForm extends JPanel {
 
 		codigo.setText(String.valueOf(housingCode));
 		return datos();
+	}
+
+	/**
+	 * Si se eligió una foto nueva, la reduce y la guarda donde
+	 * {@code Housing.image} la va a buscar después. No hace nada si no se tocó la
+	 * foto —incluida la edición de un alojamiento que ya tenía una: se conserva
+	 * tal cual, no se vuelve a escribir.
+	 *
+	 * <p>
+	 * Se llama <b>después</b> de {@link #datos()}/{@link #datosCon}, nunca antes:
+	 * si el resto del formulario no es válido no tiene sentido gastar tiempo
+	 * reduciendo una imagen que no se va a usar.
+	 *
+	 * @param housingCode el mismo código que ya lleva el {@link HousingData}
+	 *                     devuelto por esta invocación de {@link #datos()}
+	 */
+	public void guardarFotoSiHaceFalta(Long housingCode) throws IOException {
+
+		if (fotoElegida != null) {
+			HousingPhotos.guardar(nombreParaFotoNueva(housingCode), fotoElegida);
+		}
+	}
+
+	private static String nombreParaFotoNueva(Long housingCode) {
+		return housingCode + ".jpg";
 	}
 
 	private static Long entero(String texto, String queEs) throws DatosInvalidos {

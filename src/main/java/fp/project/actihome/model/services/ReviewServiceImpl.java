@@ -21,6 +21,7 @@ import fp.project.actihome.model.exceptions.MustHaveStayedException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.exceptions.NotTheAuthorException;
 import fp.project.actihome.model.exceptions.ScoreOutOfBoundsException;
+import fp.project.actihome.model.exceptions.TranslationNotConfiguredException;
 
 @Service
 @Transactional
@@ -162,5 +163,14 @@ public class ReviewServiceImpl implements ReviewService {
 		reviewToUpdate.get().getHousing().setScore(averageScore);
 
 		return reviewToUpdate.get();
+	}
+
+	@Override
+	public void translateReview(Long reviewId, String targetLanguage)
+			throws InstanceNotFoundException, TranslationNotConfiguredException {
+
+		findReview(reviewId);
+
+		throw new TranslationNotConfiguredException();
 	}
 }

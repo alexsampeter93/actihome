@@ -70,6 +70,23 @@ public class User {
 
 	private Idioma language = Idioma.ES;
 
+	/**
+	 * Si ya ha visto la pantalla de bienvenida (Fase 7.8). Por la misma razón que
+	 * {@code particlesEnabled}: el valor por defecto va en el campo, no en un
+	 * constructor, así que cualquier {@code User} nuevo —recién registrado o ya
+	 * existente en una base creada antes de esta fase— empieza en {@code false} y
+	 * ve la bienvenida exactamente una vez.
+	 */
+	private boolean onboardingSeen = false;
+
+	/**
+	 * Vista con la que arranca el catálogo la primera vez que se abre en una
+	 * sesión (Fase 7.11): {@code false} lista, {@code true} cuadrícula. Solo la
+	 * primera vez — si la persona cambia de vista mientras usa la aplicación, ese
+	 * cambio manda hasta que se cierre la aplicación o inicie sesión otra cuenta.
+	 */
+	private boolean defaultGridView = false;
+
 	public User() {
 
 	}
@@ -226,12 +243,29 @@ public class User {
 		this.language = language;
 	}
 
+	public boolean isOnboardingSeen() {
+		return onboardingSeen;
+	}
+
+	public void setOnboardingSeen(boolean onboardingSeen) {
+		this.onboardingSeen = onboardingSeen;
+	}
+
+	public boolean isDefaultGridView() {
+		return defaultGridView;
+	}
+
+	public void setDefaultGridView(boolean defaultGridView) {
+		this.defaultGridView = defaultGridView;
+	}
+
 	@Override
 	public String toString() {
 		return "User [id=" + id + ", username=" + username + ", name=" + name + ", surname=" + surname + ", locality="
 				+ locality + ", phoneNumber=" + phoneNumber + ", email=" + email + ", birthDate=" + birthDate
 				+ ", role=" + role + ", defaultSeason=" + defaultSeason + ", particlesEnabled=" + particlesEnabled
-				+ ", language=" + language + "]";
+				+ ", language=" + language + ", onboardingSeen=" + onboardingSeen + ", defaultGridView="
+				+ defaultGridView + "]";
 	}
 
 }

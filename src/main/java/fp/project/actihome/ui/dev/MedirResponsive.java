@@ -23,6 +23,8 @@ import fp.project.actihome.ui.ChangePasswordFrame;
 import fp.project.actihome.ui.DoCheckInFrame;
 import fp.project.actihome.ui.HousingDetailsFrame;
 import fp.project.actihome.ui.LoginFrame;
+import fp.project.actihome.ui.OnboardingFrame;
+import fp.project.actihome.ui.OwnerPanelFrame;
 import fp.project.actihome.ui.PublishReviewFrame;
 import fp.project.actihome.ui.ReserveHousingFrame;
 import fp.project.actihome.ui.ReviewDetailsFrame;
@@ -135,6 +137,8 @@ public class MedirResponsive {
 			pantallas.add(new Pantalla("Ajustes", c.getBean(SettingsFrame.class), null));
 			pantallas.add(new Pantalla("Login", c.getBean(LoginFrame.class), null));
 			pantallas.add(new Pantalla("Registro", c.getBean(SignUpFrame.class), null));
+			pantallas.add(new Pantalla("Bienvenida", c.getBean(OnboardingFrame.class), null));
+			pantallas.add(new Pantalla("Panel propietario", c.getBean(OwnerPanelFrame.class), null));
 
 			System.out.printf("%-22s %11s", "pantalla", "minimo");
 			for (int[] t : TAMANOS) {

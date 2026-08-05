@@ -2,7 +2,6 @@ package fp.project.actihome.ui.dev;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
@@ -15,6 +14,8 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
+import fp.project.actihome.ui.theme.ImageScaling;
+
 /**
  * Reduce los originales de {@code assets/} al tamaño en que la aplicación los
  * usa y los deja en {@code src/main/resources/images/}.
@@ -26,29 +27,15 @@ import javax.imageio.ImageIO;
  * <p>
  * <b>Por qué existe esta herramienta en vez de arrastrar los archivos a mano.</b>
  * Los originales pesan entre 1 y 1,6 MB cada uno; las dieciséis piezas que
- * necesita la aplicación caben en menos de 3 MB. Pero la diferencia no es solo
- * de peso: reducir bien una imagen con transparencia tiene dos trampas que un
- * editor cualquiera no resuelve solo, y las dos están explicadas abajo. Tenerlo
- * en código hace que regenerar todo sea repetible y que las decisiones queden
- * escritas.
+ * necesita la aplicación caben en menos de 3 MB. Tenerlo en código hace que
+ * regenerar todo sea repetible y que las decisiones queden escritas.
  *
  * <p>
- * <b>Trampa 1: el alfa premultiplicado.</b> Un PNG guarda un color también en
- * los píxeles <em>invisibles</em>, y nada obliga a que ese color sea
- * significativo. Al reducir, la interpolación promedia píxeles vecinos: si
- * mezcla uno opaco del borde de la figura con uno invisible de color oscuro, el
- * resultado es un píxel semitransparente oscuro, y repetido por todo el
- * contorno eso es una <b>orla sucia</b> alrededor del personaje. El render de
- * verano tiene los transparentes casi negros, así que el problema es real y
- * visible. Trabajar en {@link BufferedImage#TYPE_INT_ARGB_PRE} hace que un
- * píxel invisible aporte exactamente cero a cualquier promedio.
- *
- * <p>
- * <b>Trampa 2: reducir de golpe.</b> Una interpolación bilineal solo mira los
- * vecinos inmediatos, así que al bajar de 1500 píxeles a 440 de una vez la
- * mayoría del original ni se consulta: el detalle fino se pierde de forma
- * irregular y el borde sale dentado. Bajando a la mitad cada vez, cada paso
- * promedia de verdad todo lo que descarta.
+ * El escalado en sí —y las dos trampas de reducir una imagen con
+ * transparencia que un editor cualquiera no resuelve solo— vive en
+ * {@link ImageScaling} desde la Fase 7.9, compartido con
+ * {@link fp.project.actihome.ui.theme.HousingPhotos}, que reduce en tiempo de
+ * ejecución las fotos que sube un usuario real con el mismo algoritmo.
  */
 public final class GenerarAssets {
 
@@ -90,6 +77,14 @@ public final class GenerarAssets {
 		FOTOS.put("li-yan-cZOouJsXs8k-unsplash.jpg", "10004.jpg");
 		FOTOS.put("andrea-davis-nbI8gqbBaHo-unsplash.jpg", "10005.jpg");
 		FOTOS.put("bernard-hermant-nM5-mS5eA8I-unsplash.jpg", "10006.jpg");
+
+		// Fase 7.10: cuatro alojamientos más, con fotos que ya estaban descargadas en
+		// assets/ desde el principio pero sin usar (ver el comentario de clase de
+		// CREDITOS.md). No hizo falta salir a buscar nada nuevo.
+		FOTOS.put("alberto-castillo-q-mx4mSkK9zeo-unsplash.jpg", "10007.jpg");
+		FOTOS.put("webaliser-_TPTXZd9mOo-unsplash.jpg", "10008.jpg");
+		FOTOS.put("maria-orlova-b37mDyPzdJM-unsplash.jpg", "10009.jpg");
+		FOTOS.put("baptx-BTQWx51keUY-unsplash.jpg", "10010.jpg");
 	}
 
 	/** Original → nombre con el que lo pide {@code BrandAssets}. */
@@ -160,13 +155,13 @@ public final class GenerarAssets {
 				continue;
 			}
 
-			BufferedImage reducida = escalarACaja(ImageIO.read(original), LADO_FOTO);
+			BufferedImage reducida = ImageScaling.escalarACaja(ImageIO.read(original), LADO_FOTO);
 
 			// A RGB sin alfa antes de escribir: JPEG no tiene canal de transparencia, y
 			// pasarle una imagen ARGB hace que el codificador interprete los cuatro
 			// canales como si fueran color. El resultado son fotos con un tinte rosado,
 			// y es un fallo que solo se ve al abrir el archivo, no al generarlo.
-			BufferedImage sinAlfa = copiar(reducida, reducida.getWidth(), reducida.getHeight(),
+			BufferedImage sinAlfa = ImageScaling.copiar(reducida, reducida.getWidth(), reducida.getHeight(),
 					BufferedImage.TYPE_INT_RGB, null);
 
 			File salida = new File(destino, foto.getValue());
@@ -197,7 +192,7 @@ public final class GenerarAssets {
 
 		BufferedImage original = ImageIO.read(new File(origenes, "Presentacion.png"));
 		BufferedImage sinFondo = recortar(recortarFondo(original));
-		BufferedImage reducido = escalarACaja(sinFondo, 900);
+		BufferedImage reducido = ImageScaling.escalarACaja(sinFondo, 900);
 
 		File salida = new File(destino, "cocobrain-presenta.png");
 		ImageIO.write(reducido, "png", salida);
@@ -332,7 +327,7 @@ public final class GenerarAssets {
 			// Recortar el margen transparente antes de escalar: los originales son
 			// lienzos con la figura flotando en medio, y sin recortar la mascota
 			// aparecería pequeña y perdida dentro de su ranura.
-			BufferedImage reducida = escalarACaja(recortar(original), LADO_OLAZ);
+			BufferedImage reducida = ImageScaling.escalarACaja(recortar(original), LADO_OLAZ);
 
 			File salida = new File(destino, pieza.getValue());
 			ImageIO.write(reducida, "png", salida);
@@ -370,7 +365,7 @@ public final class GenerarAssets {
 			// Margen interior más generoso en los tamaños pequeños: ahí cada píxel de
 			// aire cuenta para que la silueta siga leyéndose.
 			int margen = Math.max(1, Math.round(lado * (lado <= 32 ? 0.10f : 0.13f)));
-			BufferedImage escalado = escalarACaja(logo, lado - margen * 2);
+			BufferedImage escalado = ImageScaling.escalarACaja(logo, lado - margen * 2);
 
 			g2.drawImage(escalado, (lado - escalado.getWidth()) / 2, (lado - escalado.getHeight()) / 2, null);
 			g2.dispose();
@@ -380,45 +375,6 @@ public final class GenerarAssets {
 
 			System.out.printf("actihome-icon-%-3d %d bytes%n", lado, salida.length());
 		}
-	}
-
-	/** Escala conservando la proporción, en alfa premultiplicado y por pasos. */
-	private static BufferedImage escalarACaja(BufferedImage origen, int caja) {
-
-		double escala = Math.min((double) caja / origen.getWidth(), (double) caja / origen.getHeight());
-		int ancho = Math.max(1, (int) Math.round(origen.getWidth() * escala));
-		int alto = Math.max(1, (int) Math.round(origen.getHeight() * escala));
-
-		BufferedImage actual = copiar(origen, origen.getWidth(), origen.getHeight(),
-				BufferedImage.TYPE_INT_ARGB_PRE, null);
-
-		while (actual.getWidth() / 2 > ancho) {
-			actual = copiar(actual, Math.max(ancho, actual.getWidth() / 2), Math.max(alto, actual.getHeight() / 2),
-					BufferedImage.TYPE_INT_ARGB_PRE, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-		}
-
-		BufferedImage exacta = copiar(actual, ancho, alto, BufferedImage.TYPE_INT_ARGB_PRE,
-				RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-
-		// De vuelta a ARGB sin premultiplicar, que es lo que espera un PNG.
-		return copiar(exacta, ancho, alto, BufferedImage.TYPE_INT_ARGB, null);
-	}
-
-	private static BufferedImage copiar(BufferedImage origen, int ancho, int alto, int tipo, Object interpolacion) {
-
-		BufferedImage destino = new BufferedImage(ancho, alto, tipo);
-		Graphics2D g = destino.createGraphics();
-
-		if (interpolacion != null) {
-			g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, interpolacion);
-			g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-			g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-		}
-
-		g.drawImage((Image) origen, 0, 0, ancho, alto, null);
-		g.dispose();
-
-		return destino;
 	}
 
 	/** El rectángulo mínimo que contiene todo lo que no es transparente. */

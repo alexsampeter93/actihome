@@ -42,10 +42,16 @@ public interface UserService {
 	User changeRole(Long userId) throws InstanceNotFoundException;
 
 	/**
-	 * Guarda las preferencias de Ajustes (Fase 7.6). {@code defaultSeason} puede
-	 * ser {@code null}: significa "sin preferencia guardada, usa la estación real
-	 * de hoy".
+	 * Guarda las preferencias de Ajustes (Fase 7.6, ampliada en la Fase 7.11 con
+	 * la vista de catálogo). {@code defaultSeason} puede ser {@code null}:
+	 * significa "sin preferencia guardada, usa la estación real de hoy".
 	 */
-	User updatePreferences(Long userId, EstacionPreferida defaultSeason, boolean particlesEnabled, Idioma language)
-			throws InstanceNotFoundException;
+	User updatePreferences(Long userId, EstacionPreferida defaultSeason, boolean particlesEnabled, Idioma language,
+			boolean defaultGridView) throws InstanceNotFoundException;
+
+	/**
+	 * Marca la bienvenida como vista (Fase 7.8). A partir de aquí, iniciar sesión
+	 * lleva directo al catálogo en vez de a la pantalla de bienvenida.
+	 */
+	User completeOnboarding(Long userId) throws InstanceNotFoundException;
 }

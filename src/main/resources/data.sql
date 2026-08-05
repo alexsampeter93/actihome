@@ -163,6 +163,41 @@ SELECT 10006, 'Casa Adosada Las Palmas', 'Casa', 4, 110.00,
 	(SELECT id FROM USERS WHERE username = 'Elena')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10006);
 
+-- Cuatro alojamientos más (Fase 7.10), para que los filtros nuevos de precio y
+-- ciudad tengan algo de verdad que filtrar: sin variedad de precio ni de
+-- ciudad, esos dos filtros no se pueden ni probar.
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
+SELECT 10007, 'Ático Malasaña', 'Apartamento', 2, 88.00,
+	'Ático con terraza recién reformado, cocina abierta y aire acondicionado en las dos habitaciones. El barrio se recorre entero a pie: bares, teatros y el Retiro a quince minutos.',
+	NULL, TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, FALSE, NULL, 'Madrid',
+	(SELECT id FROM USERS WHERE username = 'Marcos')
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10007);
+
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
+SELECT 10008, 'Villa Costa del Sol', 'Villa', 5, 275.00,
+	'Villa de líneas contemporáneas con piscina infinita, terraza panorámica y vistas al mar desde las dos plantas. Pensión completa incluida.',
+	NULL, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, NULL, 'Marbella, Málaga',
+	(SELECT id FROM USERS WHERE username = 'Lucia')
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10008);
+
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
+SELECT 10009, 'Casa Patio Andaluz', 'Casa', 3, 58.00,
+	'Casa con patio interior en el corazón del casco histórico, paredes encaladas y suelo de barro cocido. El Tajo queda a cinco minutos a pie desde la puerta.',
+	NULL, TRUE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE, NULL, 'Ronda, Málaga',
+	(SELECT id FROM USERS WHERE username = 'Elena')
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10009);
+
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
+SELECT 10010, 'Refugio de Nieve', 'Cabaña', 2, 68.00,
+	'Refugio de madera con estufa de leña y vistas a las pistas desde el porche. Aparcamiento propio junto a la puerta, imprescindible cuando nieva.',
+	NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, NULL, 'Valle de Tena, Huesca',
+	(SELECT id FROM USERS WHERE username = 'Elena')
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10010);
+
 -- ---------------------------------------------------------------------------
 -- Reseñas
 --
@@ -255,6 +290,56 @@ SELECT 'Correcto de principio a fin', 'Sin sorpresas ni buenas ni malas: todo fu
 	(SELECT id FROM USERS WHERE username = 'Customer16'), (SELECT id FROM HOUSINGS WHERE housingCode = 10006)
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM REVIEWS WHERE title = 'Correcto de principio a fin');
 
+-- Reseñas de los cuatro alojamientos de la Fase 7.10.
+
+INSERT INTO REVIEWS(title, body, locationScore, serviceScore, wifiScore, foodScore, cleaningScore, totalScore, publicationDate, authorId, housingId)
+SELECT 'Ubicación insuperable', 'Se sale a la calle y ya estás en Malasaña. Ruido normal de barrio por la noche, así que si buscas silencio no es tu sitio, pero para lo que es, perfecto.',
+	5.0, 4.5, 4.5, 4.0, 4.5, 4.5, TIMESTAMPADD(DAY, -18, CURRENT_TIMESTAMP),
+	(SELECT id FROM USERS WHERE username = 'Customer'), (SELECT id FROM HOUSINGS WHERE housingCode = 10007)
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM REVIEWS WHERE title = 'Ubicación insuperable');
+
+INSERT INTO REVIEWS(title, body, locationScore, serviceScore, wifiScore, foodScore, cleaningScore, totalScore, publicationDate, authorId, housingId)
+SELECT 'Pequeño pero muy bien pensado', 'La terraza aprovecha cada rincón y el aire acondicionado se agradeció en pleno agosto. Repetiríamos.',
+	4.5, 4.5, 4.5, 4.0, 4.5, 4.4, TIMESTAMPADD(DAY, -6, CURRENT_TIMESTAMP),
+	(SELECT id FROM USERS WHERE username = 'Customer10'), (SELECT id FROM HOUSINGS WHERE housingCode = 10007)
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM REVIEWS WHERE title = 'Pequeño pero muy bien pensado');
+
+INSERT INTO REVIEWS(title, body, locationScore, serviceScore, wifiScore, foodScore, cleaningScore, totalScore, publicationDate, authorId, housingId)
+SELECT 'Vale cada euro', 'La piscina infinita con vistas al mar es tal cual las fotos, y la pensión completa quitó cualquier preocupación durante la semana.',
+	5.0, 5.0, 4.5, 5.0, 5.0, 4.9, TIMESTAMPADD(DAY, -25, CURRENT_TIMESTAMP),
+	(SELECT id FROM USERS WHERE username = 'Customer16'), (SELECT id FROM HOUSINGS WHERE housingCode = 10008)
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM REVIEWS WHERE title = 'Vale cada euro');
+
+INSERT INTO REVIEWS(title, body, locationScore, serviceScore, wifiScore, foodScore, cleaningScore, totalScore, publicationDate, authorId, housingId)
+SELECT 'Lujo sin postureo', 'Éramos diez y no faltó sitio para nadie. El servicio respondió rápido a todo lo que pedimos, sin agobiar.',
+	5.0, 4.5, 4.5, 4.5, 4.5, 4.6, TIMESTAMPADD(DAY, -11, CURRENT_TIMESTAMP),
+	(SELECT id FROM USERS WHERE username = 'Customer'), (SELECT id FROM HOUSINGS WHERE housingCode = 10008)
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM REVIEWS WHERE title = 'Lujo sin postureo');
+
+INSERT INTO REVIEWS(title, body, locationScore, serviceScore, wifiScore, foodScore, cleaningScore, totalScore, publicationDate, authorId, housingId)
+SELECT 'El patio es otro mundo', 'Entras del bullicio del casco antiguo y el patio te calla de golpe. Sin aparcamiento propio, así que hay que dejar el coche fuera.',
+	4.5, 4.0, 3.5, 4.0, 4.5, 4.1, TIMESTAMPADD(DAY, -14, CURRENT_TIMESTAMP),
+	(SELECT id FROM USERS WHERE username = 'Customer10'), (SELECT id FROM HOUSINGS WHERE housingCode = 10009)
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM REVIEWS WHERE title = 'El patio es otro mundo');
+
+INSERT INTO REVIEWS(title, body, locationScore, serviceScore, wifiScore, foodScore, cleaningScore, totalScore, publicationDate, authorId, housingId)
+SELECT 'Auténtica de verdad', 'Nada de decoración de cartón piedra: es una casa real de pueblo, con sus paredes gruesas y su fresco en verano. Se admiten perros y el nuestro estuvo encantado.',
+	4.5, 4.5, 3.5, 4.5, 4.5, 4.3, TIMESTAMPADD(DAY, -2, CURRENT_TIMESTAMP),
+	(SELECT id FROM USERS WHERE username = 'Customer16'), (SELECT id FROM HOUSINGS WHERE housingCode = 10009)
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM REVIEWS WHERE title = 'Auténtica de verdad');
+
+INSERT INTO REVIEWS(title, body, locationScore, serviceScore, wifiScore, foodScore, cleaningScore, totalScore, publicationDate, authorId, housingId)
+SELECT 'Desconexión total', 'Cero cobertura y la estufa de leña como única calefacción: hay que ir sabiéndolo. Las vistas desde el porche compensan cualquier incomodidad.',
+	4.5, 3.5, 2.0, 3.0, 4.0, 3.4, TIMESTAMPADD(DAY, -30, CURRENT_TIMESTAMP),
+	(SELECT id FROM USERS WHERE username = 'Customer'), (SELECT id FROM HOUSINGS WHERE housingCode = 10010)
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM REVIEWS WHERE title = 'Desconexión total');
+
+INSERT INTO REVIEWS(title, body, locationScore, serviceScore, wifiScore, foodScore, cleaningScore, totalScore, publicationDate, authorId, housingId)
+SELECT 'Ideal para esquiar', 'A cinco minutos en coche de las pistas y con sitio de sobra para dejar el equipo a secar. El aparcamiento propio es un lujo cuando nieva de verdad.',
+	5.0, 4.0, 2.5, 3.5, 4.0, 3.8, TIMESTAMPADD(DAY, -8, CURRENT_TIMESTAMP),
+	(SELECT id FROM USERS WHERE username = 'Customer10'), (SELECT id FROM HOUSINGS WHERE housingCode = 10010)
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM REVIEWS WHERE title = 'Ideal para esquiar');
+
 -- ---------------------------------------------------------------------------
 -- Puntuación de cada alojamiento, derivada de sus reseñas
 --
@@ -288,4 +373,4 @@ WHERE EXISTS (SELECT 1 FROM REVIEWS r WHERE r.housingId = h.id);
 
 UPDATE HOUSINGS
 SET image = CONCAT(housingCode, '.jpg')
-WHERE image IS NULL AND housingCode BETWEEN 10001 AND 10006;
+WHERE image IS NULL AND housingCode BETWEEN 10001 AND 10010;

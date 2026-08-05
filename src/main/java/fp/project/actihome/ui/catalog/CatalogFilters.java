@@ -1,13 +1,19 @@
 package fp.project.actihome.ui.catalog;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.TreeSet;
 
 import javax.swing.ButtonGroup;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
@@ -66,6 +72,18 @@ public class CatalogFilters extends JPanel {
 	public static final String TODOS = "Todos";
 
 	/**
+	 * El valor del desplegable de ciudad que no filtra nada.
+	 *
+	 * <p>
+	 * A diferencia de {@link #TODOS}, la ciudad no es una categoría cerrada como
+	 * el tipo: se lee de {@code Housing.location}, texto libre. El desplegable se
+	 * rellena en tiempo de ejecución con las ubicaciones que de verdad hay en el
+	 * catálogo ({@link #setUbicaciones(List)}), así que este centinela es el
+	 * único valor fijo de la lista.
+	 */
+	private static final String TODAS_LAS_CIUDADES = "__todas__";
+
+	/**
 	 * Las categorías de alojamiento, en el orden del diseño.
 	 *
 	 * <p>
@@ -107,9 +125,16 @@ public class CatalogFilters extends JPanel {
 	private OptionLinks orden;
 
 	private Chip masFiltros;
-	private JPanel comodidadesVisibles;
+	private JPanel avanzadoVisible;
 	private final transient java.util.Map<Amenity, Chip> chipsPorComodidad = new java.util.EnumMap<>(Amenity.class);
 	private final transient java.util.Map<String, Chip> chipsPorTipo = new java.util.LinkedHashMap<>();
+
+	private JLabel etiquetaPrecio;
+	private JSpinner precioMinimo;
+	private JSpinner precioMaximo;
+	private JLabel etiquetaCiudad;
+	private JComboBox<String> ciudad;
+	private boolean actualizandoCiudades;
 
 	private String tipo = TODOS;
 	private final EnumSet<Amenity> comodidades = EnumSet.noneOf(Amenity.class);
@@ -132,7 +157,7 @@ public class CatalogFilters extends JPanel {
 
 		add(Hairline.horizontal(), "growx, h 1!");
 		add(bandaDeClasificado(), "growx");
-		add(bandaDeComodidades(), "growx");
+		add(bandaAvanzada(), "growx");
 	}
 
 	/**
@@ -227,34 +252,142 @@ public class CatalogFilters extends JPanel {
 	}
 
 	/**
-	 * Las comodidades, ocultas hasta que se piden.
+	 * Comodidades, precio y ciudad — ocultos hasta que se piden.
 	 *
 	 * <p>
-	 * <b>Recogerlas en lugar de quitarlas.</b> Son siete chips que ocupaban una
-	 * banda permanente para un filtro que no se usa en cada visita. Detrás de "Más
-	 * filtros" siguen estando a un clic, y el propio chip lleva el número de filtros
-	 * activos cuando hay alguno, así que nunca quedan olvidados y filtrando en
-	 * silencio.
+	 * <b>Recogerlos en lugar de quitarlos.</b> Empezó siendo solo las siete
+	 * comodidades, que ocupaban una banda permanente para un filtro que no se usa
+	 * en cada visita; precio y ciudad (Fase 7.10) se sumaron al mismo cajón por
+	 * el mismo motivo, no porque sean comodidades. Detrás de "Más filtros" siguen
+	 * estando a un clic, y el propio chip lleva el número de filtros activos
+	 * cuando hay alguno, así que nunca quedan olvidados filtrando en silencio.
 	 */
-	private JPanel bandaDeComodidades() {
+	private JPanel bandaAvanzada() {
 
-		JPanel banda = new JPanel(new MigLayout("hidemode 3, " + Space.insets(Space.XXS, 0, Space.SM, 0),
-				MARGEN_LATERAL + "[]" + Space.SM + "[grow,fill]" + MARGEN_LATERAL, "[]"));
+		JPanel banda = new JPanel(new MigLayout("wrap 1, hidemode 3, " + Space.insets(Space.XXS, 0, Space.SM, 0),
+				MARGEN_LATERAL + "[grow,fill]" + MARGEN_LATERAL, "[]" + Space.XS + "[]"));
 		banda.setOpaque(false);
 		banda.setVisible(false);
 
-		etiquetaComodidades = Labels.caps(Textos.t("catalogo.filtro.comodidades"));
-		banda.add(etiquetaComodidades, "aligny top, gaptop 6");
-		banda.add(chipsDeComodidad(), "growx");
+		banda.add(filaDePrecioYCiudad(), "growx");
 
-		comodidadesVisibles = banda;
+		JPanel filaComodidades = new JPanel(
+				new MigLayout(Space.insets(0), "[]" + Space.SM + "[grow,fill]", "[]"));
+		filaComodidades.setOpaque(false);
+		etiquetaComodidades = Labels.caps(Textos.t("catalogo.filtro.comodidades"));
+		filaComodidades.add(etiquetaComodidades, "aligny top, gaptop 6");
+		filaComodidades.add(chipsDeComodidad(), "growx");
+		banda.add(filaComodidades, "growx");
+
+		avanzadoVisible = banda;
 
 		return banda;
 	}
 
+	/** Precio mínimo y máximo por noche, y la ciudad — los dos filtros de la Fase 7.10. */
+	private JPanel filaDePrecioYCiudad() {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0),
+				"[]" + Space.XS + "[]" + Space.XXS + "[]" + Space.XXS + "[]" + Space.MD + "[]" + Space.XS + "[grow,fill]",
+				"[]"));
+		fila.setOpaque(false);
+
+		etiquetaPrecio = Labels.caps(Textos.t("catalogo.filtro.precio"));
+		fila.add(etiquetaPrecio, "aligny center");
+
+		// Rango 0-2000 con el valor de partida en cada extremo: así el filtro no
+		// esconde nada hasta que el usuario mueve un control. Un valor por defecto a
+		// mitad de camino habría ocultado en silencio cualquier alojamiento que se
+		// añadiera por encima de ese número, exactamente el fallo de datos que este
+		// proyecto ya ha aprendido a evitar (ver CLAUDE.md §3).
+		precioMinimo = new JSpinner(new SpinnerNumberModel(0, 0, 2000, 10));
+		precioMinimo.addChangeListener(e -> {
+			refrescarEtiquetaDeMasFiltros();
+			notificar();
+		});
+		fila.add(precioMinimo, "w 76!, h 32!, aligny center");
+
+		fila.add(Labels.muted("–"), "aligny center");
+
+		precioMaximo = new JSpinner(new SpinnerNumberModel(2000, 0, 2000, 10));
+		precioMaximo.addChangeListener(e -> {
+			refrescarEtiquetaDeMasFiltros();
+			notificar();
+		});
+		fila.add(precioMaximo, "w 76!, h 32!, aligny center");
+
+		etiquetaCiudad = Labels.caps(Textos.t("catalogo.filtro.ciudad"));
+		fila.add(etiquetaCiudad, "aligny center");
+
+		ciudad = new JComboBox<>(new String[] { TODAS_LAS_CIUDADES });
+		ciudad.setRenderer(new DefaultListCellRenderer() {
+
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public java.awt.Component getListCellRendererComponent(JList<?> list, Object value, int index,
+					boolean isSelected, boolean cellHasFocus) {
+
+				super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+				setText(TODAS_LAS_CIUDADES.equals(value) ? Textos.t("catalogo.filtro.todasCiudades") : (String) value);
+				return this;
+			}
+		});
+		ciudad.addActionListener(e -> {
+			if (!actualizandoCiudades) {
+				refrescarEtiquetaDeMasFiltros();
+				notificar();
+			}
+		});
+		fila.add(ciudad, "height 32!, aligny center, growx");
+
+		return fila;
+	}
+
+	/**
+	 * Rellena el desplegable de ciudad con las que de verdad hay en el catálogo.
+	 *
+	 * <p>
+	 * Se llama desde fuera, igual que {@link #setRecuentosPorComodidad(List)}, en
+	 * cuanto se conoce el catálogo: el desplegable no puede rellenarse en el
+	 * constructor porque en ese momento todavía no hay ningún alojamiento cargado.
+	 * Conserva la selección si la ciudad elegida sigue existiendo; si no —el
+	 * catálogo ha cambiado y esa ciudad ya no aparece—, vuelve a "todas" en vez de
+	 * dejar un filtro apuntando a algo que ya no está.
+	 */
+	public void setUbicaciones(List<Housing> catalogo) {
+
+		Object seleccionActual = ciudad.getSelectedItem();
+
+		TreeSet<String> ordenadas = new TreeSet<>();
+		for (Housing housing : catalogo) {
+			if (housing.getLocation() != null && !housing.getLocation().trim().isEmpty()) {
+				ordenadas.add(housing.getLocation());
+			}
+		}
+
+		DefaultComboBoxModel<String> modelo = new DefaultComboBoxModel<>();
+		modelo.addElement(TODAS_LAS_CIUDADES);
+		ordenadas.forEach(modelo::addElement);
+
+		// Reconstruir el modelo dispara por sí solo un cambio de selección (al vacío
+		// nuevo modelo, Swing selecciona su primer elemento). Sin esta guarda, ese
+		// evento llamaría a notificar() y, si quien llama a este método lo hace desde
+		// dentro de aplicarFiltros(), se reentraría en el mismo filtrado a medio
+		// terminar. La guarda deja pasar solo los cambios que hace la persona que usa
+		// el desplegable, no los que provoca este propio método.
+		actualizandoCiudades = true;
+		try {
+			ciudad.setModel(modelo);
+			ciudad.setSelectedItem(ordenadas.contains(seleccionActual) ? seleccionActual : TODAS_LAS_CIUDADES);
+		} finally {
+			actualizandoCiudades = false;
+		}
+	}
+
 	private void alternarComodidades() {
 
-		comodidadesVisibles.setVisible(masFiltros.isSelected());
+		avanzadoVisible.setVisible(masFiltros.isSelected());
 		revalidate();
 		repaint();
 	}
@@ -268,8 +401,22 @@ public class CatalogFilters extends JPanel {
 	 */
 	private void refrescarEtiquetaDeMasFiltros() {
 
+		int activos = comodidades.size() + (precioActivo() ? 1 : 0) + (ciudadActiva() ? 1 : 0);
+
 		String base = Textos.t("catalogo.filtro.masFiltros");
-		masFiltros.setText(comodidades.isEmpty() ? base : base + " (" + comodidades.size() + ")");
+		masFiltros.setText(activos == 0 ? base : base + " (" + activos + ")");
+	}
+
+	private boolean precioActivo() {
+
+		int minimo = (Integer) precioMinimo.getValue();
+		int maximo = (Integer) precioMaximo.getValue();
+
+		return minimo > 0 || maximo < 2000;
+	}
+
+	private boolean ciudadActiva() {
+		return !TODAS_LAS_CIUDADES.equals(ciudad.getSelectedItem());
 	}
 
 	/** Los tres rótulos de orden, ya traducidos, en el orden de {@link #ORDEN_PUNTUACION} etc. */
@@ -393,6 +540,9 @@ public class CatalogFilters extends JPanel {
 		etiquetaMinHab.setText(Textos.t("catalogo.filtro.minHab"));
 		etiquetaOrdenar.setText(Textos.t("catalogo.filtro.ordenar"));
 		etiquetaComodidades.setText(Textos.t("catalogo.filtro.comodidades"));
+		etiquetaPrecio.setText(Textos.t("catalogo.filtro.precio"));
+		etiquetaCiudad.setText(Textos.t("catalogo.filtro.ciudad"));
+		ciudad.repaint();
 
 		vista.actualizarTextos(Textos.t("catalogo.vista.lista"), Textos.t("catalogo.vista.cuadricula"));
 		orden.actualizarTextos(ordenesTraducidos());
@@ -408,6 +558,19 @@ public class CatalogFilters extends JPanel {
 	/** Si el usuario ha pedido la vista de cuadrícula. */
 	public boolean esCuadricula() {
 		return vista.getActivo() == VISTA_CUADRICULA;
+	}
+
+	/**
+	 * Fija la vista por código, sin que el usuario haya tocado el conmutador.
+	 *
+	 * <p>
+	 * Para restaurar la preferencia guardada en Ajustes (Fase 7.11) al abrir el
+	 * catálogo por primera vez en la sesión. {@link Segmented#setActivo} ya
+	 * avisa como si fuera un clic real, así que quien llame a esto no necesita
+	 * disparar el filtrado aparte.
+	 */
+	public void setVista(int indice) {
+		vista.setActivo(indice);
 	}
 
 	/** Escribe el recuento de resultados. */
@@ -445,7 +608,10 @@ public class CatalogFilters extends JPanel {
 
 		List<Housing> resultado = new ArrayList<>();
 		String texto = buscador.getTexto().toLowerCase(Locale.ROOT);
-		int minimo = (Integer) minimoHabitaciones.getValue();
+		int minimoHab = (Integer) minimoHabitaciones.getValue();
+		BigDecimal precioMin = BigDecimal.valueOf((Integer) precioMinimo.getValue());
+		BigDecimal precioMax = BigDecimal.valueOf((Integer) precioMaximo.getValue());
+		String ciudadElegida = (String) ciudad.getSelectedItem();
 
 		for (Housing housing : origen) {
 
@@ -453,7 +619,16 @@ public class CatalogFilters extends JPanel {
 				continue;
 			}
 
-			if (housing.getNumberOfRooms() < minimo) {
+			if (housing.getNumberOfRooms() < minimoHab) {
+				continue;
+			}
+
+			if (housing.getPricePerNight().compareTo(precioMin) < 0
+					|| housing.getPricePerNight().compareTo(precioMax) > 0) {
+				continue;
+			}
+
+			if (!TODAS_LAS_CIUDADES.equals(ciudadElegida) && !ciudadElegida.equals(housing.getLocation())) {
 				continue;
 			}
 

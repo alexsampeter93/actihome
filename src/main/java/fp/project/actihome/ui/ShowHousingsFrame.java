@@ -162,6 +162,16 @@ public class ShowHousingsFrame extends JFrame {
 	 */
 	private transient Set<Long> ocupadosAhora = Collections.emptySet();
 
+	/**
+	 * A quién ya se le aplicó su vista de catálogo por defecto en esta sesión
+	 * (Fase 7.11). Sin esto, cada visita al catálogo —tras ver un detalle, tras
+	 * reservar— volvería a imponer la vista guardada en Ajustes y borraría
+	 * cualquier cambio manual hecho mientras tanto. Se aplica una sola vez por
+	 * cuenta: al cambiar de usuario (cerrar sesión y entrar con otro) vuelve a
+	 * aplicarse, porque el id ya no coincide.
+	 */
+	private Long usuarioDeLaVistaAplicada;
+
 	private JLabel tituloPrimera;
 	private JLabel tituloSegunda;
 	private JLabel fraseEstacional;
@@ -532,7 +542,37 @@ public class ShowHousingsFrame extends JFrame {
 		ocupadosAhora = new HashSet<>(housingService.currentlyOccupiedHousingIds());
 
 		actualizarCifras(catalogo);
+		filtros.setUbicaciones(catalogo);
+		aplicarVistaPorDefecto();
 		aplicarFiltros();
+	}
+
+	/**
+	 * Hace que la próxima carga vuelva a imponer la vista por defecto guardada,
+	 * aunque ya se hubiera aplicado antes en esta sesión.
+	 *
+	 * <p>
+	 * Lo llama {@code SettingsFrame} justo antes de volver aquí tras guardar un
+	 * cambio en esa preferencia: sin esto, cambiar la vista por defecto y pulsar
+	 * "Guardar cambios" no se notaría hasta la próxima vez que se iniciara
+	 * sesión, porque {@link #aplicarVistaPorDefecto()} ya habría marcado a este
+	 * usuario como atendido en una visita anterior de la misma sesión.
+	 */
+	public void olvidarVistaAplicada() {
+		usuarioDeLaVistaAplicada = null;
+	}
+
+	/** Ver la nota de {@link #usuarioDeLaVistaAplicada}. */
+	private void aplicarVistaPorDefecto() {
+
+		User actual = sessionManager.getLoggedInUser();
+
+		if (actual == null || actual.getId().equals(usuarioDeLaVistaAplicada)) {
+			return;
+		}
+
+		filtros.setVista(actual.isDefaultGridView() ? CatalogFilters.VISTA_CUADRICULA : 0);
+		usuarioDeLaVistaAplicada = actual.getId();
 	}
 
 	/**
