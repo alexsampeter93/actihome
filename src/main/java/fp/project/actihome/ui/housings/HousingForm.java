@@ -4,7 +4,9 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
@@ -22,7 +24,11 @@ import net.miginfocom.swing.MigLayout;
 import fp.project.actihome.model.entities.Amenity;
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.entities.User;
+import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
+import fp.project.actihome.model.exceptions.NotTheOwnerException;
 import fp.project.actihome.model.services.HousingData;
+import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.Field;
@@ -118,6 +124,12 @@ public class HousingForm extends JPanel {
 
 	/** La foto recién elegida en esta sesión de edición, o {@code null} si no se ha tocado. */
 	private File fotoElegida;
+
+	/** Fotos de galería elegidas y todavía sin guardar (Fase 8.4). */
+	private final transient List<File> fotosDeGaleria = new ArrayList<>();
+	private JButton botonAnadirGaleria;
+	private JButton botonQuitarGaleria;
+	private JLabel resumenGaleria;
 
 	/** El nombre que ya tenía guardado {@code Housing.image}, o {@code null} en un alojamiento nuevo. */
 	private String imagenExistente;
@@ -239,8 +251,34 @@ public class HousingForm extends JPanel {
 		acciones.add(errorFoto, "gaptop " + Space.XXS);
 
 		panel.add(acciones, "aligny top");
+		panel.add(filaDeGaleria(), "newline, span 2, gaptop " + Space.MD);
 
 		return panel;
+	}
+
+	/** Añadir fotos de galería: un botón, el recuento y un enlace para vaciar. */
+	private JPanel filaDeGaleria() {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]" + Space.SM + "[]", "[]"));
+		fila.setOpaque(false);
+
+		botonAnadirGaleria = Buttons.secondary(Textos.t("alojamientoForm.galeria.anadir"),
+				e -> elegirFotosDeGaleria());
+
+		resumenGaleria = Labels.muted(" ");
+
+		botonQuitarGaleria = Buttons.link(Textos.t("alojamientoForm.galeria.vaciar"), e -> {
+			fotosDeGaleria.clear();
+			actualizarResumenDeGaleria();
+		});
+
+		fila.add(botonAnadirGaleria, "aligny center");
+		fila.add(resumenGaleria, "aligny center");
+		fila.add(botonQuitarGaleria, "aligny center");
+
+		actualizarResumenDeGaleria();
+
+		return fila;
 	}
 
 	private void elegirFoto() {
@@ -277,6 +315,93 @@ public class HousingForm extends JPanel {
 		imagenExistente = null;
 		previsualizacion.setFoto(null);
 		errorFoto.setText(" ");
+	}
+
+	/**
+	 * Elige varias fotos de galería de una vez (Fase 8.4).
+	 *
+	 * <p>
+	 * {@code setMultiSelectionEnabled} es todo lo que hace falta para que el
+	 * diálogo del sistema admita selección múltiple. Elegirlas de una tanda y no de
+	 * una en una no es solo comodidad: quien sube fotos de una casa las tiene todas
+	 * juntas en la misma carpeta, y obligar a repetir el diálogo cuatro veces es
+	 * exactamente el tipo de fricción que hace que la gente suba una sola.
+	 *
+	 * <p>
+	 * Las que no se puedan leer se descartan <b>y se cuentan</b>: aceptar en
+	 * silencio una selección de cinco de la que solo entran tres es peor que
+	 * decirlo, porque el usuario se entera al ver la galería y ya no sabe cuál
+	 * falló.
+	 */
+	private void elegirFotosDeGaleria() {
+
+		JFileChooser selector = new JFileChooser();
+		selector.setMultiSelectionEnabled(true);
+		selector.setFileFilter(
+				new FileNameExtensionFilter(Textos.t("alojamientoForm.foto.filtro"), "jpg", "jpeg", "png"));
+
+		if (selector.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
+			return;
+		}
+
+		int descartadas = 0;
+
+		for (File elegido : selector.getSelectedFiles()) {
+
+			try {
+				if (ImageIO.read(elegido) == null) {
+					throw new IOException("formato no reconocido");
+				}
+
+				fotosDeGaleria.add(elegido);
+
+			} catch (IOException ex) {
+				descartadas++;
+			}
+		}
+
+		errorFoto.setText(descartadas == 0 ? " " : Textos.t("alojamientoForm.foto.error.algunasNoSeLeen", descartadas));
+		actualizarResumenDeGaleria();
+	}
+
+	private void actualizarResumenDeGaleria() {
+
+		resumenGaleria.setText(fotosDeGaleria.isEmpty() ? Textos.t("alojamientoForm.galeria.ninguna")
+				: Textos.t("alojamientoForm.galeria.elegidas", fotosDeGaleria.size()));
+
+		botonQuitarGaleria.setVisible(!fotosDeGaleria.isEmpty());
+	}
+
+	/**
+	 * Guarda en disco las fotos de galería elegidas y las registra en el servicio.
+	 *
+	 * <p>
+	 * Va después de guardar el alojamiento y no dentro del formulario, por lo mismo
+	 * que la foto de una reseña (F15): hasta que la entidad no existe no hay
+	 * {@code housingId} al que asociarlas. El nombre del archivo sí se puede
+	 * calcular antes, porque se deriva del <em>código</em> del alojamiento, que lo
+	 * escribe el usuario y no la base de datos.
+	 *
+	 * <p>
+	 * Las excepciones de negocio no se capturan aquí: quien llama acaba de guardar
+	 * el alojamiento y está en mejor posición para decidir qué enseñar si algo
+	 * falla.
+	 */
+	public void guardarFotosDeGaleria(Long housingId, Long housingCode, Long ownerId, HousingService servicio)
+			throws IOException, InstanceNotFoundException, NotTheOwnerException, NotAuthorizedUserException {
+
+		int siguiente = servicio.showHousingPhotos(housingId).size();
+
+		for (File foto : fotosDeGaleria) {
+
+			siguiente++;
+			String nombre = housingCode + "-" + siguiente + ".jpg";
+
+			HousingPhotos.guardar(nombre, foto);
+			servicio.addHousingPhoto(housingId, ownerId, nombre);
+		}
+
+		fotosDeGaleria.clear();
 	}
 
 	private JPanel columnaDerecha() {

@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.entities.HousingDao;
+import fp.project.actihome.model.entities.HousingPhoto;
+import fp.project.actihome.model.entities.HousingPhotoDao;
 import fp.project.actihome.model.entities.ReservationDao;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
@@ -30,6 +32,9 @@ public class HousingServiceImpl implements HousingService {
 
 	@Autowired
 	private HousingDao housingDao;
+
+	@Autowired
+	private HousingPhotoDao housingPhotoDao;
 
 	@Autowired
 	private ReservationDao reservationDao;
@@ -166,6 +171,81 @@ public class HousingServiceImpl implements HousingService {
 	public ArrayList<Housing> showOpenExchanges(Long ownerId) {
 
 		return housingDao.findByOpenToExchangeTrueAndOwnerIdNot(ownerId);
+	}
+
+	@Override
+	public ArrayList<HousingPhoto> showHousingPhotos(Long housingId) {
+
+		return housingPhotoDao.findByHousingIdOrderByPositionAsc(housingId);
+	}
+
+	@Override
+	public HousingPhoto addHousingPhoto(Long housingId, Long ownerId, String image)
+			throws InstanceNotFoundException, NotTheOwnerException, NotAuthorizedUserException {
+
+		Housing housing = comprobarQueEsSuyo(housingId, ownerId);
+
+		// La posición es "una más de las que ya hay". Contarlas en vez de recibir el
+		// número de fuera evita que dos pantallas puedan escribir la misma posición.
+		int siguiente = housingPhotoDao.countByHousingId(housingId) + 1;
+
+		return housingPhotoDao.save(new HousingPhoto(housing, image, siguiente));
+	}
+
+	@Override
+	public void removeHousingPhoto(Long photoId, Long ownerId)
+			throws InstanceNotFoundException, NotTheOwnerException, NotAuthorizedUserException {
+
+		Optional<HousingPhoto> foto = housingPhotoDao.findById(photoId);
+
+		if (!foto.isPresent()) {
+			throw new InstanceNotFoundException("project.entities.housingPhoto", photoId);
+		}
+
+		Long housingId = foto.get().getHousing().getId();
+
+		comprobarQueEsSuyo(housingId, ownerId);
+		housingPhotoDao.delete(foto.get());
+
+		// Recolocar las siguientes para que las posiciones sigan siendo 1..N sin
+		// huecos. Se hace sobre la lista ya ordenada y dentro de la transacción, así
+		// que basta con mutar cada entidad: el dirty checking de JPA emite los UPDATE.
+		ArrayList<HousingPhoto> restantes = housingPhotoDao.findByHousingIdOrderByPositionAsc(housingId);
+
+		for (int i = 0; i < restantes.size(); i++) {
+			restantes.get(i).setPosition(i + 1);
+		}
+	}
+
+	/**
+	 * Comprueba que el alojamiento existe y que quien pide es su propietario.
+	 *
+	 * <p>
+	 * Es la misma pareja de comprobaciones que hace {@code updateHousing}, extraída
+	 * porque las tres operaciones de galería la necesitan igual. Tenerla en un solo
+	 * sitio es lo que evita que una de ellas se quede sin la comprobación de
+	 * propiedad el día que se añada una cuarta.
+	 */
+	private Housing comprobarQueEsSuyo(Long housingId, Long ownerId)
+			throws InstanceNotFoundException, NotTheOwnerException, NotAuthorizedUserException {
+
+		User owner = permissionChecker.checkUser(ownerId);
+
+		if (owner.getRole() != RoleType.ADMIN) {
+			throw new NotAuthorizedUserException();
+		}
+
+		Optional<Housing> housing = housingDao.findById(housingId);
+
+		if (!housing.isPresent()) {
+			throw new InstanceNotFoundException("project.entities.housing", housingId);
+		}
+
+		if (!housing.get().getOwner().getId().equals(ownerId)) {
+			throw new NotTheOwnerException();
+		}
+
+		return housing.get();
 	}
 
 	@Override

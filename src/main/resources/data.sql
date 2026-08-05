@@ -428,3 +428,68 @@ WHERE openToExchange = FALSE AND housingCode = 10008;
 
 UPDATE HOUSINGS SET openToExchange = TRUE, exchangeWanted = 'una cabaña de montaña en invierno'
 WHERE openToExchange = FALSE AND housingCode = 10009;
+
+-- ---------------------------------------------------------------------------
+-- Fotos de galería de los alojamientos de ejemplo (Fase 8.4)
+--
+-- Las prepara ui/dev/GenerarAssets desde assets/References/Alojamientos de
+-- ejemplo; son de Unsplash y están acreditadas en CREDITOS.md.
+--
+-- Aquí sí hacen falta INSERT y no un UPDATE, porque son filas nuevas de una
+-- tabla nueva: no hay ninguna fila previa que poner al día. El WHERE NOT EXISTS
+-- de siempre los hace idempotentes, y comprueba el par (alojamiento, archivo)
+-- en lugar de solo el archivo: el nombre lleva el código del alojamiento, así
+-- que no puede repetirse entre alojamientos, pero comprobar el par deja la
+-- condición correcta aunque esa convención cambie.
+-- ---------------------------------------------------------------------------
+
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10001-2.jpg', 1 FROM HOUSINGS h WHERE h.housingCode = 10001
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10001-2.jpg');
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10001-3.jpg', 2 FROM HOUSINGS h WHERE h.housingCode = 10001
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10001-3.jpg');
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10001-4.jpg', 3 FROM HOUSINGS h WHERE h.housingCode = 10001
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10001-4.jpg');
+
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10002-2.jpg', 1 FROM HOUSINGS h WHERE h.housingCode = 10002
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10002-2.jpg');
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10002-3.jpg', 2 FROM HOUSINGS h WHERE h.housingCode = 10002
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10002-3.jpg');
+
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10003-2.jpg', 1 FROM HOUSINGS h WHERE h.housingCode = 10003
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10003-2.jpg');
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10003-3.jpg', 2 FROM HOUSINGS h WHERE h.housingCode = 10003
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10003-3.jpg');
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10003-4.jpg', 3 FROM HOUSINGS h WHERE h.housingCode = 10003
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10003-4.jpg');
+
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10004-2.jpg', 1 FROM HOUSINGS h WHERE h.housingCode = 10004
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10004-2.jpg');
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10004-3.jpg', 2 FROM HOUSINGS h WHERE h.housingCode = 10004
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10004-3.jpg');
+
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10005-2.jpg', 1 FROM HOUSINGS h WHERE h.housingCode = 10005
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10005-2.jpg');
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10005-3.jpg', 2 FROM HOUSINGS h WHERE h.housingCode = 10005
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10005-3.jpg');
+
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10008-2.jpg', 1 FROM HOUSINGS h WHERE h.housingCode = 10008
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10008-2.jpg');
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10008-3.jpg', 2 FROM HOUSINGS h WHERE h.housingCode = 10008
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10008-3.jpg');
+INSERT INTO HOUSING_PHOTOS(housingId, image, position)
+SELECT h.id, '10008-4.jpg', 3 FROM HOUSINGS h WHERE h.housingCode = 10008
+	AND NOT EXISTS (SELECT 1 FROM HOUSING_PHOTOS p WHERE p.housingId = h.id AND p.image = '10008-4.jpg');

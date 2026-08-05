@@ -159,3 +159,20 @@ CREATE TABLE IF NOT EXISTS MESSAGES (
 	CONSTRAINT MessageRecipientIdFK FOREIGN KEY(recipientId) REFERENCES USERS(id),
 	CONSTRAINT MessageHousingIdFK FOREIGN KEY(housingId) REFERENCES HOUSINGS(id)
 );
+
+-- Fotos adicionales de un alojamiento, para la galería del detalle (Fase 8.4).
+-- La foto PRINCIPAL no está aquí: sigue en HOUSINGS.image, porque la usan el
+-- catálogo, la comparación y el panel de propietario, y ninguno de los tres
+-- quiere una galería. Pedirles una consulta más para obtener lo que ya tenían
+-- sería pagar en todas las pantallas el precio de una.
+CREATE TABLE IF NOT EXISTS HOUSING_PHOTOS (
+	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	housingId BIGINT NOT NULL,
+	-- Nombre del archivo dentro de /images/housings/.
+	image VARCHAR(120) NOT NULL,
+	-- Orden dentro de la galería, empezando en 1. Se guarda en lugar de deducirse
+	-- del nombre del archivo: un nombre no se puede reordenar sin renombrar
+	-- ficheros.
+	position INTEGER NOT NULL,
+	CONSTRAINT PhotoHousingIdFK FOREIGN KEY(housingId) REFERENCES HOUSINGS(id)
+);

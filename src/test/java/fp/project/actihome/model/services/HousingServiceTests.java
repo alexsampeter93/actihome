@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import fp.project.actihome.model.entities.Amenity;
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.HousingPhoto;
 import fp.project.actihome.model.entities.Reservation;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
@@ -489,6 +490,52 @@ public class HousingServiceTests {
 
 		assertTrue(abiertos.stream().anyMatch(h -> h.getId().equals(suyo.getId())));
 		assertFalse(abiertos.stream().anyMatch(h -> h.getId().equals(mio.getId())));
+	}
+
+	/**
+	 * Quitar una foto del medio <b>recoloca</b> las siguientes (Fase 8.4).
+	 *
+	 * <p>
+	 * Es la única parte de la galería con lógica de verdad, y la que fallaría en
+	 * silencio: sin recolocar, la galería seguiría viéndose bien —el orden relativo
+	 * no cambia— pero las posiciones quedarían 1, 3, 4, y cada borrado abriría otro
+	 * hueco. No da problemas hasta que alguien escribe la función de reordenar, que
+	 * es justo cuando ya nadie recuerda por qué hay huecos.
+	 */
+	@Test
+	public void testRemovingAPhotoRenumbersTheRest() throws DuplicateInstanceException, InstanceNotFoundException,
+			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException, NotTheOwnerException {
+
+		User owner = signUpUser("DuenoGaleria", RoleType.ADMIN);
+		Housing housing = housingService.uploadHousing(datos(32001), owner.getId());
+
+		housingService.addHousingPhoto(housing.getId(), owner.getId(), "a.jpg");
+		HousingPhoto segunda = housingService.addHousingPhoto(housing.getId(), owner.getId(), "b.jpg");
+		housingService.addHousingPhoto(housing.getId(), owner.getId(), "c.jpg");
+
+		housingService.removeHousingPhoto(segunda.getId(), owner.getId());
+
+		List<HousingPhoto> quedan = housingService.showHousingPhotos(housing.getId());
+
+		assertEquals(2, quedan.size());
+		assertEquals("a.jpg", quedan.get(0).getImage());
+		assertEquals(1, quedan.get(0).getPosition());
+		assertEquals("c.jpg", quedan.get(1).getImage());
+		assertEquals(2, quedan.get(1).getPosition());
+	}
+
+	/** Solo el propietario toca su galería. */
+	@Test
+	public void testOnlyTheOwnerCanAddPhotos() throws DuplicateInstanceException, InstanceNotFoundException,
+			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException {
+
+		User owner = signUpUser("DuenoLegitimo", RoleType.ADMIN);
+		User intruso = signUpUser("Intruso", RoleType.ADMIN);
+
+		Housing housing = housingService.uploadHousing(datos(32002), owner.getId());
+
+		assertThrows(NotTheOwnerException.class,
+				() -> housingService.addHousingPhoto(housing.getId(), intruso.getId(), "robada.jpg"));
 	}
 
 	/** Un alojamiento que no se ofrece no sale en el tablón, aunque sea de otro. */

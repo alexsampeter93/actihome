@@ -13,11 +13,13 @@ import org.springframework.stereotype.Component;
 
 import net.miginfocom.swing.MigLayout;
 
+import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.exceptions.DuplicateInstanceException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.exceptions.LessThanOneRoomException;
 import fp.project.actihome.model.exceptions.NegativePrizeException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
+import fp.project.actihome.model.exceptions.NotTheOwnerException;
 import fp.project.actihome.model.services.HousingData;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.ui.components.Buttons;
@@ -176,7 +178,13 @@ public class UploadHousingFrame extends JFrame {
 			// gastar tiempo reduciendo una foto que no se iba a usar.
 			formulario.guardarFotoSiHaceFalta(datos.getHousingCode());
 
-			housingService.uploadHousing(datos, sessionManager.getLoggedInUser().getId());
+			Housing creado = housingService.uploadHousing(datos, sessionManager.getLoggedInUser().getId());
+
+			// Las fotos de galería van después de crear el alojamiento y no antes: hasta
+			// que la entidad no existe no hay id al que asociarlas. Es el mismo orden que
+			// ya sigue la foto de una reseña (F15).
+			formulario.guardarFotosDeGaleria(creado.getId(), datos.getHousingCode(),
+					sessionManager.getLoggedInUser().getId(), housingService);
 
 			navigator.ir(ShowHousingsFrame.class);
 
@@ -195,6 +203,12 @@ public class UploadHousingFrame extends JFrame {
 
 		} catch (NegativePrizeException ex) {
 			error.setText(Textos.t("alojamientoForm.error.precioNegativo"));
+
+		} catch (NotTheOwnerException ex) {
+			// Solo puede llegar aqui al guardar las fotos de galeria: el alojamiento
+			// acaba de guardarse a nombre de quien pide, asi que en la practica no
+			// ocurre. Se trata igual que el resto y no con un catch generico.
+			error.setText(Textos.t("alojamientoForm.error.noEsTuyo"));
 
 		} catch (NotAuthorizedUserException ex) {
 			error.setText(Textos.t("alojamientoAlta.error.soloAdmin"));

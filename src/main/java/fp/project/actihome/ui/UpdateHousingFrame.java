@@ -207,6 +207,9 @@ public class UpdateHousingFrame extends JFrame {
 
 			housingService.updateHousing(housingId, sessionManager.getLoggedInUser().getId(), datos);
 
+			formulario.guardarFotosDeGaleria(housingId, housing.getHousingCode(),
+					sessionManager.getLoggedInUser().getId(), housingService);
+
 			volverAlDetalle();
 
 		} catch (DatosInvalidos ex) {

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Set;
 
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.HousingPhoto;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
 import fp.project.actihome.model.exceptions.DuplicateInstanceException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
@@ -40,6 +41,41 @@ public interface HousingService {
 	 * nada.
 	 */
 	ArrayList<Housing> showOpenExchanges(Long ownerId);
+
+	/**
+	 * Las fotos de galería de un alojamiento, en su orden, sin incluir la
+	 * principal (Fase 8.4).
+	 *
+	 * <p>
+	 * Devuelve lista vacía si no tiene ninguna, que es el caso de cualquier
+	 * alojamiento publicado sin subir fotos extra. La pantalla no necesita
+	 * distinguir "sin galería" de "galería vacía": las dos se pintan igual.
+	 */
+	ArrayList<HousingPhoto> showHousingPhotos(Long housingId);
+
+	/**
+	 * Añade una foto al final de la galería.
+	 *
+	 * <p>
+	 * Solo el propietario, igual que editar. La posición la decide el servicio a
+	 * partir de cuántas hay ya: dejársela al que llama sería invitar a que dos
+	 * pantallas escribieran la misma.
+	 */
+	HousingPhoto addHousingPhoto(Long housingId, Long ownerId, String image)
+			throws InstanceNotFoundException, NotTheOwnerException, NotAuthorizedUserException;
+
+	/**
+	 * Quita una foto de la galería y <b>recoloca las siguientes</b>.
+	 *
+	 * <p>
+	 * Sin recolocar, borrar la segunda de cuatro dejaría las posiciones 1, 3 y 4:
+	 * la galería seguiría viéndose bien —el orden relativo no cambia— pero cada
+	 * borrado abriría un hueco, y la posición dejaría de significar "la enésima"
+	 * para significar "un número que solo sirve para ordenar". Es de esas cosas
+	 * que no dan problemas hasta que alguien escribe la función de reordenar.
+	 */
+	void removeHousingPhoto(Long photoId, Long ownerId)
+			throws InstanceNotFoundException, NotTheOwnerException, NotAuthorizedUserException;
 
 	/**
 	 * Modifica un alojamiento existente.

@@ -85,6 +85,33 @@ public final class GenerarAssets {
 		FOTOS.put("webaliser-_TPTXZd9mOo-unsplash.jpg", "10008.jpg");
 		FOTOS.put("maria-orlova-b37mDyPzdJM-unsplash.jpg", "10009.jpg");
 		FOTOS.put("baptx-BTQWx51keUY-unsplash.jpg", "10010.jpg");
+
+		// Fotos adicionales de galería (Fase 8.4f). El nombre lleva el código del
+		// alojamiento y un ordinal —"10001-2.jpg"— para que se lea de un vistazo a
+		// quién pertenece cada archivo mirando la carpeta, igual que ya pasaba con la
+		// principal. El orden dentro de la galería NO se deduce de ese número: lo
+		// guarda la tabla HOUSING_PHOTOS, porque un nombre de archivo no puede
+		// reordenarse sin renombrar ficheros.
+		FOTOS.put("spacejoy-YI2YkyaREHk-unsplash.jpg", "10001-2.jpg");
+		FOTOS.put("kam-idris-vqMQN9zImG4-unsplash.jpg", "10001-3.jpg");
+		FOTOS.put("jean-philippe-delberghe-kpxXdzCbXHw-unsplash.jpg", "10001-4.jpg");
+
+		FOTOS.put("spacejoy-RUvW1KGD9a4-unsplash.jpg", "10002-2.jpg");
+		FOTOS.put("chastity-cortijo-6TY_WrJTwSI-unsplash.jpg", "10002-3.jpg");
+
+		FOTOS.put("jason-briscoe-AQl-J19ocWE-unsplash.jpg", "10003-2.jpg");
+		FOTOS.put("sanibell-bv-530lZQXMKGw-unsplash.jpg", "10003-3.jpg");
+		FOTOS.put("lotus-design-n-print-g51F6-WYzyU-unsplash.jpg", "10003-4.jpg");
+
+		FOTOS.put("steven-ungermann-Aac7IlKnYX8-unsplash.jpg", "10004-2.jpg");
+		FOTOS.put("josh-hild-6kVGxIHriTA-unsplash.jpg", "10004-3.jpg");
+
+		FOTOS.put("andrea-davis-IWfe63thJxk-unsplash.jpg", "10005-2.jpg");
+		FOTOS.put("marvin-meyer-fBdlytm6Hp8-unsplash.jpg", "10005-3.jpg");
+
+		FOTOS.put("frames-for-your-heart-mR1CIDduGLc-unsplash.jpg", "10008-2.jpg");
+		FOTOS.put("todd-kent-178j8tJrNlc-unsplash.jpg", "10008-3.jpg");
+		FOTOS.put("raquel-navalon-alvarez-TWj0qbJn4zI-unsplash.jpg", "10008-4.jpg");
 	}
 
 	/** Original → nombre con el que lo pide {@code BrandAssets}. */

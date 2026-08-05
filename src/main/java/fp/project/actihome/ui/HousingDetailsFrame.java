@@ -7,6 +7,7 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.HousingPhoto;
 import fp.project.actihome.model.entities.Review;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
@@ -27,6 +29,7 @@ import fp.project.actihome.model.services.ReservationService;
 import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.catalog.Destacado;
 import fp.project.actihome.ui.components.CalendarioRango;
 import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.ImagePlaceholder;
@@ -35,6 +38,7 @@ import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.components.WrappingText;
+import fp.project.actihome.ui.housings.Galeria;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Formato;
@@ -84,13 +88,15 @@ import fp.project.actihome.ui.theme.Typography;
  * rol es cuáles se añaden.
  *
  * <p>
- * <b>Por qué no hay galería de miniaturas</b>, aunque el handoff dibuja una. No
- * es una simplificación de maquetación: el modelo {@code Housing} solo tiene un
- * campo {@code image}, no una lista. No hay ningún alojamiento con más de una
- * foto que enseñar, así que dibujar tres miniaturas vacías con un "+6" encima
- * sería mentir sobre cuántas fotos existen. El día que se admitan varias fotos
- * por alojamiento —una ampliación de modelo real, no de esta pantalla— la
- * galería tiene sentido; hasta entonces, una fotografía grande es lo honesto.
+ * <b>La galería llegó al final, y el orden importa.</b> Durante seis fases esta
+ * pantalla enseñó una sola fotografía a todo lo ancho, con la nota de que
+ * dibujar tres miniaturas vacías con un "+6" encima sería mentir sobre cuántas
+ * fotos existen. Lo que faltaba no era maquetación sino modelo: {@code Housing}
+ * tenía un único campo {@code image}. Con la tabla {@code HOUSING_PHOTOS} ya
+ * hay varias fotos de verdad, y {@link Galeria} se adapta a cuántas haya —una
+ * sola sigue ocupando todo el ancho, exactamente como antes—. La regla que
+ * sostuvo la espera sigue en pie: la interfaz no promete contenido que no
+ * existe.
  */
 @Component
 @Profile("!test")
@@ -268,7 +274,7 @@ public class HousingDetailsFrame extends JFrame {
 				new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[grow,fill]" + Space.LG + "[]"));
 		izquierda.setOpaque(false);
 
-		izquierda.add(foto(), "grow");
+		izquierda.add(galeria(), "grow");
 		izquierda.add(calendarioDeOcupacion());
 
 		panel.add(izquierda, "grow");
@@ -277,14 +283,34 @@ public class HousingDetailsFrame extends JFrame {
 		return panel;
 	}
 
-	private ImagePlaceholder foto() {
+	/**
+	 * La galería: la foto principal y las de {@code HOUSING_PHOTOS} detrás.
+	 *
+	 * <p>
+	 * La lista se monta aquí y no dentro de {@link Galeria} porque ese componente
+	 * vive en el vocabulario visual y no debe conocer el modelo de negocio — la
+	 * misma razón por la que {@code ImagePlaceholder} recibe un nombre de archivo
+	 * y no una entidad. Aquí ya tenemos el alojamiento delante.
+	 */
+	private JComponent galeria() {
 
 		boolean disponible = housingService.isAvailableNow(housing.getId());
-		ImagePlaceholder placeholder = new ImagePlaceholder(Textos.tipoDeAlojamiento(housing.getType()),
-				disponible ? Textos.t("catalogo.disponibilidad.disponible") : Textos.t("catalogo.disponibilidad.reservada"),
-				disponible, housing.getImage());
-		placeholder.setMinimumSize(new Dimension(0, 320));
-		return placeholder;
+
+		List<String> archivos = new ArrayList<>();
+		archivos.add(housing.getImage());
+
+		for (HousingPhoto foto : housingService.showHousingPhotos(housing.getId())) {
+			archivos.add(foto.getImage());
+		}
+
+		Galeria galeria = new Galeria(Textos.tipoDeAlojamiento(housing.getType()),
+				disponible ? Textos.t("catalogo.disponibilidad.disponible")
+						: Textos.t("catalogo.disponibilidad.reservada"),
+				disponible, Destacado.de(housing), archivos);
+
+		galeria.setMinimumSize(new Dimension(0, 320));
+
+		return galeria;
 	}
 
 	private JPanel informacion() {
