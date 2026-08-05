@@ -156,6 +156,8 @@ public class HousingServiceImpl implements HousingService {
 		housing.setParking(data.isParking());
 		housing.setAirConditioning(data.isAirConditioning());
 		housing.setPets(data.isPets());
+
+		housing.setIdealSeason(data.getIdealSeason());
 	}
 
 	@Override

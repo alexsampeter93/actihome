@@ -374,3 +374,32 @@ WHERE EXISTS (SELECT 1 FROM REVIEWS r WHERE r.housingId = h.id);
 UPDATE HOUSINGS
 SET image = CONCAT(housingCode, '.jpg')
 WHERE image IS NULL AND housingCode BETWEEN 10001 AND 10010;
+
+-- ---------------------------------------------------------------------------
+-- Estación ideal de cada alojamiento de ejemplo (Fase 8.4)
+--
+-- Alimenta el distintivo "Ideal en {estación}" del catálogo, que solo aparece
+-- cuando la estación del alojamiento coincide con la activa. Es lo que hace que
+-- cambiar de estación cambie *lo que ves* y no solo los colores.
+--
+-- Va como UPDATE al final y no dentro de cada INSERT, por la misma razón que la
+-- migración de fotos de aquí arriba y la de contraseñas de la Fase 3d: los
+-- INSERT están protegidos por WHERE NOT EXISTS, así que en una base que ya
+-- existía no se ejecutan nunca y los diez alojamientos se habrían quedado sin
+-- estación para siempre. Un solo UPDATE cubre los dos casos —instalación nueva y
+-- base ya creada—, que es la razón de no duplicarlo también en los INSERT.
+--
+-- La condición "idealSeason IS NULL" lo hace idempotente y respeta a quien haya
+-- cambiado la estación de un alojamiento desde la aplicación: solo rellena lo
+-- que está vacío.
+--
+-- El reparto está equilibrado a propósito (2 primavera, 4 verano, 2 otoño,
+-- 2 invierno): con todas las estaciones representadas, el distintivo se ve sea
+-- cual sea la activa. Si tres cuartas partes fueran de verano, el catálogo
+-- parecería roto en invierno.
+-- ---------------------------------------------------------------------------
+
+UPDATE HOUSINGS SET idealSeason = 'INVIERNO' WHERE idealSeason IS NULL AND housingCode IN (10001, 10010);
+UPDATE HOUSINGS SET idealSeason = 'VERANO'   WHERE idealSeason IS NULL AND housingCode IN (10002, 10003, 10006, 10008);
+UPDATE HOUSINGS SET idealSeason = 'OTONO'    WHERE idealSeason IS NULL AND housingCode IN (10004, 10009);
+UPDATE HOUSINGS SET idealSeason = 'PRIMAVERA' WHERE idealSeason IS NULL AND housingCode IN (10005, 10007);

@@ -72,6 +72,14 @@ CREATE TABLE IF NOT EXISTS HOUSINGS (
 	parking BOOLEAN DEFAULT FALSE NOT NULL,
 	airConditioning BOOLEAN DEFAULT FALSE NOT NULL,
 	pets BOOLEAN DEFAULT FALSE NOT NULL,
+	-- En qué estación luce más este alojamiento (Fase 8.4). Se guarda como texto,
+	-- no por ordinal, igual que el resto de enumerados del proyecto: reordenar el
+	-- enum no debe convertir en silencio una casa de playa en una de montaña.
+	-- Admite nulo a propósito: un alojamiento publicado desde la aplicación no
+	-- tiene por qué declarar estación, y entonces sencillamente no lleva
+	-- distintivo. Obligar a elegir una convertiría un matiz editorial en un
+	-- trámite.
+	idealSeason VARCHAR(20),
 	score DOUBLE,
 	-- La disponibilidad ya no es una columna: se calcula a partir de las reservas
 	-- activas de cada alojamiento (Fase 7.5, ver migracion-h2.sql). Un booleano

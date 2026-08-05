@@ -21,6 +21,7 @@ import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Amenity;
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.services.HousingData;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Chip;
@@ -72,14 +73,30 @@ public class HousingForm extends JPanel {
 	 */
 	public static final String[] TIPOS = { "Casa", "Apartamento", "Villa", "Cabaña" };
 
+	/**
+	 * Estaciones ideales, con {@code null} en primera posición.
+	 *
+	 * <p>
+	 * Ese {@code null} no es un descuido: es la opción "Cualquiera", y tiene que
+	 * ser la primera para que sea la que sale por defecto en un alojamiento nuevo.
+	 * Declarar estación es opcional, y quien no lo haga no debería tener que
+	 * deshacer una elección que nunca hizo.
+	 */
+	private static final User.EstacionPreferida[] ESTACIONES = { null, User.EstacionPreferida.PRIMAVERA,
+			User.EstacionPreferida.VERANO, User.EstacionPreferida.OTONO, User.EstacionPreferida.INVIERNO };
+
 	private final Field codigo;
 	private final Field nombre;
 	private final JComboBox<String> tipo;
+
+	/** Estacion ideal, con null como primera opcion ("Cualquiera"). */
+	private final JComboBox<User.EstacionPreferida> estacionIdeal;
 	private final Field habitaciones;
 	private final Field precio;
 	private final Field ubicacion;
 	private final Field descripcion;
 	private JLabel etiquetaTipo;
+	private JLabel etiquetaEstacion;
 	private JLabel etiquetaPension;
 	private JLabel etiquetaComodidades;
 
@@ -133,6 +150,28 @@ public class HousingForm extends JPanel {
 				return this;
 			}
 		});
+		// Estación ideal (Fase 8.4). La primera entrada es "Cualquiera" y representa
+		// el nulo: no declarar estación es una respuesta válida, y el alojamiento
+		// simplemente no lleva distintivo. Un desplegable que obligara a elegir
+		// llenaría el catálogo de etiquetas puestas al azar, que es peor que no
+		// tenerlas porque dejarían de significar algo.
+		estacionIdeal = new JComboBox<>(ESTACIONES);
+		estacionIdeal.setFont(Typography.sans(Typography.BODY));
+		estacionIdeal.setRenderer(new DefaultListCellRenderer() {
+
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public java.awt.Component getListCellRendererComponent(JList<?> list, Object value, int index,
+					boolean isSelected, boolean cellHasFocus) {
+
+				super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+				setText(value == null ? Textos.t("alojamientoForm.estacionIdeal.cualquiera")
+						: Textos.t("season." + ((User.EstacionPreferida) value).name().toLowerCase() + ".nombre"));
+				return this;
+			}
+		});
+
 		habitaciones = Field.text(Textos.t("alojamientoForm.habitaciones"));
 		precio = Field.text(Textos.t("alojamientoForm.precio"));
 		ubicacion = Field.text(Textos.t("alojamientoForm.ubicacion"));
@@ -265,6 +304,10 @@ public class HousingForm extends JPanel {
 		panel.add(etiquetaTipo);
 		panel.add(tipo, "gaptop " + Space.XXS + ", height " + Typography.altoDeControl() + "!");
 
+		etiquetaEstacion = Labels.caps(Textos.t("alojamientoForm.estacionIdeal"));
+		panel.add(etiquetaEstacion, "gaptop " + Space.LG);
+		panel.add(estacionIdeal, "gaptop " + Space.XXS + ", height " + Typography.altoDeControl() + "!");
+
 		return panel;
 	}
 
@@ -331,6 +374,7 @@ public class HousingForm extends JPanel {
 		codigo.setEtiqueta(Textos.t("alojamientoForm.codigo"));
 		nombre.setEtiqueta(Textos.t("alojamientoForm.nombre"));
 		etiquetaTipo.setText(Textos.t("catalogo.filtro.tipo"));
+		etiquetaEstacion.setText(Textos.t("alojamientoForm.estacionIdeal"));
 		habitaciones.setEtiqueta(Textos.t("alojamientoForm.habitaciones"));
 		precio.setEtiqueta(Textos.t("alojamientoForm.precio"));
 		ubicacion.setEtiqueta(Textos.t("alojamientoForm.ubicacion"));
@@ -342,6 +386,7 @@ public class HousingForm extends JPanel {
 		cena.setText(Textos.t("catalogo.row.cena"));
 		comodidades.forEach((amenity, chip) -> chip.setText(Textos.etiquetaDe(amenity)));
 		tipo.repaint();
+		estacionIdeal.repaint();
 
 		etiquetaFoto.setText(Textos.t("alojamientoForm.foto.label"));
 		botonElegirFoto.setText(Textos.t("alojamientoForm.foto.elegir"));
@@ -354,6 +399,7 @@ public class HousingForm extends JPanel {
 		codigo.setText(String.valueOf(housing.getHousingCode()));
 		nombre.setText(housing.getName() == null ? "" : housing.getName());
 		tipo.setSelectedItem(housing.getType());
+		estacionIdeal.setSelectedItem(housing.getIdealSeason());
 		habitaciones.setText(String.valueOf(housing.getNumberOfRooms()));
 		precio.setText(housing.getPricePerNight() == null ? "" : housing.getPricePerNight().toPlainString());
 		ubicacion.setText(housing.getLocation() == null ? "" : housing.getLocation());
@@ -377,6 +423,7 @@ public class HousingForm extends JPanel {
 		codigo.setText("");
 		nombre.setText("");
 		tipo.setSelectedIndex(0);
+		estacionIdeal.setSelectedIndex(0);
 		habitaciones.setText("");
 		precio.setText("");
 		ubicacion.setText("");
@@ -417,7 +464,8 @@ public class HousingForm extends JPanel {
 				.breakfast(desayuno.isSelected())
 				.lunch(comida.isSelected())
 				.dinner(cena.isSelected())
-				.image(fotoElegida != null ? nombreParaFotoNueva(housingCode) : imagenExistente);
+				.image(fotoElegida != null ? nombreParaFotoNueva(housingCode) : imagenExistente)
+				.idealSeason((User.EstacionPreferida) estacionIdeal.getSelectedItem());
 
 		comodidades.forEach((amenity, chip) -> data.amenity(amenity, chip.isSelected()));
 

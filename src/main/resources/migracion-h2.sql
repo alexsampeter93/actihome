@@ -86,3 +86,9 @@ ALTER TABLE USERS ADD COLUMN IF NOT EXISTS defaultGridView BOOLEAN DEFAULT FALSE
 ALTER TABLE REVIEWS ADD COLUMN IF NOT EXISTS image VARCHAR(120);
 ALTER TABLE REVIEWS ADD COLUMN IF NOT EXISTS ownerResponse VARCHAR(500);
 ALTER TABLE REVIEWS ADD COLUMN IF NOT EXISTS ownerResponseDate DATETIME;
+
+-- Fase 8.4: estación ideal del alojamiento, para el distintivo "Ideal en {estación}"
+-- del catálogo. Quien tenga una base MySQL anterior a esta fase necesita aplicar
+-- a mano:
+--     ALTER TABLE HOUSINGS ADD COLUMN idealSeason VARCHAR(20);
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS idealSeason VARCHAR(20);

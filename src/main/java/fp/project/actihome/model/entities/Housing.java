@@ -3,6 +3,8 @@ package fp.project.actihome.model.entities;
 import java.math.BigDecimal;
 
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -85,6 +87,8 @@ public class Housing {
 	private boolean airConditioning;
 
 	private boolean pets;
+
+	private User.EstacionPreferida idealSeason;
 
 	private Double score;
 
@@ -242,6 +246,36 @@ public class Housing {
 
 	public void setPets(boolean pets) {
 		this.pets = pets;
+	}
+
+	/**
+	 * En qué estación luce más este alojamiento, o {@code null} si no lo declara.
+	 *
+	 * <p>
+	 * Alimenta el distintivo "Ideal en {estación}" del catálogo (Fase 8.4), que
+	 * solo aparece cuando coincide con la estación activa. Es lo que convierte el
+	 * selector de estación en algo que <em>cambia lo que ves</em> y no solo los
+	 * colores: en invierno destacan las casas de montaña y en verano las de playa.
+	 *
+	 * <p>
+	 * <b>Admite nulo a propósito.</b> Un alojamiento publicado desde la aplicación
+	 * no tiene por qué declarar estación, y entonces sencillamente no lleva
+	 * distintivo. Obligar a elegir una convertiría un matiz editorial en un
+	 * trámite, y llenaría el catálogo de etiquetas puestas al azar — que es peor
+	 * que no tenerlas, porque dejarían de significar nada.
+	 *
+	 * <p>
+	 * Se persiste como <b>texto</b> ({@code EnumType.STRING}) y no por ordinal,
+	 * como el resto de enumerados del proyecto: reordenar o insertar un valor en
+	 * el enum no debe convertir en silencio una casa de playa en una de montaña.
+	 */
+	@Enumerated(EnumType.STRING)
+	public User.EstacionPreferida getIdealSeason() {
+		return idealSeason;
+	}
+
+	public void setIdealSeason(User.EstacionPreferida idealSeason) {
+		this.idealSeason = idealSeason;
 	}
 
 	public Double getScore() {

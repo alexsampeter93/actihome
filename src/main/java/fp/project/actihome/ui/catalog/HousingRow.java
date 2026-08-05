@@ -16,6 +16,7 @@ import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Amenity;
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.InlineScore;
@@ -72,6 +73,9 @@ public class HousingRow extends JPanel {
 	 */
 	private static final int ALTO_FOTO = 190;
 
+	/** Cuántas comodidades se enseñan antes de resumir el resto con un "+N". */
+	private static final int MAXIMO_COMODIDADES = 3;
+
 	private final transient Housing housing;
 	private final boolean disponible;
 	private final boolean seleccionadoParaComparar;
@@ -119,9 +123,13 @@ public class HousingRow extends JPanel {
 
 	private ImagePlaceholder foto() {
 
-		return new ImagePlaceholder(Textos.tipoDeAlojamiento(housing.getType()),
+		ImagePlaceholder imagen = new ImagePlaceholder(Textos.tipoDeAlojamiento(housing.getType()),
 				disponible ? Textos.t("catalogo.disponibilidad.disponible") : Textos.t("catalogo.disponibilidad.reservada"),
 				disponible, housing.getImage());
+
+		imagen.setDestacado(Destacado.de(housing));
+
+		return imagen;
 	}
 
 	private JPanel informacion(int resenas, Runnable alIntercambiar) {
@@ -183,7 +191,29 @@ public class HousingRow extends JPanel {
 				: Formato.plural(resenas, Textos.t("palabra.resena.singular"), Textos.t("palabra.resena.plural"))));
 		fila.add(Labels.muted(Formato.plural(housing.getNumberOfRooms(), Textos.t("palabra.habitacion.singular"),
 				Textos.t("palabra.habitacion.plural"))));
-		fila.add(Labels.muted(Textos.t("catalogo.row.de", housing.getOwner().getUsername())));
+		fila.add(anfitrion(), "aligny center");
+
+		return fila;
+	}
+
+	/**
+	 * El anfitrión, con su avatar de iniciales delante (Fase 8.4).
+	 *
+	 * <p>
+	 * Sustituye al texto suelto "de Marcos". El nombre sigue estando, así que el
+	 * avatar no añade información — lo que añade es <b>una persona</b>: en un
+	 * listado de alojamientos, un disco con iniciales convierte al propietario en
+	 * alguien concreto en lugar de en un dato más de la ficha, que es exactamente
+	 * lo que distingue a un alojamiento de particular de una habitación de hotel.
+	 */
+	private JPanel anfitrion() {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XS + "[]", "[]"));
+		fila.setOpaque(false);
+
+		fila.add(Avatar.relleno(housing.getOwner().getName(), housing.getOwner().getSurname(), 22),
+				"w 22!, h 22!, aligny center");
+		fila.add(Labels.muted(Textos.t("catalogo.row.de", housing.getOwner().getUsername())), "aligny center");
 
 		return fila;
 	}
@@ -228,19 +258,51 @@ public class HousingRow extends JPanel {
 		return etiqueta;
 	}
 
+	/**
+	 * Las comodidades, <b>como mucho tres</b> y con el resto contado (Fase 8.4).
+	 *
+	 * <p>
+	 * Antes se pintaban todas las que tuviera el alojamiento. Con siete
+	 * disponibles, las fichas más completas sacaban siete chips en fila y ocurría
+	 * lo contrario de lo que se buscaba: cuando todo está destacado, nada lo está,
+	 * y una ficha con siete chips se lee peor que una con tres aunque ofrezca más.
+	 * Además hacía que dos fichas seguidas tuvieran alturas muy distintas y la
+	 * lista se viera irregular.
+	 *
+	 * <p>
+	 * El resto no se esconde, se cuenta ("+2"). Es la diferencia entre resumir y
+	 * ocultar: quien vea el "+2" sabe que hay más y que la ficha completa se lo
+	 * dirá. {@link Amenity#values()} tiene un orden fijo, así que las tres que se
+	 * enseñan son siempre las mismas para un alojamiento dado — un listado que
+	 * cambia de contenido al recargarlo se lee como ruido.
+	 */
 	private JPanel comodidades() {
 
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "", ""));
 		fila.setOpaque(false);
 
+		int pintadas = 0;
+		int restantes = 0;
+
 		for (Amenity amenity : Amenity.values()) {
 
-			if (amenity.presenteEn(housing)) {
+			if (!amenity.presenteEn(housing)) {
+				continue;
+			}
+
+			if (pintadas < MAXIMO_COMODIDADES) {
 				fila.add(Chip.informativo(Textos.etiquetaDe(amenity)), "gapright " + Space.XS);
+				pintadas++;
+			} else {
+				restantes++;
 			}
 		}
 
-		if (fila.getComponentCount() == 0) {
+		if (restantes > 0) {
+			fila.add(Labels.muted("+" + restantes), "gapright " + Space.XS);
+		}
+
+		if (pintadas == 0) {
 			fila.add(Labels.muted(Textos.t("catalogo.row.sinComodidades")));
 		}
 

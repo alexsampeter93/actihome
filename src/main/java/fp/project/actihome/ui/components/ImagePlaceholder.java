@@ -41,6 +41,7 @@ public class ImagePlaceholder extends JComponent {
 	private String estado;
 	private boolean disponible = true;
 	private transient BufferedImage foto;
+	private String destacado;
 
 	public ImagePlaceholder() {
 
@@ -93,6 +94,20 @@ public class ImagePlaceholder extends JComponent {
 		repaint();
 	}
 
+	/**
+	 * Distintivo de la esquina superior derecha, en el acento de la estación
+	 * ("Ideal en primavera"). {@code null} para no pintar ninguno (Fase 8.4).
+	 *
+	 * <p>
+	 * Es un texto y no un enumerado de estación a propósito: este componente vive
+	 * en el vocabulario visual del sistema y no debe saber qué es una estación
+	 * ideal ni cómo se decide. Quien lo construye ya tiene esa lógica delante.
+	 */
+	public void setDestacado(String destacado) {
+		this.destacado = destacado;
+		repaint();
+	}
+
 	@Override
 	protected void paintComponent(Graphics g) {
 
@@ -124,6 +139,15 @@ public class ImagePlaceholder extends JComponent {
 			int altoEtiqueta = 24;
 			pintarEtiqueta(g2, estado, Space.SM, alto - Space.SM - altoEtiqueta,
 					disponible ? Theme.acc() : new Color(0, 0, 0, 107), Theme.onAccent());
+		}
+
+		// Arriba a la derecha, la esquina que quedaba libre. Se calcula el ancho de la
+		// caja para anclarla al borde derecho, porque el texto cambia con la estación
+		// y con el idioma ("Ideal en primavera" / "Perfect in spring") y una posición
+		// fija dejaría la etiqueta descolgada o fuera de la foto.
+		if (destacado != null) {
+			pintarEtiqueta(g2, destacado, ancho - Space.SM - anchoDeEtiqueta(g2, destacado), Space.SM, Theme.acc(),
+					Theme.onAccent());
 		}
 
 		g2.setColor(Theme.HAIRLINE);
@@ -175,6 +199,14 @@ public class ImagePlaceholder extends JComponent {
 		for (int x = -alto; x < ancho; x += 14) {
 			g2.drawLine(x, alto, x + alto, 0);
 		}
+	}
+
+	/** Lo que va a ocupar una etiqueta, para poder anclarla a un borde derecho. */
+	private int anchoDeEtiqueta(Graphics2D g2, String texto) {
+
+		g2.setFont(Typography.label(10f));
+
+		return g2.getFontMetrics().stringWidth(texto.toUpperCase()) + Space.SM * 2;
 	}
 
 	private void pintarEtiqueta(Graphics2D g2, String texto, int x, int y, Color fondo, Color tinta) {

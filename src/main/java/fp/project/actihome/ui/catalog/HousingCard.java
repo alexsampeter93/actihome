@@ -137,9 +137,13 @@ public class HousingCard extends JPanel {
 			capa.add(new ScoreDisc(housing.getScore(), ScoreDisc.Tamano.PEQUENO), "pos (container.x2-42) 12");
 		}
 
-		capa.add(new ImagePlaceholder(Textos.tipoDeAlojamiento(housing.getType()),
+		ImagePlaceholder imagen = new ImagePlaceholder(Textos.tipoDeAlojamiento(housing.getType()),
 				disponible ? Textos.t("catalogo.disponibilidad.disponible") : Textos.t("catalogo.disponibilidad.reservada"),
-				disponible, housing.getImage()), "pos 0 0 container.x2 container.y2");
+				disponible, housing.getImage());
+
+		imagen.setDestacado(Destacado.de(housing));
+
+		capa.add(imagen, "pos 0 0 container.x2 container.y2");
 
 		return capa;
 	}

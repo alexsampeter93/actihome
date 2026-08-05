@@ -1,5 +1,6 @@
 package fp.project.actihome.model.services;
 
+import fp.project.actihome.model.entities.User;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 
@@ -85,6 +86,8 @@ public class HousingData {
 	private boolean airConditioning;
 
 	private boolean pets;
+
+	private User.EstacionPreferida idealSeason;
 
 	public HousingData() {
 
@@ -253,6 +256,15 @@ public class HousingData {
 		return this;
 	}
 
+	/**
+	 * En qué estación luce más el alojamiento. Admite {@code null}: no declararla
+	 * es una respuesta válida y significa que la ficha no lleva distintivo.
+	 */
+	public HousingData idealSeason(User.EstacionPreferida idealSeason) {
+		this.idealSeason = idealSeason;
+		return this;
+	}
+
 	public Long getHousingCode() {
 		return housingCode;
 	}
@@ -283,6 +295,10 @@ public class HousingData {
 
 	public String getImage() {
 		return image;
+	}
+
+	public User.EstacionPreferida getIdealSeason() {
+		return idealSeason;
 	}
 
 	public boolean isBreakfast() {
