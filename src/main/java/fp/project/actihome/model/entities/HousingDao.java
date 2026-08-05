@@ -17,6 +17,17 @@ public interface HousingDao extends PagingAndSortingRepository<Housing, Long> {
 	ArrayList<Housing> findAllBy();
 
 	/**
+	 * Los alojamientos ofrecidos para permutar por alguien que no seas tú.
+	 *
+	 * <p>
+	 * El filtro del propietario va en la consulta y no en Java a propósito: es una
+	 * condición de negocio —"los de otros"— y dejarla fuera significaría traerse
+	 * también los tuyos para descartarlos después, con el riesgo de que alguna
+	 * pantalla se olvide de descartarlos y te ofrezca intercambiar contigo mismo.
+	 */
+	ArrayList<Housing> findByOpenToExchangeTrueAndOwnerIdNot(Long ownerId);
+
+	/**
 	 * Búsqueda por tipo, sin distinguir mayúsculas.
 	 *
 	 * <p>

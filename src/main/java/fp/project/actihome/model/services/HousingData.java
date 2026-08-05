@@ -89,6 +89,10 @@ public class HousingData {
 
 	private User.EstacionPreferida idealSeason;
 
+	private boolean openToExchange;
+
+	private String exchangeWanted;
+
 	public HousingData() {
 
 	}
@@ -263,6 +267,26 @@ public class HousingData {
 	public HousingData idealSeason(User.EstacionPreferida idealSeason) {
 		this.idealSeason = idealSeason;
 		return this;
+	}
+
+	/** Si el propietario ofrece este alojamiento para permutar (Fase 8.4). */
+	public HousingData openToExchange(boolean openToExchange) {
+		this.openToExchange = openToExchange;
+		return this;
+	}
+
+	/** Qué busca a cambio, en una línea. Admite {@code null}. */
+	public HousingData exchangeWanted(String exchangeWanted) {
+		this.exchangeWanted = exchangeWanted;
+		return this;
+	}
+
+	public boolean isOpenToExchange() {
+		return openToExchange;
+	}
+
+	public String getExchangeWanted() {
+		return exchangeWanted;
 	}
 
 	public Long getHousingCode() {

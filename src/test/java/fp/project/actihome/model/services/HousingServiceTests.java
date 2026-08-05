@@ -461,4 +461,47 @@ public class HousingServiceTests {
 		assertThrows(AlreadyReservedException.class,
 				() -> housingService.tradeHousings(owner1.getId(), housing1.getId(), housing2.getHousingCode()));
 	}
+
+	/**
+	 * El tablón de intercambios abiertos enseña los de otros y <b>nunca los
+	 * tuyos</b> (Fase 8.4).
+	 *
+	 * <p>
+	 * Es la única regla de negocio que aporta el intercambio abierto, y merece un
+	 * test porque el fallo sería silencioso: la lista se vería igual de llena, solo
+	 * que ofreciéndote permutar contigo mismo. Se comprueban las dos direcciones
+	 * —que el ajeno aparece y el propio no— porque una consulta que devolviera
+	 * siempre la lista vacía pasaría la mitad de la comprobación.
+	 */
+	@Test
+	public void testShowOpenExchangesExcludesYourOwn() throws DuplicateInstanceException, InstanceNotFoundException,
+			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException {
+
+		User propio = signUpUser("DuenoPropio", RoleType.ADMIN);
+		User ajeno = signUpUser("DuenoAjeno", RoleType.ADMIN);
+
+		Housing mio = housingService.uploadHousing(datos(31001).openToExchange(true).exchangeWanted("una cabaña"),
+				propio.getId());
+		Housing suyo = housingService.uploadHousing(datos(31002).name("Casa ajena").description("Descripción ajena")
+				.location("Otra ciudad").openToExchange(true).exchangeWanted("un ático"), ajeno.getId());
+
+		List<Housing> abiertos = housingService.showOpenExchanges(propio.getId());
+
+		assertTrue(abiertos.stream().anyMatch(h -> h.getId().equals(suyo.getId())));
+		assertFalse(abiertos.stream().anyMatch(h -> h.getId().equals(mio.getId())));
+	}
+
+	/** Un alojamiento que no se ofrece no sale en el tablón, aunque sea de otro. */
+	@Test
+	public void testShowOpenExchangesIgnoresClosedOnes() throws DuplicateInstanceException, InstanceNotFoundException,
+			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException {
+
+		User yo = signUpUser("Curioso", RoleType.ADMIN);
+		User otro = signUpUser("Cerrado", RoleType.ADMIN);
+
+		Housing cerrado = housingService.uploadHousing(datos(31003), otro.getId());
+
+		assertFalse(housingService.showOpenExchanges(yo.getId()).stream()
+				.anyMatch(h -> h.getId().equals(cerrado.getId())));
+	}
 }

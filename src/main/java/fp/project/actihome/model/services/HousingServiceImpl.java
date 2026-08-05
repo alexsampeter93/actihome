@@ -158,6 +158,14 @@ public class HousingServiceImpl implements HousingService {
 		housing.setPets(data.isPets());
 
 		housing.setIdealSeason(data.getIdealSeason());
+		housing.setOpenToExchange(data.isOpenToExchange());
+		housing.setExchangeWanted(data.getExchangeWanted());
+	}
+
+	@Override
+	public ArrayList<Housing> showOpenExchanges(Long ownerId) {
+
+		return housingDao.findByOpenToExchangeTrueAndOwnerIdNot(ownerId);
 	}
 
 	@Override

@@ -92,3 +92,12 @@ ALTER TABLE REVIEWS ADD COLUMN IF NOT EXISTS ownerResponseDate DATETIME;
 -- a mano:
 --     ALTER TABLE HOUSINGS ADD COLUMN idealSeason VARCHAR(20);
 ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS idealSeason VARCHAR(20);
+
+-- Fase 8.4: intercambio abierto. Un propietario puede declarar que acepta
+-- permutar un alojamiento y qué busca a cambio, y eso alimenta la lista de
+-- "intercambios abiertos ahora mismo" de la pantalla de intercambio. Quien tenga
+-- una base MySQL anterior a esta fase necesita aplicar a mano:
+--     ALTER TABLE HOUSINGS ADD COLUMN openToExchange BOOLEAN DEFAULT FALSE NOT NULL;
+--     ALTER TABLE HOUSINGS ADD COLUMN exchangeWanted VARCHAR(120);
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS openToExchange BOOLEAN DEFAULT FALSE NOT NULL;
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS exchangeWanted VARCHAR(120);

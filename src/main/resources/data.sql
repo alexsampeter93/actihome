@@ -403,3 +403,28 @@ UPDATE HOUSINGS SET idealSeason = 'INVIERNO' WHERE idealSeason IS NULL AND housi
 UPDATE HOUSINGS SET idealSeason = 'VERANO'   WHERE idealSeason IS NULL AND housingCode IN (10002, 10003, 10006, 10008);
 UPDATE HOUSINGS SET idealSeason = 'OTONO'    WHERE idealSeason IS NULL AND housingCode IN (10004, 10009);
 UPDATE HOUSINGS SET idealSeason = 'PRIMAVERA' WHERE idealSeason IS NULL AND housingCode IN (10005, 10007);
+
+-- ---------------------------------------------------------------------------
+-- Intercambios abiertos de ejemplo (Fase 8.4)
+--
+-- Alimentan la lista de "intercambios abiertos ahora mismo" de la pantalla de
+-- intercambio. Sin ellos, esa pantalla sigue estando vacía para quien todavía no
+-- tiene alojamientos, que es justo a quien hay que convencer de publicar uno.
+--
+-- Van como UPDATE al final por lo mismo que las fotos y la estación ideal: los
+-- INSERT están protegidos por WHERE NOT EXISTS y en una base ya creada no se
+-- ejecutan nunca. La condición "openToExchange = FALSE" lo hace idempotente y
+-- respeta a quien haya retirado su oferta desde la aplicación.
+--
+-- Son de tres propietarios distintos (Marcos, Lucia, Elena) a propósito: la
+-- lista tiene que enseñar variedad de gente, no el tablón de una sola persona.
+-- ---------------------------------------------------------------------------
+
+UPDATE HOUSINGS SET openToExchange = TRUE, exchangeWanted = 'una casa rural para agosto'
+WHERE openToExchange = FALSE AND housingCode = 10005;
+
+UPDATE HOUSINGS SET openToExchange = TRUE, exchangeWanted = 'un apartamento urbano con buena conexión'
+WHERE openToExchange = FALSE AND housingCode = 10008;
+
+UPDATE HOUSINGS SET openToExchange = TRUE, exchangeWanted = 'una cabaña de montaña en invierno'
+WHERE openToExchange = FALSE AND housingCode = 10009;

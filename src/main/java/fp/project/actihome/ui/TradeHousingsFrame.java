@@ -1,9 +1,13 @@
 package fp.project.actihome.ui;
 
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.List;
 import java.util.Optional;
 
 import javax.swing.JButton;
@@ -26,6 +30,7 @@ import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Card;
+import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
@@ -338,21 +343,160 @@ public class TradeHousingsFrame extends JFrame {
 	}
 
 	/** Lo que se ve cuando el administrador todavía no ha publicado nada. */
+	/**
+	 * El estado vacío: explica el mecanismo y enseña que hay gente usándolo.
+	 *
+	 * <p>
+	 * <b>Antes solo bloqueaba.</b> Decía "necesitas un alojamiento" y ofrecía un
+	 * botón, que es correcto y no convence a nadie: quien llega aquí sin
+	 * alojamientos no sabe todavía qué es intercambiar en ActiHome, y se le está
+	 * pidiendo publicar una casa para averiguarlo.
+	 *
+	 * <p>
+	 * El handoff lo resuelve con dos añadidos, y los dos hacen un trabajo
+	 * distinto. Los <b>tres pasos</b> contestan «¿cómo funciona esto?». Los
+	 * <b>intercambios abiertos ahora mismo</b> contestan la pregunta que de verdad
+	 * frena, que es «¿y hay alguien al otro lado?» — y esa no se puede contestar
+	 * con texto fijo, hace falta enseñar ofertas reales de otros propietarios.
+	 */
 	private JPanel estadoVacio() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.XXL, 0, Space.XXL, 0), "[grow,fill]",
-				"[]" + Space.LG + "[]" + Space.XS + "[]" + Space.XL + "[]"));
+				""));
 		panel.setOpaque(false);
 
-		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.ACCION)));
+		// Olaz baja de mediano a pequeño (Fase 8.4). La regla del proyecto es "tamaño
+		// según el vacío", y esta pantalla ha dejado de estar vacía: con los tres
+		// pasos y la caja de intercambios abiertos debajo, una mascota grande empuja
+		// lo que de verdad convence fuera de la ventana.
+		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.ACCION)), "gapbottom " + Space.MD);
+
 		vacioTitulo = Labels.title(Textos.t("intercambio.vacio.titulo"));
-		panel.add(centrar(vacioTitulo));
+		panel.add(centrar(vacioTitulo), "gapbottom " + Space.XS);
+
 		vacioCuerpo = Labels.muted(Textos.t("intercambio.vacio.cuerpo"));
-		panel.add(centrar(vacioCuerpo));
+		panel.add(centrar(vacioCuerpo), "gapbottom " + Space.XXL);
+
+		panel.add(losTresPasos(), "gapbottom " + Space.XXL);
+
+		// Solo si hay ofertas de otros. Una caja titulada "intercambios abiertos ahora
+		// mismo" y vacía debajo diría exactamente lo contrario de lo que pretende.
+		JPanel abiertos = intercambiosAbiertos();
+
+		if (abiertos != null) {
+			panel.add(abiertos, "gapbottom " + Space.XXL);
+		}
+
 		vacioBoton = Buttons.primary(Textos.t("intercambio.vacio.boton"), e -> navigator.ir(UploadHousingFrame.class));
 		panel.add(centrar(vacioBoton));
 
 		return panel;
+	}
+
+	/** Los tres pasos del mecanismo, en columnas. Texto fijo: es cómo funciona, no datos. */
+	private JPanel losTresPasos() {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0),
+				"[grow,fill]" + Space.XL + "[grow,fill]" + Space.XL + "[grow,fill]", "[]"));
+		fila.setOpaque(false);
+
+		fila.add(paso(1, "intercambio.paso1"), "aligny top");
+		fila.add(paso(2, "intercambio.paso2"), "aligny top");
+		fila.add(paso(3, "intercambio.paso3"), "aligny top");
+
+		return fila;
+	}
+
+	private JPanel paso(int numero, String clave) {
+
+		JPanel columna = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XS + "[]"));
+		columna.setOpaque(false);
+
+		columna.add(Labels.capsAccent(String.valueOf(numero)));
+		columna.add(new WrappingText(Textos.t(clave)), "growx, wmin 0");
+
+		return columna;
+	}
+
+	/**
+	 * Las ofertas abiertas de otros propietarios, o {@code null} si no hay ninguna.
+	 *
+	 * <p>
+	 * Cada línea lleva a la ficha del alojamiento. No es decoración: alguien que
+	 * lee "Loft Barrio Gótico busca casa rural" quiere ver ese loft, y una lista
+	 * que enseña algo apetecible y no deja abrirlo es peor que no enseñarlo.
+	 */
+	private JPanel intercambiosAbiertos() {
+
+		User usuario = sessionManager.getLoggedInUser();
+
+		if (usuario == null) {
+			return null;
+		}
+
+		List<Housing> abiertos = housingService.showOpenExchanges(usuario.getId());
+
+		if (abiertos.isEmpty()) {
+			return null;
+		}
+
+		Card tarjeta = new Card(new MigLayout("wrap 1, " + Space.insets(Space.XL), "[grow,fill]", ""));
+
+		tarjeta.add(Labels.capsAccent(Textos.t("intercambio.abiertos.titulo")), "gapbottom " + Space.MD);
+
+		for (Housing abierto : abiertos) {
+			tarjeta.add(lineaDeOferta(abierto), "gapbottom " + Space.SM);
+		}
+
+		return tarjeta;
+	}
+
+	private JPanel lineaDeOferta(Housing abierto) {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[grow,fill]", "[]"));
+		fila.setOpaque(false);
+		fila.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+		fila.add(new Punto(), "w 7!, h 7!, aligny center");
+
+		String texto = abierto.getExchangeWanted() == null
+				? Textos.t("intercambio.abiertos.sinDetalle", abierto.getName())
+				: Textos.t("intercambio.abiertos.busca", abierto.getName(), abierto.getExchangeWanted());
+
+		fila.add(Labels.body(texto), "aligny center");
+
+		fila.addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(abierto));
+			}
+		});
+
+		return fila;
+	}
+
+	/** El disco del acento que hace de viñeta. Se dibuja porque "●" no está en las fuentes. */
+	private static class Punto extends JComponent {
+
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		protected void paintComponent(Graphics g) {
+
+			Graphics2D g2 = (Graphics2D) g.create();
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+			g2.setColor(Theme.acc());
+			g2.fillOval(0, 0, getWidth(), getHeight());
+
+			g2.dispose();
+		}
+
+		@Override
+		public Dimension getMinimumSize() {
+			return new Dimension(7, 7);
+		}
 	}
 
 	private JPanel centrar(JComponent componente) {

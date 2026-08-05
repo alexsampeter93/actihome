@@ -91,6 +91,10 @@ public class HousingForm extends JPanel {
 
 	/** Estacion ideal, con null como primera opcion ("Cualquiera"). */
 	private final JComboBox<User.EstacionPreferida> estacionIdeal;
+
+	/** Oferta de intercambio y, si se activa, qué se busca a cambio (Fase 8.4). */
+	private final Chip intercambio = new Chip(Textos.t("alojamientoForm.intercambio"));
+	private final Field queBusca = Field.text(Textos.t("alojamientoForm.queBusca"));
 	private final Field habitaciones;
 	private final Field precio;
 	private final Field ubicacion;
@@ -131,7 +135,7 @@ public class HousingForm extends JPanel {
 		// vacía a los lados. Repartido en dos, cabe entero y el reparto tiene sentido
 		// propio: a la izquierda lo que identifica el alojamiento, a la derecha lo que
 		// lo describe y lo que ofrece.
-		super(new MigLayout(Space.insets(0), "[grow,fill]" + Space.XXL + "[grow,fill]", "[]"));
+		super(new MigLayout("hidemode 3, " + Space.insets(0), "[grow,fill]" + Space.XXL + "[grow,fill]", "[]"));
 		setOpaque(false);
 
 		codigo = Field.text(Textos.t("alojamientoForm.codigo"));
@@ -308,6 +312,15 @@ public class HousingForm extends JPanel {
 		panel.add(etiquetaEstacion, "gaptop " + Space.LG);
 		panel.add(estacionIdeal, "gaptop " + Space.XXS + ", height " + Typography.altoDeControl() + "!");
 
+		// El campo de "qué busco" solo tiene sentido si se ofrece el intercambio, así
+		// que aparece y desaparece con el chip en vez de estar siempre ahí en gris.
+		// "hidemode 3" es lo que hace que además deje de reservar su hueco.
+		panel.add(intercambio, "gaptop " + Space.LG);
+		panel.add(queBusca, "gaptop " + Space.XXS);
+
+		intercambio.addActionListener(e -> queBusca.setVisible(intercambio.isSelected()));
+		queBusca.setVisible(false);
+
 		return panel;
 	}
 
@@ -375,6 +388,8 @@ public class HousingForm extends JPanel {
 		nombre.setEtiqueta(Textos.t("alojamientoForm.nombre"));
 		etiquetaTipo.setText(Textos.t("catalogo.filtro.tipo"));
 		etiquetaEstacion.setText(Textos.t("alojamientoForm.estacionIdeal"));
+		intercambio.setText(Textos.t("alojamientoForm.intercambio"));
+		queBusca.setEtiqueta(Textos.t("alojamientoForm.queBusca"));
 		habitaciones.setEtiqueta(Textos.t("alojamientoForm.habitaciones"));
 		precio.setEtiqueta(Textos.t("alojamientoForm.precio"));
 		ubicacion.setEtiqueta(Textos.t("alojamientoForm.ubicacion"));
@@ -400,6 +415,9 @@ public class HousingForm extends JPanel {
 		nombre.setText(housing.getName() == null ? "" : housing.getName());
 		tipo.setSelectedItem(housing.getType());
 		estacionIdeal.setSelectedItem(housing.getIdealSeason());
+		intercambio.setSelected(housing.isOpenToExchange());
+		queBusca.setText(housing.getExchangeWanted() == null ? "" : housing.getExchangeWanted());
+		queBusca.setVisible(housing.isOpenToExchange());
 		habitaciones.setText(String.valueOf(housing.getNumberOfRooms()));
 		precio.setText(housing.getPricePerNight() == null ? "" : housing.getPricePerNight().toPlainString());
 		ubicacion.setText(housing.getLocation() == null ? "" : housing.getLocation());
@@ -424,6 +442,9 @@ public class HousingForm extends JPanel {
 		nombre.setText("");
 		tipo.setSelectedIndex(0);
 		estacionIdeal.setSelectedIndex(0);
+		intercambio.setSelected(false);
+		queBusca.setText("");
+		queBusca.setVisible(false);
 		habitaciones.setText("");
 		precio.setText("");
 		ubicacion.setText("");
@@ -465,7 +486,9 @@ public class HousingForm extends JPanel {
 				.lunch(comida.isSelected())
 				.dinner(cena.isSelected())
 				.image(fotoElegida != null ? nombreParaFotoNueva(housingCode) : imagenExistente)
-				.idealSeason((User.EstacionPreferida) estacionIdeal.getSelectedItem());
+				.idealSeason((User.EstacionPreferida) estacionIdeal.getSelectedItem())
+				.openToExchange(intercambio.isSelected())
+				.exchangeWanted(queBusca.getText().trim().isEmpty() ? null : queBusca.getText().trim());
 
 		comodidades.forEach((amenity, chip) -> data.amenity(amenity, chip.isSelected()));
 

@@ -90,6 +90,10 @@ public class Housing {
 
 	private User.EstacionPreferida idealSeason;
 
+	private boolean openToExchange;
+
+	private String exchangeWanted;
+
 	private Double score;
 
 	private String location;
@@ -276,6 +280,44 @@ public class Housing {
 
 	public void setIdealSeason(User.EstacionPreferida idealSeason) {
 		this.idealSeason = idealSeason;
+	}
+
+	/**
+	 * Si el propietario acepta permutar este alojamiento (Fase 8.4).
+	 *
+	 * <p>
+	 * <b>Es una oferta pública, no una propuesta entre dos personas</b>, y por eso
+	 * vive aquí y no en una tabla de propuestas con remitente y destinatario. La
+	 * diferencia no es de implementación: una propuesta necesita un flujo de
+	 * aceptar y rechazar, estados intermedios y avisos; una oferta abierta es un
+	 * tablón de anuncios, y es exactamente lo que la pantalla de intercambio
+	 * necesita para dejar de estar vacía. El intercambio en sí ya existía y sigue
+	 * siendo inmediato.
+	 */
+	public boolean isOpenToExchange() {
+		return openToExchange;
+	}
+
+	public void setOpenToExchange(boolean openToExchange) {
+		this.openToExchange = openToExchange;
+	}
+
+	/**
+	 * Qué busca a cambio, en una línea ("una casa rural para agosto"), o
+	 * {@code null} si no lo concreta.
+	 *
+	 * <p>
+	 * Es texto libre y no una lista de criterios a propósito. Un buscador de
+	 * intercambios con filtros de tipo, zona y fechas sería un producto entero; lo
+	 * que hace falta aquí es que una persona pueda decir en sus palabras qué le
+	 * interesa, que es como se habla de esto de verdad.
+	 */
+	public String getExchangeWanted() {
+		return exchangeWanted;
+	}
+
+	public void setExchangeWanted(String exchangeWanted) {
+		this.exchangeWanted = exchangeWanted;
 	}
 
 	public Double getScore() {

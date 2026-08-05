@@ -31,6 +31,17 @@ public interface HousingService {
 	ArrayList<Housing> showHousings();
 
 	/**
+	 * Los intercambios abiertos por otros propietarios (Fase 8.4).
+	 *
+	 * <p>
+	 * Alimenta la lista de "intercambios abiertos ahora mismo" de la pantalla de
+	 * intercambio, que es lo que la saca del estado vacio. Excluye los propios: un
+	 * tablon de anuncios en el que aparecen tus propios anuncios no informa de
+	 * nada.
+	 */
+	ArrayList<Housing> showOpenExchanges(Long ownerId);
+
+	/**
 	 * Modifica un alojamiento existente.
 	 *
 	 * <p>

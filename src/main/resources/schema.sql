@@ -80,6 +80,12 @@ CREATE TABLE IF NOT EXISTS HOUSINGS (
 	-- distintivo. Obligar a elegir una convertiría un matiz editorial en un
 	-- trámite.
 	idealSeason VARCHAR(20),
+	-- Intercambio abierto (Fase 8.4): el propietario declara que acepta permutar
+	-- este alojamiento, y opcionalmente qué busca a cambio. Es una OFERTA publica,
+	-- no una propuesta entre dos personas: por eso vive en el alojamiento y no en
+	-- una tabla de propuestas con remitente y destinatario.
+	openToExchange BOOLEAN DEFAULT FALSE NOT NULL,
+	exchangeWanted VARCHAR(120),
 	score DOUBLE,
 	-- La disponibilidad ya no es una columna: se calcula a partir de las reservas
 	-- activas de cada alojamiento (Fase 7.5, ver migracion-h2.sql). Un booleano
