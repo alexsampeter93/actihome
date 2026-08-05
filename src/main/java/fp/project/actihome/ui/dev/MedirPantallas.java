@@ -66,7 +66,7 @@ public class MedirPantallas {
 			medir("Alta alojamiento", c.getBean(UploadHousingFrame.class), null, util);
 			medir("Editar alojamiento", c.getBean(UpdateHousingFrame.class), f -> ((UpdateHousingFrame)f).setHousingId(propio.getId()), util);
 			medir("Intercambio", c.getBean(TradeHousingsFrame.class), f -> ((TradeHousingsFrame)f).setHousingId(propio.getId()), util);
-			medir("Perfil", c.getBean(UpdateProfileFrame.class), null, util);
+			// "Perfil" se fusiono con Ajustes en la Fase 8.4.
 			medir("Contrasena", c.getBean(ChangePasswordFrame.class), null, util);
 			medir("Login", c.getBean(LoginFrame.class), null, util);
 			medir("Registro", c.getBean(SignUpFrame.class), null, util);

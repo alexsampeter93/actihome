@@ -6,7 +6,6 @@ import java.util.Locale;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -26,13 +25,18 @@ import fp.project.actihome.model.entities.User.EstacionPreferida;
 import fp.project.actihome.model.entities.User.Idioma;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.BackupFailedException;
+import fp.project.actihome.model.exceptions.DuplicateInstanceException;
 import fp.project.actihome.model.exceptions.BackupNotAvailableException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.services.BackupService;
 import fp.project.actihome.model.services.UserService;
 import fp.project.actihome.ui.catalog.CatalogFilters;
+import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Card;
+import fp.project.actihome.ui.components.Field;
+import fp.project.actihome.ui.components.Interruptor;
 import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
@@ -90,11 +94,27 @@ public class SettingsFrame extends JFrame {
 	private final transient Navigator navigator;
 	private final HeaderPanel headerPanel;
 
-	private JLabel superTitulo;
-	private JLabel titulo;
+	// Cabecera de identidad
+	private JPanel avatar;
+	private JLabel nombreCompleto;
+	private JLabel identidad;
+	private JButton cambiarRol;
+
+	// Tarjeta de datos personales
+	private JLabel superTituloDatos;
+	private Field usuario;
+	private Field nombre;
+	private Field apellido;
+	private Field correo;
+	private Field telefono;
+	private Field localidad;
+
+	// Tarjeta de preferencias
+	private JLabel superTituloPreferencias;
 	private JLabel etiquetaEstacion;
 	private JComboBox<Season> estacion;
-	private JCheckBox particulas;
+	private JLabel etiquetaParticulas;
+	private Interruptor particulas;
 	private JLabel etiquetaIdioma;
 	private JComboBox<Idioma> idioma;
 	private JLabel etiquetaVista;
@@ -106,6 +126,8 @@ public class SettingsFrame extends JFrame {
 	private JLabel errorCopiaDeSeguridad;
 	private JButton guardar;
 	private JButton cancelar;
+	private JButton enlaceContrasena;
+	private JButton enlaceCerrarSesion;
 	private JLabel error;
 
 	public SettingsFrame(UserService userService, BackupService backupService, SessionManager sessionManager,
@@ -142,7 +164,7 @@ public class SettingsFrame extends JFrame {
 
 		JPanel exterior = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.GIANT), "[grow]", "[grow]"));
 		exterior.setOpaque(false);
-		exterior.add(formulario(), Layout.ancho(Layout.FORMULARIO) + ", aligny center, alignx center");
+		exterior.add(formulario(), Layout.ancho(Layout.CONTENIDO) + ", aligny center, alignx center");
 
 		raiz.add(headerPanel, "growx");
 		raiz.add(Rescate.envolver(exterior), "grow");
@@ -152,23 +174,31 @@ public class SettingsFrame extends JFrame {
 		Foco.alPulsarEscape(this, () -> navigator.ir(ShowHousingsFrame.class));
 	}
 
+	/**
+	 * Cabecera de identidad y, debajo, las dos tarjetas temáticas en paralelo.
+	 *
+	 * <p>
+	 * <b>Dos columnas y no una lista larga.</b> Con perfil y preferencias juntos
+	 * son once controles, y apilados no caben en la ventana — lo que la regla de
+	 * escritorio del proyecto no permite—. Repartidos, cabe entero y el corte tiene
+	 * sentido propio: a la izquierda <em>quién eres</em>, a la derecha <em>cómo
+	 * quieres ver la aplicación</em>.
+	 */
 	private JPanel formulario() {
 
-		// "hidemode 3": el bloque de copia de seguridad solo se ve para ADMIN
-		// (ver precargar()), y sin esto seguiría reservando su hueco vacío para
-		// quien no lo ve — el mismo mecanismo que ya usa el hero contraíble del
-		// catálogo.
-		JPanel panel = new JPanel(new MigLayout("wrap 1, hidemode 3, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.XXL + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.LG + "[]"
-						+ Space.LG + "[]" + Space.LG + "[]"));
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
+				"[]" + Space.XL + "[]" + Space.XL + "[]" + Space.LG + "[]"));
 		panel.setOpaque(false);
 
-		panel.add(cabecera());
-		panel.add(campoEstacion());
-		panel.add(campoParticulas());
-		panel.add(campoIdioma());
-		panel.add(campoVistaPorDefecto());
-		panel.add(campoCopiaDeSeguridad());
+		panel.add(cabeceraDeIdentidad());
+
+		JPanel columnas = new JPanel(
+				new MigLayout(Space.insets(0), "[grow,fill]" + Space.XL + "[grow,fill]", "[grow,fill]"));
+		columnas.setOpaque(false);
+		columnas.add(tarjetaDatosPersonales(), "aligny top");
+		columnas.add(tarjetaPreferencias(), "aligny top");
+
+		panel.add(columnas);
 
 		error = Labels.error(" ");
 		panel.add(error);
@@ -178,24 +208,86 @@ public class SettingsFrame extends JFrame {
 		return panel;
 	}
 
-	private JPanel cabecera() {
+	/**
+	 * Avatar grande, nombre real y, debajo, usuario · rol · localidad. A la derecha
+	 * el cambio de rol.
+	 *
+	 * <p>
+	 * Es la pieza que convierte dos formularios en <b>una cuenta</b>: antes, editar
+	 * el perfil y cambiar los ajustes eran dos pantallas sin nada en común, y en
+	 * ninguna de las dos aparecía en ningún sitio de quién eran los datos que se
+	 * estaban tocando.
+	 */
+	private JPanel cabeceraDeIdentidad() {
 
-		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[grow,fill]push[]", ""));
+		JPanel panel = new JPanel(
+				new MigLayout(Space.insets(0), "[]" + Space.MD + "[grow,fill]push[]", "[]"));
 		panel.setOpaque(false);
 
-		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
-		titulos.setOpaque(false);
+		avatar = new JPanel(new MigLayout(Space.insets(0), "[]", "[]"));
+		avatar.setOpaque(false);
+		panel.add(avatar, "aligny center");
 
-		superTitulo = Labels.capsAccent(" ");
-		titulo = Labels.title(" ");
+		JPanel textos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]"));
+		textos.setOpaque(false);
 
-		titulos.add(superTitulo);
-		titulos.add(titulo, "gaptop " + Space.XXS);
+		nombreCompleto = Labels.title(" ");
+		identidad = Labels.muted(" ");
 
-		panel.add(titulos);
-		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "top, w 56!, h 56!");
+		textos.add(nombreCompleto);
+		textos.add(identidad);
+		panel.add(textos, "aligny center");
+
+		cambiarRol = Buttons.secondary(" ", e -> cambiarRol());
+		panel.add(cambiarRol, "aligny center");
 
 		return panel;
+	}
+
+	/** Tarjeta izquierda: los datos de la persona. */
+	private Card tarjetaDatosPersonales() {
+
+		Card tarjeta = new Card(new MigLayout("wrap 2, " + Space.insets(Space.XL),
+				"[grow,fill]" + Space.MD + "[grow,fill]", ""));
+
+		superTituloDatos = Labels.capsAccent(" ");
+		tarjeta.add(superTituloDatos, "span 2, gapbottom " + Space.MD);
+
+		usuario = Field.text(" ");
+		nombre = Field.text(" ");
+		apellido = Field.text(" ");
+		correo = Field.text(" ");
+		telefono = Field.text(" ");
+		localidad = Field.text(" ");
+
+		tarjeta.add(usuario, "gapbottom " + Space.MD);
+		tarjeta.add(nombre, "gapbottom " + Space.MD);
+		tarjeta.add(apellido, "gapbottom " + Space.MD);
+		tarjeta.add(correo, "gapbottom " + Space.MD);
+		tarjeta.add(telefono);
+		tarjeta.add(localidad);
+
+		return tarjeta;
+	}
+
+	/** Tarjeta derecha: cómo se ve y se comporta la aplicación. */
+	private Card tarjetaPreferencias() {
+
+		// "hidemode 3": el bloque de copia de seguridad solo se ve para ADMIN (ver
+		// precargar()), y sin esto seguiría reservando su hueco vacío para quien no
+		// lo ve.
+		Card tarjeta = new Card(new MigLayout("wrap 1, hidemode 3, " + Space.insets(Space.XL), "[grow,fill]", ""));
+
+		superTituloPreferencias = Labels.capsAccent(" ");
+		tarjeta.add(superTituloPreferencias, "gapbottom " + Space.MD);
+
+		tarjeta.add(campoEstacion(), "gapbottom " + Space.MD);
+		tarjeta.add(campoIdioma(), "gapbottom " + Space.MD);
+		tarjeta.add(campoVistaPorDefecto(), "gapbottom " + Space.MD);
+		tarjeta.add(campoParticulas(), "gapbottom " + Space.MD);
+		tarjeta.add(campoCopiaDeSeguridad());
+
+		return tarjeta;
 	}
 
 	private JPanel campoEstacion() {
@@ -227,16 +319,27 @@ public class SettingsFrame extends JFrame {
 		return panel;
 	}
 
+	/**
+	 * Las partículas, con un interruptor de verdad y no una casilla.
+	 *
+	 * <p>
+	 * Lo pide el handoff y la razón es de gramática: una casilla dice «marca esto y
+	 * luego pulsa Guardar», un interruptor dice «esto está encendido». En una
+	 * pantalla de preferencias lo que se manipula no son datos que rellenar sino
+	 * estados que activar. La etiqueta va a la izquierda y el control a la derecha,
+	 * que es la disposición de una fila de ajuste — al revés que un campo de
+	 * formulario, donde el rótulo va encima.
+	 */
 	private JPanel campoParticulas() {
 
-		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[grow,fill]", ""));
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[grow,fill]push[]", "[]"));
 		panel.setOpaque(false);
 
-		particulas = new JCheckBox();
-		particulas.setOpaque(false);
-		particulas.setFont(Typography.sans(Typography.BODY));
+		etiquetaParticulas = Labels.caps(" ");
+		particulas = new Interruptor();
 
-		panel.add(particulas);
+		panel.add(etiquetaParticulas, "aligny center");
+		panel.add(particulas, "aligny center");
 
 		return panel;
 	}
@@ -376,7 +479,8 @@ public class SettingsFrame extends JFrame {
 
 	private JPanel acciones() {
 
-		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
+		JPanel fila = new JPanel(
+				new MigLayout(Space.insets(0), "[]" + Space.LG + "[]push[]" + Space.XL + "[]", ""));
 		fila.setOpaque(false);
 
 		// El texto se fija en actualizarTextos() en vez de aquí, igual que el resto
@@ -384,10 +488,53 @@ public class SettingsFrame extends JFrame {
 		guardar = Buttons.primary(" ", e -> guardar());
 		cancelar = Buttons.link(" ", e -> navigator.ir(ShowHousingsFrame.class));
 
+		// A la derecha, separadas de los botones de guardar, las dos acciones que no
+		// son "guardar cambios" sino salir de la cuenta por otro lado. El handoff las
+		// quiere como texto simple: no compiten con la acción principal y dejan de
+		// necesitar el menú desplegable para llegar a ellas.
+		enlaceContrasena = Buttons.link(" ", e -> navigator.ir(ChangePasswordFrame.class));
+		enlaceCerrarSesion = Buttons.link(" ", e -> cerrarSesion());
+
 		fila.add(guardar, "height " + Typography.altoDeBoton() + "!");
 		fila.add(cancelar);
+		fila.add(enlaceContrasena);
+		fila.add(enlaceCerrarSesion);
 
 		return fila;
+	}
+
+	private void cerrarSesion() {
+
+		sessionManager.logout();
+		navigator.ir(LoginFrame.class);
+	}
+
+	/**
+	 * Cambia entre cliente y administrador.
+	 *
+	 * <p>
+	 * El cambio se <b>persiste</b>, no se toca solo la sesión, y eso no es un
+	 * detalle: {@code PermissionChecker} recarga el usuario de la base de datos en
+	 * cada llamada, así que un rol cambiado únicamente en memoria no cambiaría
+	 * nada de lo que el servicio autoriza.
+	 */
+	private void cambiarRol() {
+
+		User actual = sessionManager.getLoggedInUser();
+
+		if (actual == null) {
+			navigator.ir(LoginFrame.class);
+			return;
+		}
+
+		try {
+			sessionManager.setLoggedInUser(userService.changeRole(actual.getId()));
+			navigator.ir(ShowHousingsFrame.class);
+
+		} catch (InstanceNotFoundException ex) {
+			sessionManager.logout();
+			navigator.ir(LoginFrame.class);
+		}
 	}
 
 	/**
@@ -397,10 +544,18 @@ public class SettingsFrame extends JFrame {
 	 */
 	private void actualizarTextos() {
 
-		superTitulo.setText(Textos.t("ajustes.superTitulo"));
-		titulo.setText(Textos.t("ajustes.titulo"));
+		superTituloDatos.setText(Textos.t("ajustes.datosPersonales"));
+		superTituloPreferencias.setText(Textos.t("ajustes.preferencias"));
+
+		usuario.setEtiqueta(Textos.t("login.usuario"));
+		nombre.setEtiqueta(Textos.t("registro.nombre"));
+		apellido.setEtiqueta(Textos.t("registro.apellido"));
+		correo.setEtiqueta(Textos.t("registro.correo"));
+		telefono.setEtiqueta(Textos.t("registro.telefono"));
+		localidad.setEtiqueta(Textos.t("registro.localidad"));
+
 		etiquetaEstacion.setText(Textos.t("ajustes.estacion.label"));
-		particulas.setText(Textos.t("ajustes.particulas.label"));
+		etiquetaParticulas.setText(Textos.t("ajustes.particulas.label"));
 		etiquetaIdioma.setText(Textos.t("ajustes.idioma.label"));
 		etiquetaVista.setText(Textos.t("ajustes.vista.label"));
 		vistaPorDefecto.actualizarTextos(Textos.t("catalogo.vista.lista"), Textos.t("catalogo.vista.cuadricula"));
@@ -409,6 +564,8 @@ public class SettingsFrame extends JFrame {
 		exportarCopiaDeSeguridad.setText(Textos.t("ajustes.backup.boton"));
 		guardar.setText(Textos.t("ajustes.guardar"));
 		cancelar.setText(Textos.t("ajustes.cancelar"));
+		enlaceContrasena.setText(Textos.t("header.menu.contrasena"));
+		enlaceCerrarSesion.setText(Textos.t("header.menu.cerrarSesion"));
 
 		// Fuerza a los desplegables a repintar su selección actual con el renderer,
 		// que es quien traduce los nombres de estación e idioma.
@@ -435,24 +592,87 @@ public class SettingsFrame extends JFrame {
 				: Theme.estacion();
 
 		estacion.setSelectedItem(estacionInicial);
-		particulas.setSelected(actual.isParticlesEnabled());
+		particulas.setEncendido(actual.isParticlesEnabled());
 		idioma.setSelectedItem(actual.getLanguage());
 		vistaPorDefecto.setActivo(actual.isDefaultGridView() ? CatalogFilters.VISTA_CUADRICULA : 0);
 		bloqueCopiaDeSeguridad.setVisible(actual.getRole() == RoleType.ADMIN);
 		errorCopiaDeSeguridad.setVisible(false);
 
+		usuario.setText(actual.getUsername());
+		nombre.setText(actual.getName());
+		apellido.setText(actual.getSurname());
+		correo.setText(actual.getEmail());
+		telefono.setText(String.valueOf(actual.getPhoneNumber()));
+		localidad.setText(actual.getLocality());
+
+		// El avatar se reconstruye en cada visita en lugar de guardarse: su color y
+		// sus iniciales dependen del nombre, que esta misma pantalla puede acabar de
+		// cambiar.
+		avatar.removeAll();
+		avatar.add(Avatar.relleno(actual.getName(), actual.getSurname(), 64), "w 64!, h 64!");
+
+		nombreCompleto.setText(actual.getName() + " " + actual.getSurname());
+		identidad.setText("@" + actual.getUsername() + " · "
+				+ Textos.t(actual.getRole() == RoleType.ADMIN ? "header.usuario.tooltip.admin"
+						: "header.usuario.tooltip.cliente")
+				+ (actual.getLocality() == null || actual.getLocality().isEmpty() ? ""
+						: " · " + actual.getLocality()));
+
+		cambiarRol.setText(Textos.t(actual.getRole() == RoleType.ADMIN ? "header.menu.rol.aCliente"
+				: "header.menu.rol.aAdmin"));
+
 		error.setText(" ");
 	}
 
+	/**
+	 * Guarda de una vez el perfil y las preferencias.
+	 *
+	 * <p>
+	 * <b>Son dos llamadas al servicio y un solo botón</b>, y el orden importa:
+	 * primero el perfil, que es el que puede fallar por un nombre de usuario ya
+	 * ocupado. Si fallara después de haber guardado las preferencias, el usuario
+	 * vería un error habiendo cambiado ya media pantalla. Las preferencias no
+	 * pueden fallar por conflicto con nadie, así que van segundas.
+	 *
+	 * <p>
+	 * No es una transacción: si la segunda llamada fallara —solo puede hacerlo
+	 * porque la cuenta haya dejado de existir entre una y otra— quedaría el perfil
+	 * guardado y las preferencias no. Se acepta a conciencia: montar una
+	 * transacción de aplicación para dos escrituras sobre la misma fila, en una
+	 * aplicación de escritorio de un solo usuario, sería más maquinaria que
+	 * problema.
+	 */
 	private void guardar() {
 
 		Season estacionElegida = (Season) estacion.getSelectedItem();
 		Idioma idiomaElegido = (Idioma) idioma.getSelectedItem();
-		boolean particulasActivas = particulas.isSelected();
+		boolean particulasActivas = particulas.isEncendido();
 
 		boolean vistaCuadricula = vistaPorDefecto.getActivo() == CatalogFilters.VISTA_CUADRICULA;
 
+		if (usuario.getText().trim().isEmpty()) {
+			error.setText(Textos.t("perfil.error.usuarioVacio"));
+			return;
+		}
+
+		int numeroDeTelefono;
+
 		try {
+			// Se valida aquí y no se deja caer en el catch de abajo: un teléfono mal
+			// escrito no es un fallo del servicio, y mezclarlo con las excepciones de
+			// negocio produce mensajes de error que hablan de otra cosa.
+			numeroDeTelefono = Integer.parseInt(telefono.getText().trim());
+
+		} catch (NumberFormatException ex) {
+			error.setText(Textos.t("perfil.error.telefonoInvalido"));
+			return;
+		}
+
+		try {
+			userService.updateProfile(sessionManager.getLoggedInUser().getId(), usuario.getText().trim(),
+					nombre.getText().trim(), apellido.getText().trim(), correo.getText().trim(), numeroDeTelefono,
+					localidad.getText().trim());
+
 			User actualizado = userService.updatePreferences(sessionManager.getLoggedInUser().getId(),
 					EstacionPreferida.valueOf(estacionElegida.name()), particulasActivas, idiomaElegido,
 					vistaCuadricula);
@@ -472,6 +692,9 @@ public class SettingsFrame extends JFrame {
 
 			navigator.ir(ShowHousingsFrame.class, ShowHousingsFrame::olvidarVistaAplicada);
 			Toast.mostrar(navigator.ventanaVisible(), Textos.t("ajustes.confirmacion.guardado"));
+
+		} catch (DuplicateInstanceException ex) {
+			error.setText(Textos.t("perfil.error.usuarioOcupado"));
 
 		} catch (InstanceNotFoundException ex) {
 			error.setText(Textos.t("ajustes.error.usuarioNoExiste"));

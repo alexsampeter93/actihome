@@ -36,7 +36,7 @@ import fp.project.actihome.ui.theme.Typography;
  * Cambiar la contraseña.
  *
  * <p>
- * Tenía el mismo callejón sin salida que {@link UpdateProfileFrame}: sin
+ * Tenía el mismo callejón sin salida que la antigua pantalla de perfil: sin
  * cabecera ni cancelar, solo se salía guardando con éxito. Ahora lleva las dos
  * cosas.
  *

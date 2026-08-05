@@ -38,11 +38,11 @@ import fp.project.actihome.ui.ReserveHousingFrame;
 import fp.project.actihome.ui.ReviewDetailsFrame;
 import fp.project.actihome.ui.ShowHousingsFrame;
 import fp.project.actihome.ui.ShowMyReservationsFrame;
+import fp.project.actihome.ui.SettingsFrame;
 import fp.project.actihome.ui.ShowReviewsFrame;
 import fp.project.actihome.ui.TradeHousingsFrame;
 import fp.project.actihome.ui.ChangePasswordFrame;
 import fp.project.actihome.ui.UpdateHousingFrame;
-import fp.project.actihome.ui.UpdateProfileFrame;
 import fp.project.actihome.ui.UploadHousingFrame;
 import fp.project.actihome.ui.UpdateReviewFrame;
 import fp.project.actihome.ui.components.Segmented;
@@ -337,8 +337,9 @@ public final class ScreenSnapshots {
 		sinNada.setHousingId(null);
 		guardar(sinNada, "fase6-intercambio-sin-alojamientos");
 
-		UpdateProfileFrame perfil = context.getBean(UpdateProfileFrame.class);
-		guardar(perfil, "fase6-perfil");
+		// El perfil ya no es una pantalla propia: la Fase 8.4 lo fusionó con Ajustes.
+		SettingsFrame perfilYAjustes = context.getBean(SettingsFrame.class);
+		guardar(perfilYAjustes, "fase6-perfil");
 
 		ChangePasswordFrame contrasena = context.getBean(ChangePasswordFrame.class);
 		guardar(contrasena, "fase6-contrasena");

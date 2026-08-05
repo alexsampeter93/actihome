@@ -43,7 +43,6 @@ import fp.project.actihome.ui.ShowReviewsFrame;
 import fp.project.actihome.ui.SignUpFrame;
 import fp.project.actihome.ui.TradeHousingsFrame;
 import fp.project.actihome.ui.UpdateHousingFrame;
-import fp.project.actihome.ui.UpdateProfileFrame;
 import fp.project.actihome.ui.UpdateReviewFrame;
 import fp.project.actihome.ui.UploadHousingFrame;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
@@ -163,7 +162,7 @@ public class MedirResponsive {
 					f -> ((UpdateHousingFrame) f).setHousingId(propio.getId())));
 			pantallas.add(new Pantalla("Intercambio", c.getBean(TradeHousingsFrame.class),
 					f -> ((TradeHousingsFrame) f).setHousingId(propio.getId())));
-			pantallas.add(new Pantalla("Perfil", c.getBean(UpdateProfileFrame.class), null));
+			// "Perfil" ya no es una pantalla propia: la Fase 8.4 la fusiono con Ajustes.
 			pantallas.add(new Pantalla("Contrasena", c.getBean(ChangePasswordFrame.class), null));
 			pantallas.add(new Pantalla("Ajustes", c.getBean(SettingsFrame.class), null));
 			pantallas.add(new Pantalla("Login", c.getBean(LoginFrame.class), null));

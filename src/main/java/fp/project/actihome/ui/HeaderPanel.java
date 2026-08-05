@@ -343,8 +343,13 @@ public class HeaderPanel extends JPanel {
 			menu.addSeparator();
 		}
 
+		// "Editar perfil" y "Ajustes" llevan a la misma pantalla desde la Fase 8.4,
+		// que las unificó. Se conservan las dos entradas a propósito: son dos formas
+		// distintas de pensar lo mismo ("quiero cambiar mi correo" / "quiero cambiar
+		// la estación"), y quitar una obligaría a la mitad de la gente a buscar su
+		// tarea bajo un nombre que no es el que tiene en la cabeza.
 		JMenuItem perfil = new JMenuItem(Textos.t("header.menu.perfil"));
-		perfil.addActionListener(e -> navigator.ir(UpdateProfileFrame.class));
+		perfil.addActionListener(e -> navigator.ir(SettingsFrame.class));
 
 		JMenuItem contrasena = new JMenuItem(Textos.t("header.menu.contrasena"));
 		contrasena.addActionListener(e -> navigator.ir(ChangePasswordFrame.class));
