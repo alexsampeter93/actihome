@@ -39,6 +39,12 @@ public class Review {
 
 	private Housing housing;
 
+	private String image;
+
+	private String ownerResponse;
+
+	private LocalDateTime ownerResponseDate;
+
 	public Review() {
 
 	}
@@ -178,12 +184,39 @@ public class Review {
 		this.housing = housing;
 	}
 
+	/** Nombre del archivo de foto dentro de {@code /images/reviews/}, o {@code null} sin foto adjunta (F15). */
+	public String getImage() {
+		return image;
+	}
+
+	public void setImage(String image) {
+		this.image = image;
+	}
+
+	/** Respuesta pública del propietario del alojamiento, o {@code null} si no ha respondido (F15). */
+	public String getOwnerResponse() {
+		return ownerResponse;
+	}
+
+	public void setOwnerResponse(String ownerResponse) {
+		this.ownerResponse = ownerResponse;
+	}
+
+	public LocalDateTime getOwnerResponseDate() {
+		return ownerResponseDate;
+	}
+
+	public void setOwnerResponseDate(LocalDateTime ownerResponseDate) {
+		this.ownerResponseDate = ownerResponseDate;
+	}
+
 	@Override
 	public String toString() {
 		return "Review [id=" + id + ", title=" + title + ", body=" + body + ", locationScore=" + locationScore
 				+ ", serviceScore=" + serviceScore + ", wifiScore=" + wifiScore + ", foodScore=" + foodScore
 				+ ", cleaningScore=" + cleaningScore + ", publicationDate=" + publicationDate + ", author=" + author
-				+ ", housing=" + housing + "]";
+				+ ", housing=" + housing + ", image=" + image + ", ownerResponse=" + ownerResponse
+				+ ", ownerResponseDate=" + ownerResponseDate + "]";
 	}
 
 }

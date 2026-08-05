@@ -13,6 +13,7 @@ import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Review;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.theme.Formato;
@@ -79,10 +80,11 @@ public class ReviewRow extends JPanel {
 		});
 	}
 
-	/** Título a la izquierda, nota total y el enlace de apertura a la derecha. */
+	/** Título a la izquierda, nota total, los indicadores de F15 y el enlace de apertura a la derecha. */
 	private JPanel cabecera(Review review, Runnable alAbrir) {
 
-		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.MD + "[]push[]", "[]"));
+		JPanel panel = new JPanel(
+				new MigLayout(Space.insets(0), "[]" + Space.MD + "[]" + Space.MD + "[]push[]", "[]"));
 		panel.setOpaque(false);
 
 		JLabel titulo = Labels.cardTitle(review.getTitle());
@@ -93,9 +95,32 @@ public class ReviewRow extends JPanel {
 		nota.setFont(Typography.serifMedium(20f));
 		panel.add(nota);
 
+		panel.add(indicadores(review));
+
 		// La fila entera ya es pinchable; el enlace existe porque una zona pinchable
 		// sin ninguna señal visible no se descubre.
 		panel.add(Buttons.link(Textos.t("resenas.verResena"), e -> alAbrir.run()));
+
+		return panel;
+	}
+
+	/**
+	 * Pistas de F15 sin abrir la reseña: si lleva foto, si el propietario ya ha
+	 * respondido. Un panel vacío cuando no hay ninguna de las dos no ocupa
+	 * ancho, así que no hace falta un layout condicional distinto para ese caso.
+	 */
+	private JPanel indicadores(Review review) {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XS + "[]", "[]"));
+		panel.setOpaque(false);
+
+		if (review.getImage() != null) {
+			panel.add(Chip.informativo(Textos.t("resenas.row.conFoto")));
+		}
+
+		if (review.getOwnerResponse() != null) {
+			panel.add(Chip.informativo(Textos.t("resenas.row.respondida")));
+		}
 
 		return panel;
 	}

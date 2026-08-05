@@ -422,6 +422,8 @@ public class HousingDetailsFrame extends JFrame {
 
 		if (usuario != null && usuario.getRole() == RoleType.CUSTOMER) {
 			izquierda.add(Buttons.primary(Textos.t("detalle.accion.reservar"), e -> reservar()), "height 44!");
+			izquierda.add(Buttons.linkAccent(Textos.t("detalle.accion.preguntar"), e -> preguntar()),
+					"gapleft " + Space.XL);
 
 		} else if (usuario != null && usuario.getRole() == RoleType.ADMIN && esPropietario) {
 			izquierda.add(Buttons.secondary(Textos.t("detalle.accion.actualizar"), e -> actualizar()), "height 44!");
@@ -437,6 +439,11 @@ public class HousingDetailsFrame extends JFrame {
 
 	private void reservar() {
 		navigator.ir(ReserveHousingFrame.class, frame -> frame.setHousingId(housingId));
+	}
+
+	/** F10: preguntar al propietario antes de reservar, sin tener que abrir la bandeja de mensajes primero. */
+	private void preguntar() {
+		navigator.ir(ConversationFrame.class, frame -> frame.setConversacion(housing.getOwner(), housing));
 	}
 
 	private void actualizar() {

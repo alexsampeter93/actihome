@@ -1,14 +1,25 @@
 package fp.project.actihome.ui.reviews;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Review;
+import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Field;
+import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.StarRating;
+import fp.project.actihome.ui.theme.BrandAssets;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
 
@@ -36,11 +47,23 @@ public class ReviewForm extends JPanel {
 	private final StarRating comida;
 	private final StarRating limpieza;
 
+	private final ImagePlaceholder previsualizacion = new ImagePlaceholder();
+	private JLabel etiquetaFoto;
+	private JButton botonElegirFoto;
+	private JButton botonQuitarFoto;
+	private JLabel errorFoto;
+
+	/** La foto recién elegida en el selector, sin guardar todavía. Ver la nota de {@link #guardarFotoSiHaceFalta}. */
+	private File fotoElegida;
+
+	/** El nombre de la foto que ya tenía la reseña, o {@code null} si nunca tuvo o se acaba de quitar. */
+	private String imagenExistente;
+
 	public ReviewForm() {
 
 		super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.LG + "[]" + Space.LG + "[]" + Space.SM + "[]" + Space.SM + "[]" + Space.SM + "[]"
-						+ Space.SM + "[]" + Space.SM + "[]"));
+				"[]" + Space.LG + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.SM + "[]" + Space.SM + "[]"
+						+ Space.SM + "[]" + Space.SM + "[]" + Space.SM + "[]"));
 		setOpaque(false);
 
 		titulo = Field.text(Textos.t("resenaForm.titulo"));
@@ -56,12 +79,81 @@ public class ReviewForm extends JPanel {
 
 		add(titulo);
 		add(cuerpo);
+		add(campoFoto());
 		add(nota);
 		add(ubicacion);
 		add(servicio);
 		add(wifi);
 		add(comida);
 		add(limpieza);
+	}
+
+	/**
+	 * Elegir una foto para adjuntar a la reseña (F15), opcional. Mismo patrón
+	 * que {@code HousingForm.campoFoto}: la reducción de verdad se pospone a
+	 * {@link #guardarFotoSiHaceFalta}, que llama quien tiene la pantalla, solo
+	 * una vez que la reseña ya se ha publicado o actualizado con éxito.
+	 */
+	private JPanel campoFoto() {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.MD + "[grow,fill]", ""));
+		panel.setOpaque(false);
+
+		panel.add(previsualizacion, "w 120!, h 84!, aligny top");
+
+		JPanel acciones = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		acciones.setOpaque(false);
+
+		etiquetaFoto = Labels.caps(Textos.t("resenaForm.foto.label"));
+		acciones.add(etiquetaFoto, "gapbottom " + Space.XS);
+
+		botonElegirFoto = Buttons.secondary(Textos.t("resenaForm.foto.elegir"), e -> elegirFoto());
+		acciones.add(botonElegirFoto, "gapbottom " + Space.XXS);
+
+		botonQuitarFoto = Buttons.link(Textos.t("resenaForm.foto.quitar"), e -> quitarFoto());
+		acciones.add(botonQuitarFoto);
+
+		errorFoto = Labels.error(" ");
+		acciones.add(errorFoto, "gaptop " + Space.XXS);
+
+		panel.add(acciones, "aligny top");
+
+		return panel;
+	}
+
+	private void elegirFoto() {
+
+		JFileChooser selector = new JFileChooser();
+		selector.setFileFilter(new FileNameExtensionFilter(Textos.t("alojamientoForm.foto.filtro"), "jpg", "jpeg", "png"));
+
+		if (selector.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
+			return;
+		}
+
+		File elegido = selector.getSelectedFile();
+
+		try {
+			BufferedImage leida = ImageIO.read(elegido);
+
+			if (leida == null) {
+				throw new IOException("formato no reconocido");
+			}
+
+			fotoElegida = elegido;
+			previsualizacion.setFoto(leida);
+			errorFoto.setText(" ");
+
+		} catch (IOException ex) {
+			errorFoto.setText(Textos.t("alojamientoForm.foto.error.noSeLee"));
+		}
+	}
+
+	private void quitarFoto() {
+
+		fotoElegida = null;
+		imagenExistente = null;
+		previsualizacion.setFoto(null);
+		errorFoto.setText(" ");
 	}
 
 	/**
@@ -80,6 +172,10 @@ public class ReviewForm extends JPanel {
 		wifi.setEtiqueta(Textos.t("resenas.subnota.wifi"));
 		comida.setEtiqueta(Textos.t("resenas.subnota.comida"));
 		limpieza.setEtiqueta(Textos.t("resenas.subnota.limpieza"));
+
+		etiquetaFoto.setText(Textos.t("resenaForm.foto.label"));
+		botonElegirFoto.setText(Textos.t("resenaForm.foto.elegir"));
+		botonQuitarFoto.setText(Textos.t("resenaForm.foto.quitar"));
 	}
 
 	/**
@@ -102,6 +198,27 @@ public class ReviewForm extends JPanel {
 		wifi.setValor(redondear(review.getWifiScore()));
 		comida.setValor(redondear(review.getFoodScore()));
 		limpieza.setValor(redondear(review.getCleaningScore()));
+
+		fotoElegida = null;
+		imagenExistente = review.getImage();
+		previsualizacion.setFoto(BrandAssets.fotoDeResena(imagenExistente));
+		errorFoto.setText(" ");
+	}
+
+	/** La foto recién elegida sin guardar, o {@code null} si no se ha tocado el campo. */
+	public File getFotoElegida() {
+		return fotoElegida;
+	}
+
+	/**
+	 * El nombre de la foto que ya tenía la reseña antes de este formulario, o
+	 * {@code null} si nunca tuvo o si se acaba de pulsar "Quitar". Junto con
+	 * {@link #getFotoElegida()}, es lo que necesita quien tiene la pantalla
+	 * para decidir si hay que llamar a {@code ReviewService.setReviewImage}
+	 * tras guardar: foto nueva, foto quitada, o ningún cambio.
+	 */
+	public String getImagenExistente() {
+		return imagenExistente;
 	}
 
 	public String getTitulo() {

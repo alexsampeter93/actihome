@@ -1,6 +1,7 @@
 package fp.project.actihome.ui;
 
 import java.awt.Dimension;
+import java.io.IOException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -16,10 +17,12 @@ import org.springframework.stereotype.Component;
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.Review;
 import fp.project.actihome.model.exceptions.AlreadyPublishedException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.exceptions.MustHaveStayedException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
+import fp.project.actihome.model.exceptions.NotTheAuthorException;
 import fp.project.actihome.model.exceptions.ScoreOutOfBoundsException;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.ReviewService;
@@ -28,11 +31,13 @@ import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.components.Toast;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.reviews.ReviewForm;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
+import fp.project.actihome.ui.theme.ReviewPhotos;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
 
@@ -211,10 +216,11 @@ public class PublishReviewFrame extends JFrame {
 		}
 
 		try {
-			reviewService.publishReview(sessionManager.getLoggedInUser().getId(), housingId, formulario.getTitulo(),
-					formulario.getCuerpo(), formulario.getUbicacion(), formulario.getServicio(), formulario.getWifi(),
-					formulario.getComida(), formulario.getLimpieza());
+			Review publicada = reviewService.publishReview(sessionManager.getLoggedInUser().getId(), housingId,
+					formulario.getTitulo(), formulario.getCuerpo(), formulario.getUbicacion(), formulario.getServicio(),
+					formulario.getWifi(), formulario.getComida(), formulario.getLimpieza());
 
+			guardarFotoSiHaceFalta(publicada);
 			volverAlListado();
 
 		} catch (AlreadyPublishedException ex) {
@@ -234,6 +240,32 @@ public class PublishReviewFrame extends JFrame {
 
 		} catch (InstanceNotFoundException ex) {
 			error.setText(Textos.t("resenaForm.error.alojamientoNoDisponible"));
+		}
+	}
+
+	/**
+	 * Guarda la foto elegida, si la hay, y la asocia a la reseña ya publicada.
+	 *
+	 * <p>
+	 * Va después de publicar, nunca antes: el nombre del archivo (F15, ver
+	 * {@link ReviewPhotos}) no depende del id de la reseña, pero asociarla sí
+	 * necesita que la reseña ya exista. Un fallo aquí no deshace la publicación
+	 * —ya está hecha, y es lo importante— así que se avisa con un
+	 * {@link Toast} en vez de bloquear la pantalla con un error.
+	 */
+	private void guardarFotoSiHaceFalta(Review review) {
+
+		if (formulario.getFotoElegida() == null) {
+			return;
+		}
+
+		try {
+			String nombre = ReviewPhotos.nombreNuevo();
+			ReviewPhotos.guardar(nombre, formulario.getFotoElegida());
+			reviewService.setReviewImage(review.getId(), sessionManager.getLoggedInUser().getId(), nombre);
+
+		} catch (IOException | NotAuthorizedUserException | InstanceNotFoundException | NotTheAuthorException ex) {
+			Toast.mostrar(this, Textos.t("resenaForm.foto.error.noSeGuarda"));
 		}
 	}
 

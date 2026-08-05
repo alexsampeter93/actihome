@@ -15,6 +15,7 @@ import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import fp.project.actihome.ui.LoginFrame;
 import fp.project.actihome.ui.brand.SplashScreen;
 import fp.project.actihome.ui.nav.Navigator;
+import fp.project.actihome.ui.reminders.TrayReminders;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
 
 @SpringBootApplication
@@ -45,7 +46,14 @@ public class ActihomeApplication {
 		// La primera ventana también se abre por el navegador: así queda registrada
 		// como ventana visible y recibe el mismo tratamiento que las demás (entre otras
 		// cosas, el icono y que pulsar la X cierre la aplicación de verdad).
-		EventQueue.invokeLater(() -> context.getBean(Navigator.class).ir(LoginFrame.class));
+		//
+		// Los recordatorios de bandeja (F11) arrancan aquí mismo, una sola vez en toda
+		// la sesión: no pertenecen a ninguna pantalla, así que no tienen un
+		// setVisible(true) natural del que colgarse.
+		EventQueue.invokeLater(() -> {
+			context.getBean(Navigator.class).ir(LoginFrame.class);
+			context.getBean(TrayReminders.class).iniciar();
+		});
 
 		// El splash se retira cuando el login ya está pedido. Espera por su cuenta a
 		// haber estado un mínimo en pantalla, para que en un arranque rápido no

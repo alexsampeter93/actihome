@@ -30,6 +30,7 @@ import fp.project.actihome.model.exceptions.MustHaveStayedException;
 import fp.project.actihome.model.exceptions.NegativePrizeException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.exceptions.NotTheAuthorException;
+import fp.project.actihome.model.exceptions.NotTheOwnerException;
 import fp.project.actihome.model.exceptions.ScoreOutOfBoundsException;
 import fp.project.actihome.model.exceptions.TranslationNotConfiguredException;
 import fp.project.actihome.model.exceptions.WrongCreditCardNumberException;
@@ -456,5 +457,105 @@ public class ReviewServiceTests {
 	public void testTranslateNonExistentReview() {
 
 		assertThrows(InstanceNotFoundException.class, () -> reviewService.translateReview(Long.valueOf(60), "en"));
+	}
+
+	// ------------------------------------------------------------------
+	// F15: foto adjunta y respuesta del propietario
+	// ------------------------------------------------------------------
+
+	@Test
+	public void testSetReviewImage()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException,
+			MustHaveStayedException, NotTheAuthorException {
+
+		User author = signUpUser("Author", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
+
+		Review review = reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.5, 3.5,
+				3.5, 3.5);
+
+		Review actualizada = reviewService.setReviewImage(review.getId(), author.getId(), "foto.jpg");
+
+		assertEquals("foto.jpg", actualizada.getImage());
+		assertEquals("foto.jpg", reviewDao.findById(review.getId()).get().getImage());
+	}
+
+	@Test
+	public void testSetReviewImageRejectsSomeoneElsesReview()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException,
+			MustHaveStayedException {
+
+		User author = signUpUser("Author", RoleType.CUSTOMER);
+		User otroCliente = signUpUser("OtroCliente", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
+
+		Review review = reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.5, 3.5,
+				3.5, 3.5);
+
+		assertThrows(NotTheAuthorException.class,
+				() -> reviewService.setReviewImage(review.getId(), otroCliente.getId(), "foto.jpg"));
+	}
+
+	@Test
+	public void testRespondToReview()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException,
+			MustHaveStayedException, NotTheOwnerException {
+
+		User author = signUpUser("Author", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
+
+		Review review = reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.5, 3.5,
+				3.5, 3.5);
+
+		Review respondida = reviewService.respondToReview(review.getId(), owner.getId(), "Gracias por tu visita");
+
+		assertEquals("Gracias por tu visita", respondida.getOwnerResponse());
+		assertEquals("Gracias por tu visita", reviewDao.findById(review.getId()).get().getOwnerResponse());
+	}
+
+	@Test
+	public void testRespondToReviewRejectsSomeoneElsesHousing()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException,
+			MustHaveStayedException {
+
+		User author = signUpUser("Author", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		User otroPropietario = signUpUser("OtroPropietario", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
+
+		Review review = reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.5, 3.5,
+				3.5, 3.5);
+
+		assertThrows(NotTheOwnerException.class,
+				() -> reviewService.respondToReview(review.getId(), otroPropietario.getId(), "Respuesta"));
+	}
+
+	@Test
+	public void testRespondToReviewRejectsCustomer()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException,
+			MustHaveStayedException {
+
+		User author = signUpUser("Author", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+		createCompletedStay(author, housing);
+
+		Review review = reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.5, 3.5,
+				3.5, 3.5);
+
+		assertThrows(NotAuthorizedUserException.class,
+				() -> reviewService.respondToReview(review.getId(), author.getId(), "Respuesta"));
 	}
 }

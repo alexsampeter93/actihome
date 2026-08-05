@@ -13,6 +13,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.Reservation;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
 import fp.project.actihome.model.exceptions.CheckOutMustBeOneDayAfterException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
@@ -35,6 +37,7 @@ import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
+import fp.project.actihome.ui.components.Toast;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.Rescate;
@@ -76,6 +79,14 @@ public class ReserveHousingFrame extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * Duración de la simulación de pago (F13). Ni tan corta que parezca que no
+	 * ha pasado nada —esa es la pista de que "reservar" y "pagar" son el mismo
+	 * clic sin fricción, que es justo lo que no transmite una pasarela real—, ni
+	 * tan larga que se sienta como una espera de verdad.
+	 */
+	private static final int DURACION_PAGO_SIMULADO_MS = 900;
+
 	private final transient ReservationService reservationService;
 	private final transient HousingService housingService;
 	private final transient SessionManager sessionManager;
@@ -89,7 +100,11 @@ public class ReserveHousingFrame extends JFrame {
 	private JLabel subtituloUbicacion;
 	private JLabel etiquetaFechas;
 	private CalendarioRango calendario;
+	private JLabel etiquetaPago;
+	private Field titular;
 	private Field tarjeta;
+	private Field caducidad;
+	private Field cvv;
 	private JLabel resumen;
 	private JLabel error;
 	private JButton botonConfirmar;
@@ -132,7 +147,11 @@ public class ReserveHousingFrame extends JFrame {
 
 		superTitulo.setText(Textos.t("reservar.titulo"));
 		etiquetaFechas.setText(Textos.t("reservar.entradaYSalida"));
+		etiquetaPago.setText(Textos.t("reservar.pago.label"));
+		titular.setEtiqueta(Textos.t("reservar.titular"));
 		tarjeta.setEtiqueta(Textos.t("reservar.tarjeta"));
+		caducidad.setEtiqueta(Textos.t("reservar.caducidad"));
+		cvv.setEtiqueta(Textos.t("reservar.cvv"));
 		botonConfirmar.setText(Textos.t("reservar.confirmar"));
 		enlaceCancelar.setText(Textos.t("reservar.cancelar"));
 	}
@@ -159,8 +178,12 @@ public class ReserveHousingFrame extends JFrame {
 		LocalDate manana = LocalDate.now().plusDays(1);
 
 		calendario.seleccionar(manana, manana.plusDays(1));
+		titular.setText("");
 		tarjeta.setText("");
+		caducidad.setText("");
+		cvv.setText("");
 		error.setText(" ");
+		restaurarBotonConfirmar();
 
 		actualizarResumen();
 		SwingUtilities.invokeLater(() -> tarjeta.getInput().requestFocus());
@@ -194,16 +217,13 @@ public class ReserveHousingFrame extends JFrame {
 	private JPanel formulario() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.XXL + "[]" + Space.LG + "[]" + Space.XL + "[]" + Space.SM + "[]" + Space.XL + "[]"));
+				"[]" + Space.XXL + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.SM + "[]" + Space.XL + "[]"
+						+ Space.SM + "[]" + Space.XL + "[]"));
 		panel.setOpaque(false);
 
 		panel.add(cabecera());
 		panel.add(campoFechas());
-
-		// A diferencia del calendario, esto sí es texto: mantiene el ancho cómodo de
-		// lectura de un formulario aunque el panel que lo contiene sea más ancho.
-		tarjeta = Field.text(Textos.t("reservar.tarjeta"));
-		panel.add(tarjeta, Layout.ancho(Layout.FORMULARIO));
+		panel.add(campoPago());
 
 		resumen = Labels.body(" ");
 		panel.add(resumen);
@@ -212,6 +232,49 @@ public class ReserveHousingFrame extends JFrame {
 		panel.add(error);
 
 		panel.add(acciones());
+
+		return panel;
+	}
+
+	/**
+	 * Los datos de la tarjeta (F13): titular, número, caducidad y CVV.
+	 *
+	 * <p>
+	 * <b>Solo el número viaja al servicio.</b> Caducidad y CVV se validan aquí
+	 * mismo, en la pantalla, y no en ningún sitio más — ni se guardan ni se
+	 * envían. Es la regla de cualquier pasarela real llevada a sus últimas
+	 * consecuencias: el CVV en particular no debería persistir en ningún sitio,
+	 * ni siquiera en una simulación, así que la forma más honesta de "no
+	 * guardarlo nunca" es no dejar que salga de este formulario.
+	 */
+	private JPanel campoPago() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
+				"[]" + Space.XS + "[]" + Space.SM + "[]" + Space.SM + "[]"));
+		panel.setOpaque(false);
+
+		etiquetaPago = Labels.caps(Textos.t("reservar.pago.label"));
+		panel.add(etiquetaPago);
+
+		// Ancho de formulario y no el del calendario: son campos de texto cortos, y
+		// estirarlos al ancho de una rejilla de dos meses los haría incómodos de leer.
+		titular = Field.text(Textos.t("reservar.titular"));
+		panel.add(titular, Layout.ancho(Layout.FORMULARIO));
+
+		tarjeta = Field.text(Textos.t("reservar.tarjeta"));
+		panel.add(tarjeta, Layout.ancho(Layout.FORMULARIO));
+
+		JPanel caducidadYCvv = new JPanel(
+				new MigLayout(Space.insets(0), "[grow,fill]" + Space.MD + "[grow,fill]", ""));
+		caducidadYCvv.setOpaque(false);
+
+		caducidad = Field.text(Textos.t("reservar.caducidad"));
+		caducidadYCvv.add(caducidad);
+
+		cvv = Field.text(Textos.t("reservar.cvv"));
+		caducidadYCvv.add(cvv);
+
+		panel.add(caducidadYCvv, Layout.ancho(Layout.FORMULARIO));
 
 		return panel;
 	}
@@ -335,27 +398,116 @@ public class ReserveHousingFrame extends JFrame {
 			return;
 		}
 
+		if (!validarPago()) {
+			return;
+		}
+
+		error.setText(" ");
+		procesarPago(entrada, salida);
+	}
+
+	/**
+	 * Titular, caducidad y CVV: lo que la propia pantalla puede comprobar sin
+	 * llamar al servicio, porque ninguno de los tres viaja hasta él (ver la nota
+	 * de {@link #campoPago()}). El número de tarjeta se queda fuera de aquí a
+	 * propósito — su validación la impone el servicio
+	 * ({@link WrongCreditCardNumberException}), no la pantalla, siguiendo la
+	 * misma regla del resto de la aplicación: una conversión de formato se
+	 * valida en la pantalla, una regla de negocio la valida el servicio.
+	 */
+	private boolean validarPago() {
+
+		if (titular.getText().trim().isEmpty()) {
+			error.setText(Textos.t("reservar.error.titularVacio"));
+			titular.requestFocus();
+			return false;
+		}
+
+		String textoCaducidad = caducidad.getText().trim();
+
+		if (!textoCaducidad.matches("(0[1-9]|1[0-2])/\\d{2}")) {
+			error.setText(Textos.t("reservar.error.caducidadInvalida"));
+			caducidad.requestFocus();
+			return false;
+		}
+
+		if (!caducidadVigente(textoCaducidad)) {
+			error.setText(Textos.t("reservar.error.tarjetaCaducada"));
+			caducidad.requestFocus();
+			return false;
+		}
+
+		if (!cvv.getText().trim().matches("\\d{3}")) {
+			error.setText(Textos.t("reservar.error.cvvInvalido"));
+			cvv.requestFocus();
+			return false;
+		}
+
+		return true;
+	}
+
+	/** La tarjeta caduca al final del mes indicado, no al principio: "07/29" sigue siendo válida durante todo julio de 2029. */
+	private boolean caducidadVigente(String mmAA) {
+
+		int mes = Integer.parseInt(mmAA.substring(0, 2));
+		int anio = 2000 + Integer.parseInt(mmAA.substring(3));
+
+		LocalDate finDelMes = LocalDate.of(anio, mes, 1).plusMonths(1).minusDays(1);
+
+		return !finDelMes.isBefore(LocalDate.now());
+	}
+
+	/**
+	 * Simula el paso por la pasarela (F13) antes de tocar el servicio.
+	 *
+	 * <p>
+	 * <b>Por qué un {@code Timer} y no una llamada directa.</b> Confirmar y
+	 * reservar en el mismo clic, sin ninguna señal intermedia, no se distingue
+	 * de rellenar un formulario cualquiera — es la misma fricción cero que tiene
+	 * "Guardar cambios" en Ajustes. El dinero pide una pausa deliberada, aunque
+	 * sea corta y aunque no haya ningún banco al otro lado: es lo que hace que
+	 * el usuario perciba que <em>algo</em> ha pasado con su tarjeta antes de
+	 * confirmar la reserva.
+	 */
+	private void procesarPago(LocalDate entrada, LocalDate salida) {
+
+		botonConfirmar.setEnabled(false);
+		botonConfirmar.setText(Textos.t("reservar.procesando"));
+
+		Timer temporizador = new Timer(DURACION_PAGO_SIMULADO_MS, e -> confirmarReserva(entrada, salida));
+		temporizador.setRepeats(false);
+		temporizador.start();
+	}
+
+	private void confirmarReserva(LocalDate entrada, LocalDate salida) {
+
 		LocalDateTime checkIn = entrada.atStartOfDay();
 		LocalDateTime checkOut = salida.atStartOfDay();
 		String numeroTarjeta = tarjeta.getText().trim();
 
 		try {
-			reservationService.reserveHousing(sessionManager.getLoggedInUser().getId(), housingId, numeroTarjeta,
-					checkIn, checkOut);
+			Reservation reserva = reservationService.reserveHousing(sessionManager.getLoggedInUser().getId(),
+					housingId, numeroTarjeta, checkIn, checkOut);
 
 			navigator.ir(ShowMyReservationsFrame.class);
+			Toast.mostrar(navigator.ventanaVisible(),
+					Textos.t("reservar.pago.confirmado", Formato.precio(reserva.getTotalPrice())));
 
 		} catch (WrongCreditCardNumberException ex) {
+			restaurarBotonConfirmar();
 			error.setText(Textos.t("reservar.error.tarjetaInvalida"));
 			tarjeta.requestFocus();
 
 		} catch (MustBeTodayOrAfterException ex) {
+			restaurarBotonConfirmar();
 			error.setText(Textos.t("reservar.error.entradaPasada"));
 
 		} catch (CheckOutMustBeOneDayAfterException ex) {
+			restaurarBotonConfirmar();
 			error.setText(Textos.t("reservar.resumen.salidaInvalida"));
 
 		} catch (AlreadyReservedException ex) {
+			restaurarBotonConfirmar();
 			error.setText(Textos.t("reservar.error.disponibilidadPerdida"));
 
 		} catch (InstanceNotFoundException | NotAuthorizedUserException ex) {
@@ -363,7 +515,14 @@ public class ReserveHousingFrame extends JFrame {
 			// alojamiento que se acaba de cargar. NotAuthorizedUserException tampoco: solo
 			// un CUSTOMER ve el botón "Reservar". Cubrirlas igual evita una pantalla muda
 			// si algún día cambia esa garantía.
+			restaurarBotonConfirmar();
 			error.setText(Textos.t("reservar.error.generico"));
 		}
+	}
+
+	private void restaurarBotonConfirmar() {
+
+		botonConfirmar.setEnabled(true);
+		botonConfirmar.setText(Textos.t("reservar.confirmar"));
 	}
 }

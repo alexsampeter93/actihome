@@ -202,6 +202,7 @@ public class HeaderPanel extends JPanel {
 	private void construirNavegacion() {
 
 		anadirDestino(navegacion, Textos.t("header.nav.catalogo"), ShowHousingsFrame.class);
+		anadirDestino(navegacion, Textos.t("header.nav.mensajes"), MessagesFrame.class);
 
 		if (esCliente()) {
 			anadirDestino(navegacion, Textos.t("header.nav.misReservas"), ShowMyReservationsFrame.class);
@@ -355,10 +356,17 @@ public class HeaderPanel extends JPanel {
 		// mostrar aquí. Mismo criterio de visibilidad que ya usa "Cambiar rol", justo
 		// debajo.
 		JMenuItem panelPropietario = null;
+		JMenuItem panelPlataforma = null;
 
 		if (!esCliente()) {
 			panelPropietario = new JMenuItem(Textos.t("header.menu.panelPropietario"));
 			panelPropietario.addActionListener(e -> navigator.ir(OwnerPanelFrame.class));
+
+			// F14: panel agregado de toda la plataforma, no solo de los alojamientos
+			// propios — ver la nota de clase de PlatformPanelFrame sobre por qué es
+			// accesible a cualquier ADMIN y no a un "superadmin" que hoy no existe.
+			panelPlataforma = new JMenuItem(Textos.t("header.menu.panelPlataforma"));
+			panelPlataforma.addActionListener(e -> navigator.ir(PlatformPanelFrame.class));
 		}
 
 		JMenuItem rol = new JMenuItem(esCliente() ? Textos.t("header.menu.rol.aAdmin") : Textos.t("header.menu.rol.aCliente"));
@@ -379,6 +387,7 @@ public class HeaderPanel extends JPanel {
 
 		if (panelPropietario != null) {
 			menu.add(panelPropietario);
+			menu.add(panelPlataforma);
 		}
 
 		menu.addSeparator();

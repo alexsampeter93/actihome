@@ -1,15 +1,19 @@
 package fp.project.actihome.ui;
 
+import java.io.File;
+import java.time.LocalDate;
 import java.util.Locale;
 
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
@@ -20,7 +24,12 @@ import net.miginfocom.swing.MigLayout;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.EstacionPreferida;
 import fp.project.actihome.model.entities.User.Idioma;
+import fp.project.actihome.model.entities.User.RoleType;
+import fp.project.actihome.model.exceptions.BackupFailedException;
+import fp.project.actihome.model.exceptions.BackupNotAvailableException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
+import fp.project.actihome.model.services.BackupService;
 import fp.project.actihome.model.services.UserService;
 import fp.project.actihome.ui.catalog.CatalogFilters;
 import fp.project.actihome.ui.components.Buttons;
@@ -44,7 +53,8 @@ import fp.project.actihome.ui.theme.Typography;
 
 /**
  * Ajustes de la cuenta: estación por defecto, partículas decorativas e idioma
- * (Fase 7.6), y vista de catálogo por defecto (Fase 7.11).
+ * (Fase 7.6), vista de catálogo por defecto (Fase 7.11) y, solo para ADMIN,
+ * copia de seguridad de la base de datos (F12).
  *
  * <p>
  * <b>Es la pantalla piloto del idioma.</b> Todo su texto pasa por
@@ -74,6 +84,7 @@ public class SettingsFrame extends JFrame {
 	private static final long serialVersionUID = 1L;
 
 	private final transient UserService userService;
+	private final transient BackupService backupService;
 	private final transient SessionManager sessionManager;
 	private final transient Navigator navigator;
 	private final HeaderPanel headerPanel;
@@ -87,14 +98,20 @@ public class SettingsFrame extends JFrame {
 	private JComboBox<Idioma> idioma;
 	private JLabel etiquetaVista;
 	private Segmented vistaPorDefecto;
+	private JPanel bloqueCopiaDeSeguridad;
+	private JLabel etiquetaCopiaDeSeguridad;
+	private JLabel descripcionCopiaDeSeguridad;
+	private JButton exportarCopiaDeSeguridad;
+	private JLabel errorCopiaDeSeguridad;
 	private JButton guardar;
 	private JButton cancelar;
 	private JLabel error;
 
-	public SettingsFrame(UserService userService, SessionManager sessionManager, Navigator navigator,
-			HeaderPanel headerPanel) {
+	public SettingsFrame(UserService userService, BackupService backupService, SessionManager sessionManager,
+			Navigator navigator, HeaderPanel headerPanel) {
 
 		this.userService = userService;
+		this.backupService = backupService;
 		this.sessionManager = sessionManager;
 		this.navigator = navigator;
 		this.headerPanel = headerPanel;
@@ -136,9 +153,13 @@ public class SettingsFrame extends JFrame {
 
 	private JPanel formulario() {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
+		// "hidemode 3": el bloque de copia de seguridad solo se ve para ADMIN
+		// (ver precargar()), y sin esto seguiría reservando su hueco vacío para
+		// quien no lo ve — el mismo mecanismo que ya usa el hero contraíble del
+		// catálogo.
+		JPanel panel = new JPanel(new MigLayout("wrap 1, hidemode 3, " + Space.insets(0), "[grow,fill]",
 				"[]" + Space.XXL + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.LG + "[]"
-						+ Space.LG + "[]"));
+						+ Space.LG + "[]" + Space.LG + "[]"));
 		panel.setOpaque(false);
 
 		panel.add(cabecera());
@@ -146,6 +167,7 @@ public class SettingsFrame extends JFrame {
 		panel.add(campoParticulas());
 		panel.add(campoIdioma());
 		panel.add(campoVistaPorDefecto());
+		panel.add(campoCopiaDeSeguridad());
 
 		error = Labels.error(" ");
 		panel.add(error);
@@ -274,6 +296,83 @@ public class SettingsFrame extends JFrame {
 		return panel;
 	}
 
+	/**
+	 * Copia de seguridad de la base de datos (F12), solo para ADMIN: es una
+	 * operación sobre toda la base, no sobre la cuenta de quien la pide, así que
+	 * se oculta por completo para CUSTOMER en vez de mostrarse deshabilitada —
+	 * igual que el botón de publicar alojamiento del catálogo.
+	 */
+	private JPanel campoCopiaDeSeguridad() {
+
+		bloqueCopiaDeSeguridad = new JPanel(
+				new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]" + Space.SM + "[]"));
+		bloqueCopiaDeSeguridad.setOpaque(false);
+
+		etiquetaCopiaDeSeguridad = Labels.caps(" ");
+		descripcionCopiaDeSeguridad = Labels.muted(" ");
+
+		exportarCopiaDeSeguridad = Buttons.secondary(" ", e -> exportarCopiaDeSeguridad());
+		errorCopiaDeSeguridad = Labels.error(" ");
+		errorCopiaDeSeguridad.setVisible(false);
+
+		bloqueCopiaDeSeguridad.add(etiquetaCopiaDeSeguridad);
+		bloqueCopiaDeSeguridad.add(descripcionCopiaDeSeguridad);
+		bloqueCopiaDeSeguridad.add(exportarCopiaDeSeguridad);
+		bloqueCopiaDeSeguridad.add(errorCopiaDeSeguridad, "gaptop " + Space.XXS);
+
+		return bloqueCopiaDeSeguridad;
+	}
+
+	/**
+	 * Abre el selector de fichero y delega en {@link BackupService}.
+	 *
+	 * <p>
+	 * Sin hilo aparte: igual que el resto de la pantalla, esta acción se
+	 * resuelve directamente en el hilo de Swing. Es una operación de un fichero
+	 * de base de datos de escritorio —megabytes, no gigabytes— y el resto de la
+	 * aplicación tampoco usa {@code SwingWorker} en ningún sitio; introducirlo
+	 * aquí solo para esta acción rompería la coherencia sin una necesidad real.
+	 */
+	private void exportarCopiaDeSeguridad() {
+
+		errorCopiaDeSeguridad.setVisible(false);
+
+		JFileChooser selector = new JFileChooser();
+		selector.setDialogTitle(Textos.t("ajustes.backup.dialogoTitulo"));
+		selector.setFileFilter(new FileNameExtensionFilter("ZIP", "zip"));
+		selector.setSelectedFile(new File(Textos.t("ajustes.backup.nombreSugerido") + "-" + LocalDate.now() + ".zip"));
+
+		if (selector.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+			return;
+		}
+
+		File destino = selector.getSelectedFile();
+
+		if (!destino.getName().toLowerCase(Locale.ROOT).endsWith(".zip")) {
+			destino = new File(destino.getParentFile(), destino.getName() + ".zip");
+		}
+
+		try {
+			backupService.exportarCopiaDeSeguridad(sessionManager.getLoggedInUser().getId(), destino.getAbsolutePath());
+			Toast.mostrar(this, Textos.t("ajustes.backup.confirmacion"));
+
+		} catch (NotAuthorizedUserException ex) {
+			errorCopiaDeSeguridad.setText(Textos.t("ajustes.error.usuarioNoExiste"));
+			errorCopiaDeSeguridad.setVisible(true);
+
+		} catch (InstanceNotFoundException ex) {
+			navigator.ir(LoginFrame.class);
+
+		} catch (BackupNotAvailableException ex) {
+			errorCopiaDeSeguridad.setText(Textos.t("ajustes.backup.error.noDisponible"));
+			errorCopiaDeSeguridad.setVisible(true);
+
+		} catch (BackupFailedException ex) {
+			errorCopiaDeSeguridad.setText(Textos.t("ajustes.backup.error.fallo"));
+			errorCopiaDeSeguridad.setVisible(true);
+		}
+	}
+
 	private JPanel acciones() {
 
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
@@ -304,6 +403,9 @@ public class SettingsFrame extends JFrame {
 		etiquetaIdioma.setText(Textos.t("ajustes.idioma.label"));
 		etiquetaVista.setText(Textos.t("ajustes.vista.label"));
 		vistaPorDefecto.actualizarTextos(Textos.t("catalogo.vista.lista"), Textos.t("catalogo.vista.cuadricula"));
+		etiquetaCopiaDeSeguridad.setText(Textos.t("ajustes.backup.titulo"));
+		descripcionCopiaDeSeguridad.setText(Textos.t("ajustes.backup.descripcion"));
+		exportarCopiaDeSeguridad.setText(Textos.t("ajustes.backup.boton"));
 		guardar.setText(Textos.t("ajustes.guardar"));
 		cancelar.setText(Textos.t("ajustes.cancelar"));
 
@@ -335,6 +437,8 @@ public class SettingsFrame extends JFrame {
 		particulas.setSelected(actual.isParticlesEnabled());
 		idioma.setSelectedItem(actual.getLanguage());
 		vistaPorDefecto.setActivo(actual.isDefaultGridView() ? CatalogFilters.VISTA_CUADRICULA : 0);
+		bloqueCopiaDeSeguridad.setVisible(actual.getRole() == RoleType.ADMIN);
+		errorCopiaDeSeguridad.setVisible(false);
 
 		error.setText(" ");
 	}

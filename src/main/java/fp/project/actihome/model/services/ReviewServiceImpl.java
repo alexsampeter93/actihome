@@ -20,6 +20,7 @@ import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.exceptions.MustHaveStayedException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.exceptions.NotTheAuthorException;
+import fp.project.actihome.model.exceptions.NotTheOwnerException;
 import fp.project.actihome.model.exceptions.ScoreOutOfBoundsException;
 import fp.project.actihome.model.exceptions.TranslationNotConfiguredException;
 
@@ -172,5 +173,54 @@ public class ReviewServiceImpl implements ReviewService {
 		findReview(reviewId);
 
 		throw new TranslationNotConfiguredException();
+	}
+
+	@Override
+	public Review setReviewImage(Long reviewId, Long authorId, String image)
+			throws InstanceNotFoundException, NotAuthorizedUserException, NotTheAuthorException {
+
+		User author = permissionChecker.checkUser(authorId);
+		Optional<Review> review = reviewDao.findById(reviewId);
+
+		if (author.getRole() != RoleType.CUSTOMER) {
+			throw new NotAuthorizedUserException();
+		}
+
+		if (!review.isPresent()) {
+			throw new InstanceNotFoundException("project.entities.review", reviewId);
+		}
+
+		if (!review.get().getAuthor().getId().equals(authorId)) {
+			throw new NotTheAuthorException();
+		}
+
+		review.get().setImage(image);
+
+		return review.get();
+	}
+
+	@Override
+	public Review respondToReview(Long reviewId, Long ownerId, String response)
+			throws InstanceNotFoundException, NotAuthorizedUserException, NotTheOwnerException {
+
+		User owner = permissionChecker.checkUser(ownerId);
+		Optional<Review> review = reviewDao.findById(reviewId);
+
+		if (owner.getRole() != RoleType.ADMIN) {
+			throw new NotAuthorizedUserException();
+		}
+
+		if (!review.isPresent()) {
+			throw new InstanceNotFoundException("project.entities.review", reviewId);
+		}
+
+		if (!review.get().getHousing().getOwner().getId().equals(ownerId)) {
+			throw new NotTheOwnerException();
+		}
+
+		review.get().setOwnerResponse(response);
+		review.get().setOwnerResponseDate(LocalDateTime.now());
+
+		return review.get();
 	}
 }

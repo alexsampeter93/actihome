@@ -96,6 +96,13 @@ CREATE TABLE IF NOT EXISTS REVIEWS (
 	publicationDate DATETIME NOT NULL,
 	authorId BIGINT NOT NULL,
 	housingId BIGINT NOT NULL,
+	-- Nombre del archivo de foto dentro de /images/reviews/. Nulo mientras la
+	-- reseña no lleve foto adjunta (F15): no todas la llevan.
+	image VARCHAR(120),
+	-- Respuesta pública del propietario del alojamiento (F15). Las dos van juntas
+	-- y las dos nulas hasta que el propietario responde.
+	ownerResponse VARCHAR(500),
+	ownerResponseDate DATETIME,
 	CONSTRAINT AuthorIdFK FOREIGN KEY(authorId) REFERENCES USERS(id),
 	CONSTRAINT HousingIdFK FOREIGN KEY(housingId) REFERENCES HOUSINGS(id)
 );
@@ -117,4 +124,24 @@ CREATE TABLE IF NOT EXISTS RESERVATIONS (
 	housingId BIGINT NOT NULL,
 	CONSTRAINT CustomerIdFK FOREIGN KEY(customerId) REFERENCES USERS(id),
 	CONSTRAINT HousingIdFK2 FOREIGN KEY(housingId) REFERENCES HOUSINGS(id)
+);
+
+-- Mensajería interna huésped <-> propietario (F10), siempre sobre un
+-- alojamiento concreto. No hay tabla de "conversaciones": una conversación es
+-- el conjunto de mensajes que comparten alojamiento y los dos mismos
+-- participantes, y eso se agrupa en memoria (MessageServiceImpl), no en SQL.
+CREATE TABLE IF NOT EXISTS MESSAGES (
+	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	senderId BIGINT NOT NULL,
+	recipientId BIGINT NOT NULL,
+	housingId BIGINT NOT NULL,
+	body VARCHAR(1000) NOT NULL,
+	sentDate DATETIME NOT NULL,
+	-- Nulo mientras el destinatario no lo haya abierto. No se llama "read": es
+	-- palabra reservada en varios dialectos SQL, y además un LocalDateTime dice
+	-- más que un booleano (cuándo, no solo si).
+	readDate DATETIME,
+	CONSTRAINT MessageSenderIdFK FOREIGN KEY(senderId) REFERENCES USERS(id),
+	CONSTRAINT MessageRecipientIdFK FOREIGN KEY(recipientId) REFERENCES USERS(id),
+	CONSTRAINT MessageHousingIdFK FOREIGN KEY(housingId) REFERENCES HOUSINGS(id)
 );

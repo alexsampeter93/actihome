@@ -6,6 +6,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.font.TextAttribute;
 import java.util.Collections;
+import java.util.function.Consumer;
 
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -73,23 +74,33 @@ public class HousingRow extends JPanel {
 
 	private final transient Housing housing;
 	private final boolean disponible;
+	private final boolean seleccionadoParaComparar;
+	private final transient Consumer<Boolean> alCambiarComparacion;
 
 	/**
 	 * @param resenas    cuántas reseñas tiene, ya contadas por quien construye la
 	 *                   lista
 	 * @param disponible si el alojamiento tiene una estancia en curso ahora mismo,
 	 *                   ya calculado por quien construye la lista
+	 * @param seleccionadoParaComparar si esta fila ya está en la selección de
+	 *                   comparar (F16), para que el chip nazca en el estado
+	 *                   correcto tras un redibujado
 	 * @param alAbrir    qué hacer al pulsar la fila
 	 * @param alIntercambiar acción de intercambio, o {@code null} si no procede para
 	 *                   este usuario
+	 * @param alCambiarComparacion qué hacer al marcar o desmarcar el chip de
+	 *                   comparar
 	 */
-	public HousingRow(Housing housing, int resenas, boolean disponible, Runnable alAbrir, Runnable alIntercambiar) {
+	public HousingRow(Housing housing, int resenas, boolean disponible, boolean seleccionadoParaComparar,
+			Runnable alAbrir, Runnable alIntercambiar, Consumer<Boolean> alCambiarComparacion) {
 
 		super(new MigLayout(Space.insets(Space.LG, 0, Space.LG, 0), "[46%:46%:46%]" + Space.HUGE + "[grow,fill]",
 				"[]"));
 
 		this.housing = housing;
 		this.disponible = disponible;
+		this.seleccionadoParaComparar = seleccionadoParaComparar;
+		this.alCambiarComparacion = alCambiarComparacion;
 
 		setOpaque(false);
 		setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -129,10 +140,11 @@ public class HousingRow extends JPanel {
 		return panel;
 	}
 
-	/** "Nº 10001 —— Sierra Nevada, Granada" */
+	/** "Nº 10001 —— Sierra Nevada, Granada", con el chip de comparar al otro extremo. */
 	private JPanel referencia() {
 
-		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]" + Space.SM + "[]", ""));
+		JPanel fila = new JPanel(
+				new MigLayout(Space.insets(0), "[]" + Space.SM + "[]" + Space.SM + "[]push[]", ""));
 		fila.setOpaque(false);
 
 		JLabel numero = Labels.capsAccent(Textos.t("catalogo.numero") + " " + housing.getHousingCode());
@@ -143,6 +155,10 @@ public class HousingRow extends JPanel {
 		// pero con menos ruido.
 		fila.add(new Raya(), "w 26!, h 1!, aligny center");
 		fila.add(Labels.caps(housing.getLocation()));
+
+		Chip comparar = new Chip(Textos.t("catalogo.comparar.chip"), seleccionadoParaComparar);
+		comparar.addActionListener(e -> alCambiarComparacion.accept(comparar.isSelected()));
+		fila.add(comparar, "aligny center");
 
 		return fila;
 	}

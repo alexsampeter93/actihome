@@ -62,6 +62,11 @@ public final class BrandAssets {
 		return iconos;
 	}
 
+	/** El icono de aplicación al tamaño que usa la bandeja del sistema (F11). */
+	public static BufferedImage iconoDeBandeja() {
+		return cargar("/images/brand/actihome-icon-32.png");
+	}
+
 	/** Lockup circular "CocoBrain presenta" del splash. */
 	public static BufferedImage lockupCocoBrain() {
 		return cargar("/images/brand/cocobrain-presenta.png");
@@ -123,6 +128,16 @@ public final class BrandAssets {
 		}
 
 		return cargar("/images/housings/" + nombre.trim());
+	}
+
+	/** Foto adjunta a una reseña (F15), o {@code null} sin foto. Mismo patrón que {@link #fotoDeAlojamiento}. */
+	public static BufferedImage fotoDeResena(String nombre) {
+
+		if (nombre == null || nombre.trim().isEmpty()) {
+			return null;
+		}
+
+		return ReviewPhotos.cargar(nombre.trim());
 	}
 
 	/** Olaz en la variante de una estación y una pose. */

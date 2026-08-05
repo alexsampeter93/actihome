@@ -185,6 +185,25 @@ public class ReservationServiceTests {
 						entrada(), salida()));
 	}
 
+	/**
+	 * F13: dieciséis caracteres no bastan si no son dieciséis dígitos. Antes de
+	 * este endurecimiento, "123456789012345A" pasaba la comprobación —solo
+	 * medía la longitud— y llegaba a guardarse como si fuera un número de
+	 * tarjeta válido.
+	 */
+	@Test
+	public void testReserveHousingCreditCardMustBeAllDigits() throws DuplicateInstanceException,
+			InstanceNotFoundException, LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException {
+
+		User customer = signUpUser("Author", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+
+		assertThrows(WrongCreditCardNumberException.class,
+				() -> reservationService.reserveHousing(customer.getId(), housing.getId(), "123456789012345A",
+						entrada(), salida()));
+	}
+
 	@Test
 	public void testReserveUnavailableHousing()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,

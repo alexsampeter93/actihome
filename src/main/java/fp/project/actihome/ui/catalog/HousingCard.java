@@ -3,6 +3,7 @@ package fp.project.actihome.ui.catalog;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.function.Consumer;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -10,6 +11,7 @@ import javax.swing.JPanel;
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.ScoreDisc;
@@ -47,14 +49,26 @@ public class HousingCard extends JPanel {
 
 	private final transient Housing housing;
 	private final boolean disponible;
+	private final boolean seleccionadoParaComparar;
+	private final transient Consumer<Boolean> alCambiarComparacion;
 
-	public HousingCard(Housing housing, int resenas, boolean disponible, Runnable alAbrir) {
+	/**
+	 * @param seleccionadoParaComparar si esta ficha ya está en la selección de
+	 *                                  comparar (F16), para que el chip nazca en
+	 *                                  el estado correcto tras un redibujado
+	 * @param alCambiarComparacion     qué hacer al marcar o desmarcar el chip de
+	 *                                  comparar
+	 */
+	public HousingCard(Housing housing, int resenas, boolean disponible, boolean seleccionadoParaComparar,
+			Runnable alAbrir, Consumer<Boolean> alCambiarComparacion) {
 
-		super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.SM + "[]" + Space.XXS + "[]" + Space.XS + "[]" + Space.SM + "[]"));
+		super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.SM + "[]" + Space.XXS + "[]"
+				+ Space.XS + "[]" + Space.XS + "[]" + Space.SM + "[]"));
 
 		this.housing = housing;
 		this.disponible = disponible;
+		this.seleccionadoParaComparar = seleccionadoParaComparar;
+		this.alCambiarComparacion = alCambiarComparacion;
 
 		setOpaque(false);
 		setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -63,6 +77,7 @@ public class HousingCard extends JPanel {
 		add(Labels.caps(Textos.t("catalogo.numero") + " " + housing.getHousingCode() + " · " + housing.getLocation()));
 		add(nombre());
 		add(Labels.muted(datos(resenas)));
+		add(comparaChip());
 		add(pie());
 
 		addMouseListener(new MouseAdapter() {
@@ -72,6 +87,29 @@ public class HousingCard extends JPanel {
 				alAbrir.run();
 			}
 		});
+	}
+
+	/**
+	 * Chip para añadir o quitar esta ficha de la comparación (F16).
+	 *
+	 * <p>
+	 * Va en su propia fila y no superpuesto a la foto: encima de una fotografía
+	 * real el contorno fino del chip sin marcar —sin relleno propio— se leería
+	 * distinto según lo clara u oscura que sea cada foto, y el sistema no tiene
+	 * ningún fondo garantizado para ese caso. En su propia fila, sobre el fondo
+	 * de la página, el contraste es el mismo que el de cualquier otro chip del
+	 * catálogo.
+	 */
+	private JPanel comparaChip() {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]", "[]"));
+		fila.setOpaque(false);
+
+		Chip comparar = new Chip(Textos.t("catalogo.comparar.chip"), seleccionadoParaComparar);
+		comparar.addActionListener(e -> alCambiarComparacion.accept(comparar.isSelected()));
+		fila.add(comparar);
+
+		return fila;
 	}
 
 	/**

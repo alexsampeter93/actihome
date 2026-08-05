@@ -17,14 +17,22 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 import fp.project.actihome.ActihomeApplication;
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.Review;
+import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.services.HousingService;
+import fp.project.actihome.model.services.MessageService;
+import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.model.services.UserService;
 import fp.project.actihome.ui.ChangePasswordFrame;
+import fp.project.actihome.ui.ComparisonFrame;
+import fp.project.actihome.ui.ConversationFrame;
 import fp.project.actihome.ui.DoCheckInFrame;
 import fp.project.actihome.ui.HousingDetailsFrame;
 import fp.project.actihome.ui.LoginFrame;
+import fp.project.actihome.ui.MessagesFrame;
 import fp.project.actihome.ui.OnboardingFrame;
 import fp.project.actihome.ui.OwnerPanelFrame;
+import fp.project.actihome.ui.PlatformPanelFrame;
 import fp.project.actihome.ui.PublishReviewFrame;
 import fp.project.actihome.ui.ReserveHousingFrame;
 import fp.project.actihome.ui.ReviewDetailsFrame;
@@ -107,11 +115,32 @@ public class MedirResponsive {
 			SessionManager sesion = c.getBean(SessionManager.class);
 			UserService usuarios = c.getBean(UserService.class);
 			HousingService alojamientos = c.getBean(HousingService.class);
+			ReviewService resenas = c.getBean(ReviewService.class);
+			MessageService mensajeria = c.getBean(MessageService.class);
 
-			sesion.login(usuarios.login("Lucia", "1234"));
+			User lucia = usuarios.login("Lucia", "1234");
+			sesion.login(lucia);
 
 			Housing propio = alojamientos.showHousings().stream()
 					.filter(h -> h.getHousingCode().equals(10001L)).findFirst().orElseThrow();
+			Housing otro = alojamientos.showHousings().stream()
+					.filter(h -> h.getHousingCode().equals(10002L)).findFirst().orElseThrow();
+
+			// Se enriquece con foto y respuesta (F15) para que "Detalle resena" y
+			// "Editar resena" midan de verdad esas dos filas nuevas, no una reseña
+			// pelada. El nombre de foto no existe en disco -eso no hace falta aquí-, lo
+			// que importa es que el layout reserve su hueco como si la hubiera.
+			Review propiaResena = resenas.showHousingReviews(propio.getId()).get(0);
+			resenas.setReviewImage(propiaResena.getId(), propiaResena.getAuthor().getId(), "medir-responsive.jpg");
+			resenas.respondToReview(propiaResena.getId(), lucia.getId(),
+					"Gracias por la reseña, esperamos verte pronto de nuevo.");
+
+			// F10: una conversación real de dos mensajes, para que "Mensajes" y
+			// "Conversacion" midan el hilo con contenido y no una bandeja vacía.
+			mensajeria.sendMessage(propiaResena.getAuthor().getId(), lucia.getId(), propio.getId(),
+					"Hola, ¿el alojamiento admite mascotas pequeñas?");
+			mensajeria.sendMessage(lucia.getId(), propiaResena.getAuthor().getId(), propio.getId(),
+					"¡Hola! Sí, admitimos mascotas pequeñas sin problema.");
 
 			List<Pantalla> pantallas = new ArrayList<>();
 			pantallas.add(new Pantalla("Catalogo", c.getBean(ShowHousingsFrame.class), null));
@@ -123,10 +152,12 @@ public class MedirResponsive {
 			pantallas.add(new Pantalla("Check-in", c.getBean(DoCheckInFrame.class), null));
 			pantallas.add(new Pantalla("Resenas", c.getBean(ShowReviewsFrame.class),
 					f -> ((ShowReviewsFrame) f).setHousingId(propio.getId())));
-			pantallas.add(new Pantalla("Detalle resena", c.getBean(ReviewDetailsFrame.class), null));
+			pantallas.add(new Pantalla("Detalle resena", c.getBean(ReviewDetailsFrame.class),
+					f -> ((ReviewDetailsFrame) f).loadDetails(propiaResena)));
 			pantallas.add(new Pantalla("Publicar resena", c.getBean(PublishReviewFrame.class),
 					f -> ((PublishReviewFrame) f).setHousingId(propio.getId())));
-			pantallas.add(new Pantalla("Editar resena", c.getBean(UpdateReviewFrame.class), null));
+			pantallas.add(new Pantalla("Editar resena", c.getBean(UpdateReviewFrame.class),
+					f -> ((UpdateReviewFrame) f).setReviewId(propiaResena.getId())));
 			pantallas.add(new Pantalla("Alta alojamiento", c.getBean(UploadHousingFrame.class), null));
 			pantallas.add(new Pantalla("Editar alojamiento", c.getBean(UpdateHousingFrame.class),
 					f -> ((UpdateHousingFrame) f).setHousingId(propio.getId())));
@@ -139,6 +170,12 @@ public class MedirResponsive {
 			pantallas.add(new Pantalla("Registro", c.getBean(SignUpFrame.class), null));
 			pantallas.add(new Pantalla("Bienvenida", c.getBean(OnboardingFrame.class), null));
 			pantallas.add(new Pantalla("Panel propietario", c.getBean(OwnerPanelFrame.class), null));
+			pantallas.add(new Pantalla("Panel plataforma", c.getBean(PlatformPanelFrame.class), null));
+			pantallas.add(new Pantalla("Mensajes", c.getBean(MessagesFrame.class), null));
+			pantallas.add(new Pantalla("Conversacion", c.getBean(ConversationFrame.class),
+					f -> ((ConversationFrame) f).setConversacion(propiaResena.getAuthor(), propio)));
+			pantallas.add(new Pantalla("Comparar", c.getBean(ComparisonFrame.class),
+					f -> ((ComparisonFrame) f).loadHousings(List.of(propio.getId(), otro.getId()))));
 
 			System.out.printf("%-22s %11s", "pantalla", "minimo");
 			for (int[] t : TAMANOS) {

@@ -11,13 +11,16 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -40,6 +43,7 @@ import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.ui.catalog.CatalogFilters;
 import fp.project.actihome.ui.catalog.HousingCard;
 import fp.project.actihome.ui.catalog.HousingRow;
+import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
@@ -47,6 +51,7 @@ import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.SeasonSelector;
 import fp.project.actihome.ui.components.Stat;
+import fp.project.actihome.ui.components.Toast;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Formato;
@@ -124,6 +129,14 @@ public class ShowHousingsFrame extends JFrame {
 	/** Columnas de la vista de cuadrícula, según el handoff. */
 	private static final int COLUMNAS_CUADRICULA = 3;
 
+	/**
+	 * Cuántos alojamientos como máximo se pueden comparar a la vez (F16). Tres
+	 * es el número que cabe en {@link ComparisonFrame} sin scroll horizontal
+	 * —la misma cifra que columnas tiene la cuadrícula del catálogo— y más allá
+	 * de eso una tabla de comparación deja de leerse de un vistazo.
+	 */
+	private static final int MAX_COMPARAR = 3;
+
 	private final transient HousingService housingService;
 	private final transient ReviewService reviewService;
 	private final transient SessionManager sessionManager;
@@ -171,6 +184,18 @@ public class ShowHousingsFrame extends JFrame {
 	 * aplicarse, porque el id ya no coincide.
 	 */
 	private Long usuarioDeLaVistaAplicada;
+
+	/**
+	 * Los alojamientos marcados para comparar (F16), en el orden en que se
+	 * marcaron. Se vacía cada vez que se recarga el catálogo: es una selección
+	 * de la visita, no una preferencia que deba sobrevivir a un "Actualizar".
+	 */
+	private final transient Set<Long> seleccionComparar = new LinkedHashSet<>();
+
+	private JPanel accionComparar;
+	private JLabel etiquetaComparar;
+	private JButton botonComparar;
+	private JLabel enlaceCancelarComparar;
 
 	private JLabel tituloPrimera;
 	private JLabel tituloSegunda;
@@ -540,6 +565,8 @@ public class ShowHousingsFrame extends JFrame {
 		catalogo = housingService.showHousings();
 		resenasPorAlojamiento.clear();
 		ocupadosAhora = new HashSet<>(housingService.currentlyOccupiedHousingIds());
+		seleccionComparar.clear();
+		actualizarBarraComparar();
 
 		actualizarCifras(catalogo);
 		filtros.setUbicaciones(catalogo);
@@ -653,7 +680,8 @@ public class ShowHousingsFrame extends JFrame {
 		for (Housing housing : alojamientos) {
 			lista.add(
 					new HousingCard(housing, contarResenas(housing), !ocupadosAhora.contains(housing.getId()),
-							abrir(housing)),
+							seleccionComparar.contains(housing.getId()), abrir(housing),
+							seleccionado -> alternarComparacion(housing, seleccionado)),
 					"growx, aligny top, gapbottom " + Space.LG);
 		}
 	}
@@ -677,7 +705,8 @@ public class ShowHousingsFrame extends JFrame {
 				: null;
 
 		return new HousingRow(housing, contarResenas(housing), !ocupadosAhora.contains(housing.getId()),
-				abrir(housing), intercambiar);
+				seleccionComparar.contains(housing.getId()), abrir(housing), intercambiar,
+				seleccionado -> alternarComparacion(housing, seleccionado));
 	}
 
 	private boolean puedeIntercambiar(Housing housing) {
@@ -782,14 +811,103 @@ public class ShowHousingsFrame extends JFrame {
 		accionAdmin = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]", "[]"));
 		accionAdmin.setOpaque(false);
 
+		accionComparar = barraComparar();
+
 		// El botón va con "pos" —posición absoluta, fuera de la rejilla— y la lista con
 		// "grow". Es importante que solo uno de los dos ocupe celda: si los dos van en
 		// posición absoluta, ningún componente aporta tamaño a la rejilla y MigLayout le
 		// da altura cero al contenedor entero.
 		capa.add(accionAdmin, "pos null null (container.x2-" + Space.XXXL + ") (container.y2-" + Space.XL + ")");
+		capa.add(accionComparar, "pos (container.x+" + Space.HUGE + ") null null (container.y2-" + Space.XL + ")");
 		capa.add(zonaDeLista(), "grow");
 
 		return capa;
+	}
+
+	/**
+	 * Barra flotante que aparece al marcar dos o más alojamientos para comparar
+	 * (F16), en la esquina opuesta al botón de publicar.
+	 *
+	 * <p>
+	 * Reutiliza el mismo idioma visual que {@link Toast} —bloque sólido con
+	 * {@code Theme.hdr()} y texto claro— en vez de inventar una superficie nueva:
+	 * es la única pieza del sistema pensada para flotar sobre el contenido con
+	 * un fondo propio.
+	 */
+	private JPanel barraComparar() {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(Space.SM, Space.LG, Space.SM, Space.LG),
+				"[]" + Space.MD + "[]" + Space.MD + "[]", "[]"));
+		panel.setOpaque(true);
+		panel.setBackground(Theme.hdr());
+		panel.setVisible(false);
+
+		etiquetaComparar = Labels.onHeader("");
+		panel.add(etiquetaComparar, "aligny center");
+
+		botonComparar = Buttons.primary(Textos.t("catalogo.comparar.boton"),
+				e -> navigator.ir(ComparisonFrame.class, frame -> frame.loadHousings(new ArrayList<>(seleccionComparar))));
+		panel.add(botonComparar, "aligny center");
+
+		enlaceCancelarComparar = Labels.onHeader(Textos.t("catalogo.comparar.cancelar"));
+		enlaceCancelarComparar.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		enlaceCancelarComparar.addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				seleccionComparar.clear();
+				actualizarBarraComparar();
+				aplicarFiltros();
+			}
+		});
+		panel.add(enlaceCancelarComparar, "aligny center");
+
+		return panel;
+	}
+
+	/**
+	 * Marca o desmarca un alojamiento en la selección de comparar.
+	 *
+	 * <p>
+	 * Rechazar el {@value #MAX_COMPARAR}+1 exige repintar la lista entera: el
+	 * chip ya se dibujó marcado en cuanto el usuario lo pulsó —así es como
+	 * responde un {@code JToggleButton}— y la única forma de devolverlo a su
+	 * estado real, sin guardar una referencia al chip concreto, es reconstruir
+	 * la fila desde el estado que sí es la fuente de verdad: {@link #seleccionComparar}.
+	 */
+	private void alternarComparacion(Housing housing, boolean seleccionado) {
+
+		if (seleccionado) {
+
+			if (seleccionComparar.size() >= MAX_COMPARAR) {
+				Toast.mostrar(this,
+						Textos.t("catalogo.comparar.limite.prefijo") + " " + MAX_COMPARAR + " "
+								+ Textos.t("catalogo.comparar.limite.sufijo"));
+				aplicarFiltros();
+				return;
+			}
+
+			seleccionComparar.add(housing.getId());
+
+		} else {
+			seleccionComparar.remove(housing.getId());
+		}
+
+		actualizarBarraComparar();
+	}
+
+	private void actualizarBarraComparar() {
+
+		if (accionComparar == null) {
+			return;
+		}
+
+		boolean visible = seleccionComparar.size() >= 2;
+		accionComparar.setVisible(visible);
+
+		if (visible) {
+			etiquetaComparar.setText(seleccionComparar.size() + " " + Textos.t("catalogo.comparar.seleccionados"));
+		}
 	}
 
 	/**
@@ -876,6 +994,10 @@ public class ShowHousingsFrame extends JFrame {
 		enCatalogo.setRotulo(Textos.t("catalogo.stat.enCatalogo"));
 		disponibles.setRotulo(Textos.t("catalogo.stat.disponibles"));
 		media.setRotulo(Textos.t("catalogo.stat.media"));
+
+		botonComparar.setText(Textos.t("catalogo.comparar.boton"));
+		enlaceCancelarComparar.setText(Textos.t("catalogo.comparar.cancelar"));
+		actualizarBarraComparar();
 
 		if (heroContraido) {
 			actualizarHeroCompacto();

@@ -1,6 +1,7 @@
 package fp.project.actihome.ui;
 
 import java.awt.Dimension;
+import java.io.IOException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -26,11 +27,13 @@ import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.components.Toast;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.reviews.ReviewForm;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
+import fp.project.actihome.ui.theme.ReviewPhotos;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
 
@@ -202,10 +205,11 @@ public class UpdateReviewFrame extends JFrame {
 		}
 
 		try {
-			reviewService.updateReview(reviewId, sessionManager.getLoggedInUser().getId(), formulario.getTitulo(),
-					formulario.getCuerpo(), formulario.getUbicacion(), formulario.getServicio(), formulario.getWifi(),
-					formulario.getComida(), formulario.getLimpieza());
+			Review actualizada = reviewService.updateReview(reviewId, sessionManager.getLoggedInUser().getId(),
+					formulario.getTitulo(), formulario.getCuerpo(), formulario.getUbicacion(), formulario.getServicio(),
+					formulario.getWifi(), formulario.getComida(), formulario.getLimpieza());
 
+			guardarFotoSiHaceFalta(actualizada);
 			volverAlDetalle();
 
 		} catch (NotTheAuthorException ex) {
@@ -219,6 +223,32 @@ public class UpdateReviewFrame extends JFrame {
 
 		} catch (InstanceNotFoundException ex) {
 			error.setText(Textos.t("resenaEditar.error.yaNoExiste"));
+		}
+	}
+
+	/**
+	 * Guarda, reemplaza o quita la foto de la reseña, según lo que haya tocado
+	 * el formulario (F15). Ver la nota gemela en
+	 * {@code PublishReviewFrame.guardarFotoSiHaceFalta}: un fallo aquí no
+	 * deshace el resto de la edición, ya guardada, así que se avisa con un
+	 * {@link Toast} en vez de bloquear la pantalla.
+	 */
+	private void guardarFotoSiHaceFalta(Review actualizada) {
+
+		try {
+			if (formulario.getFotoElegida() != null) {
+
+				String nombre = ReviewPhotos.nombreNuevo();
+				ReviewPhotos.guardar(nombre, formulario.getFotoElegida());
+				reviewService.setReviewImage(actualizada.getId(), sessionManager.getLoggedInUser().getId(), nombre);
+
+			} else if (formulario.getImagenExistente() == null && actualizada.getImage() != null) {
+				// Tenía foto y se pulsó "Quitar": la reseña se queda sin ninguna.
+				reviewService.setReviewImage(actualizada.getId(), sessionManager.getLoggedInUser().getId(), null);
+			}
+
+		} catch (IOException | NotAuthorizedUserException | InstanceNotFoundException | NotTheAuthorException ex) {
+			Toast.mostrar(this, Textos.t("resenaForm.foto.error.noSeGuarda"));
 		}
 	}
 

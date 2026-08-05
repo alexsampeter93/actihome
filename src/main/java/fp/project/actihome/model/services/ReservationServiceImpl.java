@@ -64,7 +64,10 @@ public class ReservationServiceImpl implements ReservationService {
 			throw new InstanceNotFoundException("project.housing.entities", housingId);
 		}
 
-		if (creditCardNumber.length() != 16) {
+		// F13: no basta con contar caracteres. Antes "123456789012345A" pasaba la
+		// comprobación porque medía 16 de largo, aunque no fuera un número de tarjeta
+		// de verdad.
+		if (!creditCardNumber.matches("\\d{16}")) {
 			throw new WrongCreditCardNumberException();
 		}
 

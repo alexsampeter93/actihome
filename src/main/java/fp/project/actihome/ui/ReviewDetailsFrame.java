@@ -16,19 +16,26 @@ import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Review;
 import fp.project.actihome.model.entities.User;
+import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
+import fp.project.actihome.model.exceptions.NotTheOwnerException;
 import fp.project.actihome.model.exceptions.TranslationNotConfiguredException;
 import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Hairline;
+import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.components.ScoreBar;
 import fp.project.actihome.ui.components.ScoreDisc;
 import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
+import fp.project.actihome.ui.theme.BrandAssets;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
@@ -120,7 +127,12 @@ public class ReviewDetailsFrame extends JFrame {
 		contenido.setOpaque(false);
 
 		raiz.add(headerPanel, "growx");
-		raiz.add(contenido, "grow");
+		// Rescate: hasta F15 esta pantalla nunca necesitó red de seguridad, porque
+		// título, cuerpo y cinco barras cabían siempre. Con la foto adjunta (hasta
+		// 260px) y la respuesta del propietario, el contenido ya puede superar una
+		// ventana pequeña, y sin esto las últimas barras de subNotas quedaban
+		// dibujadas por debajo del borde: no cortadas, inalcanzables.
+		raiz.add(Rescate.envolver(contenido), "grow");
 
 		setContentPane(raiz);
 
@@ -151,26 +163,66 @@ public class ReviewDetailsFrame extends JFrame {
 		contenido.setLayout(new MigLayout("fill, " + Space.insets(Space.XL, Space.HUGE, Space.XL, Space.HUGE),
 				"[grow,fill]", "[grow,fill]"));
 
+		boolean conFoto = review.getImage() != null;
+		boolean conRespuesta = review.getOwnerResponse() != null || esPropietarioDelAlojamiento();
+
+		// El número de filas de "columna" depende de la reseña (¿tiene foto? ¿hay
+		// respuesta del propietario, o puede haberla?), así que su spec de filas se
+		// construye aquí en vez de ser una constante — no hay problema en reconstruir
+		// todo el panel en cada visita, que es justo lo que ya hacía este método antes
+		// de F15.
+		StringBuilder filas = new StringBuilder("[]").append(Space.LG).append("[]").append(Space.MD).append("[]");
+
+		if (conFoto) {
+			filas.append(Space.SM).append("[]");
+		}
+
+		filas.append(Space.SM).append("[]").append(Space.XXL).append("[]").append(Space.XXL).append("[]");
+
+		if (conRespuesta) {
+			filas.append(Space.XXL).append("[]").append(Space.LG).append("[]");
+		}
+
+		filas.append("push[]");
+
 		// Una sola columna centrada, y dentro todo alineado a la izquierda. Es la
 		// diferencia entre un margen izquierdo recto y uno dentado: si cada bloque se
 		// centrase por su cuenta según su propio ancho máximo, el cuerpo del texto
 		// arrancaría más adentro que el título.
-		JPanel columna = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.LG + "[]"
-				+ Space.MD + "[]" + Space.SM + "[]" + Space.XXL + "[]" + Space.XXL + "[]push[]"));
+		JPanel columna = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", filas.toString()));
 		columna.setOpaque(false);
 
 		columna.add(migaDePan(), "growx");
 		columna.add(cabecera(), "growx");
 		columna.add(new WrappingText(review.getBody()), "growx, " + Layout.ancho(Layout.TEXTO));
+
+		if (conFoto) {
+			columna.add(foto(), "h 0:260:260, " + Layout.ancho(Layout.TEXTO));
+		}
+
 		columna.add(traduccion(), "growx, " + Layout.ancho(Layout.TEXTO));
 		columna.add(Hairline.horizontal(), "growx, h 1!");
 		columna.add(subNotas(), "growx, " + Layout.ancho(Layout.TEXTO));
+
+		if (conRespuesta) {
+			columna.add(Hairline.horizontal(), "growx, h 1!");
+			columna.add(respuestaDelPropietario(), "growx, " + Layout.ancho(Layout.TEXTO));
+		}
+
 		columna.add(acciones(), "growx");
 
 		contenido.add(columna, "grow, " + Layout.anchoCentrado(Layout.CONTENIDO));
 
 		contenido.revalidate();
 		contenido.repaint();
+	}
+
+	/** La foto adjunta a la reseña (F15), del mismo tamaño de caja en las cuatro estaciones. */
+	private ImagePlaceholder foto() {
+
+		ImagePlaceholder placeholder = new ImagePlaceholder();
+		placeholder.setFoto(BrandAssets.fotoDeResena(review.getImage()));
+		return placeholder;
 	}
 
 	private JPanel migaDePan() {
@@ -278,5 +330,98 @@ public class ReviewDetailsFrame extends JFrame {
 		User usuario = sessionManager.getLoggedInUser();
 
 		return usuario != null && usuario.getId().equals(review.getAuthor().getId());
+	}
+
+	/**
+	 * Respuesta pública del propietario del alojamiento (F15).
+	 *
+	 * <p>
+	 * Al propietario se le enseña siempre el formulario para responder —incluso
+	 * si todavía no hay respuesta, que es justo el caso que le interesa—; a
+	 * cualquier otra persona solo se le enseña si ya hay algo que leer. Es el
+	 * mismo criterio de "una acción que no te corresponde ni se enseña" que usa
+	 * el resto de la aplicación (el botón de publicar alojamiento, la copia de
+	 * seguridad de F12): un formulario de respuesta vacío en la pantalla de un
+	 * huésped no tiene ninguna acción que hacer con él.
+	 */
+	private JPanel respuestaDelPropietario() {
+
+		JPanel panel = new JPanel(
+				new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XS + "[]"));
+		panel.setOpaque(false);
+
+		panel.add(Labels.caps(Textos.t("detalleResena.respuesta.titulo")));
+		panel.add(esPropietarioDelAlojamiento() ? formularioDeRespuesta() : lecturaDeRespuesta());
+
+		return panel;
+	}
+
+	private JPanel lecturaDeRespuesta() {
+
+		JPanel panel = new JPanel(
+				new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]"));
+		panel.setOpaque(false);
+
+		panel.add(new WrappingText(review.getOwnerResponse()));
+		panel.add(Labels.muted(formatoFecha().format(review.getOwnerResponseDate())));
+
+		return panel;
+	}
+
+	/**
+	 * Precargado con lo que ya hubiera, igual que cualquier formulario de
+	 * edición de esta aplicación (regla de B9): si el propietario abre esto para
+	 * corregir una palabra, no debe encontrarse el campo en blanco.
+	 */
+	private JPanel formularioDeRespuesta() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
+				"[]" + Space.SM + "[]" + Space.XS + "[]"));
+		panel.setOpaque(false);
+
+		Field respuesta = Field.textArea(Textos.t("detalleResena.respuesta.campo"), 3);
+		respuesta.setText(review.getOwnerResponse() == null ? "" : review.getOwnerResponse());
+		panel.add(respuesta);
+
+		JLabel errorRespuesta = Labels.error(" ");
+
+		String textoBoton = review.getOwnerResponse() == null ? Textos.t("detalleResena.respuesta.publicar")
+				: Textos.t("detalleResena.respuesta.actualizar");
+
+		panel.add(Buttons.secondary(textoBoton, e -> {
+
+			String texto = respuesta.getText().trim();
+
+			if (texto.isEmpty()) {
+				errorRespuesta.setText(Textos.t("detalleResena.respuesta.error.vacia"));
+				return;
+			}
+
+			try {
+				reviewService.respondToReview(review.getId(), sessionManager.getLoggedInUser().getId(), texto);
+				recargar();
+
+			} catch (NotTheOwnerException | NotAuthorizedUserException ex) {
+				// No debería poder ocurrir —esPropietarioDelAlojamiento() ya comprueba lo
+				// mismo que el servicio—, pero la regla la impone el servicio y la pantalla
+				// no debe darla por hecha.
+				errorRespuesta.setText(Textos.t("detalleResena.respuesta.error.noAutorizado"));
+
+			} catch (InstanceNotFoundException ex) {
+				navigator.ir(ShowHousingsFrame.class);
+			}
+		}));
+
+		panel.add(errorRespuesta);
+
+		return panel;
+	}
+
+	private boolean esPropietarioDelAlojamiento() {
+
+		User usuario = sessionManager.getLoggedInUser();
+
+		return usuario != null && usuario.getRole() == RoleType.ADMIN
+				&& review.getHousing().getOwner().getId().equals(usuario.getId());
 	}
 }

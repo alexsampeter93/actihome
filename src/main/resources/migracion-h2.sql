@@ -77,3 +77,12 @@ ALTER TABLE USERS ADD COLUMN IF NOT EXISTS onboardingSeen BOOLEAN DEFAULT FALSE 
 -- anterior a esta fase necesita aplicar a mano:
 --     ALTER TABLE USERS ADD COLUMN defaultGridView BOOLEAN DEFAULT FALSE NOT NULL;
 ALTER TABLE USERS ADD COLUMN IF NOT EXISTS defaultGridView BOOLEAN DEFAULT FALSE NOT NULL;
+
+-- F15: reseñas enriquecidas (foto adjunta, respuesta pública del propietario).
+-- Quien tenga una base MySQL anterior a esta fase necesita aplicar a mano:
+--     ALTER TABLE REVIEWS ADD COLUMN image VARCHAR(120);
+--     ALTER TABLE REVIEWS ADD COLUMN ownerResponse VARCHAR(500);
+--     ALTER TABLE REVIEWS ADD COLUMN ownerResponseDate DATETIME;
+ALTER TABLE REVIEWS ADD COLUMN IF NOT EXISTS image VARCHAR(120);
+ALTER TABLE REVIEWS ADD COLUMN IF NOT EXISTS ownerResponse VARCHAR(500);
+ALTER TABLE REVIEWS ADD COLUMN IF NOT EXISTS ownerResponseDate DATETIME;
