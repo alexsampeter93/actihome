@@ -27,7 +27,7 @@ public final class MedirGlifos {
 
 	/** Los símbolos que la aplicación usa o ha usado en algún momento. */
 	private static final String[] SIMBOLOS = { "→", "←", "·", "›", "—", "–", "€", "↔", "⇄", "⇆", "★", "✓", "⟷", "×",
-			"✳", "•", "●", "±", "«", "»", "…", "¿", "¡", "ñ", "á", "ü" };
+			"✳", "•", "●", "±", "«", "»", "…", "¿", "¡", "ñ", "á", "ü", "↑", "↓", "▾", "▸" };
 
 	private MedirGlifos() {
 	}
@@ -41,8 +41,8 @@ public final class MedirGlifos {
 		Font serifDisplay = Typography.serif(46f);
 
 		System.out.println();
-		System.out.printf("%-8s %-14s %-14s %-14s%n", "simbolo", "Archivo", "Fraunces 9pt", "Fraunces 144pt");
-		System.out.println("--------------------------------------------------------");
+		System.out.printf("%-8s %-8s %-8s %-8s  %s%n", "simbolo", "Archivo", "Fr 9pt", "Fr 144pt", "nombre Unicode");
+		System.out.println("---------------------------------------------------------------------------");
 
 		boolean hayFaltas = false;
 
@@ -50,12 +50,18 @@ public final class MedirGlifos {
 
 			int punto = simbolo.codePointAt(0);
 
+			// El nombre Unicode dice cual es cual sin depender de que la consola sepa
+			// pintar el simbolo: en una consola de Windows con la pagina de codigos por
+			// defecto, la columna del simbolo sale como "?" y la tabla se vuelve
+			// inutil justo para lo que se hizo.
+			String nombre = Character.getName(punto);
+
 			boolean enSans = sans.canDisplay(punto);
 			boolean enSerifTexto = serifTexto.canDisplay(punto);
 			boolean enSerifDisplay = serifDisplay.canDisplay(punto);
 
-			System.out.printf("%-8s %-14s %-14s %-14s%n", simbolo, marca(enSans), marca(enSerifTexto),
-					marca(enSerifDisplay));
+			System.out.printf("%-8s %-8s %-8s %-8s  %s%n", simbolo, marca(enSans), marca(enSerifTexto),
+					marca(enSerifDisplay), nombre);
 
 			hayFaltas = hayFaltas || !enSans || !enSerifTexto || !enSerifDisplay;
 		}

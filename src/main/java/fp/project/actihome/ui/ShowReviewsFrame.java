@@ -31,6 +31,7 @@ import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.nav.Navigator;
+import fp.project.actihome.ui.reviews.ResumenDeResenas;
 import fp.project.actihome.ui.reviews.ReviewRow;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
@@ -225,29 +226,31 @@ public class ShowReviewsFrame extends JFrame {
 	}
 
 	/**
-	 * La media del alojamiento, en grande, con el número de reseñas al lado.
+	 * El resumen: media grande, histograma de notas y distintivos de categoría,
+	 * con el botón de publicar a la derecha.
 	 *
 	 * <p>
 	 * La media se lee de {@code housing.getScore()} y no se calcula aquí: el
 	 * servicio ya la recalcula y la reescribe cada vez que se publica o se
 	 * actualiza una reseña. Recalcularla también en la pantalla sería tener la
 	 * misma regla en dos sitios, y el día que cambiara solo se corregiría uno.
+	 *
+	 * <p>
+	 * El histograma y los distintivos sí se calculan aquí (Fase 8.4), y la
+	 * diferencia con la media es deliberada: no son datos del alojamiento, son
+	 * <em>una lectura</em> de la lista que la pantalla acaba de cargar para
+	 * pintarse. Guardarlos en la entidad significaría mantener sincronizado en la
+	 * base de datos algo que se deriva en dos líneas de lo que ya está ahí.
 	 */
 	private JPanel notaMedia(List<Review> resenas) {
 
-		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.MD + "[]" + Space.XL + "[]push[]", "[]"));
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XL + "[]push", "[]"));
 		panel.setOpaque(false);
 
-		JLabel media = Labels.price(Formato.nota(housing.getScore()));
-		media.setFont(Typography.serifMedium(40f));
-		panel.add(media, "aligny center");
-
-		panel.add(Labels.muted(resenas.isEmpty() ? Textos.t("catalogo.sinResenas")
-				: Formato.plural(resenas.size(), Textos.t("palabra.resena.singular"), Textos.t("palabra.resena.plural"))),
-				"aligny center");
+		panel.add(new ResumenDeResenas(housing.getScore(), resenas), "aligny center");
 
 		if (esCliente() && !yaOpino(resenas)) {
-			panel.add(Buttons.primary(Textos.t("resenas.publicar"), e -> publicar()), "aligny center");
+			panel.add(Buttons.primary(Textos.t("resenas.publicar"), e -> publicar()), "aligny top");
 		}
 
 		return panel;

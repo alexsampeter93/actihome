@@ -12,6 +12,7 @@ import javax.swing.JPanel;
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Review;
+import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.Labels;
@@ -66,8 +67,7 @@ public class ReviewRow extends JPanel {
 		setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
 		add(cabecera(review, alAbrir), "growx");
-		add(Labels.muted(Textos.t("resenas.row.por", review.getAuthor().getUsername()) + " · "
-				+ formatoFecha().format(review.getPublicationDate())));
+		add(autoria(review), "growx");
 		add(new WrappingText(extracto(review.getBody())), "growx");
 		add(subNotas(review), "growx");
 
@@ -78,6 +78,29 @@ public class ReviewRow extends JPanel {
 				alAbrir.run();
 			}
 		});
+	}
+
+	/**
+	 * Quién la escribió y cuándo, con su avatar de iniciales delante (Fase 8.4).
+	 *
+	 * <p>
+	 * El avatar no añade ninguna información que no estuviera ya en el texto —el
+	 * nombre sigue ahí al lado—, y aun así hace un trabajo real: en una lista de
+	 * reseñas seguidas, un disco de color permite ver de un golpe si son de
+	 * personas distintas o de la misma. El color lo deriva {@link Avatar} del
+	 * propio nombre, así que es estable entre sesiones sin guardar nada.
+	 */
+	private JPanel autoria(Review review) {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XS + "[]", "[]"));
+		panel.setOpaque(false);
+
+		panel.add(Avatar.relleno(review.getAuthor().getName(), review.getAuthor().getSurname(), 26),
+				"w 26!, h 26!, aligny center");
+		panel.add(Labels.muted(Textos.t("resenas.row.por", review.getAuthor().getUsername()) + " · "
+				+ formatoFecha().format(review.getPublicationDate())), "aligny center");
+
+		return panel;
 	}
 
 	/** Título a la izquierda, nota total, los indicadores de F15 y el enlace de apertura a la derecha. */
