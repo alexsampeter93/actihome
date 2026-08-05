@@ -57,10 +57,6 @@
 			<groupId>org.springframework.security</groupId> 
 			<artifactId>spring-security-crypto</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation</artifactId>
-		</dependency>
 
 		<!-- H2: base de datos embebida, escrita en Java puro. Es la de por defecto:
 			viaja dentro del jar y guarda los datos en un fichero del usuario, así que la

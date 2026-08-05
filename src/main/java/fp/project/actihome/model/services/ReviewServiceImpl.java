@@ -140,7 +140,15 @@ public class ReviewServiceImpl implements ReviewService {
 			throw new ScoreOutOfBoundsException();
 		}
 
-		if ( reviewToUpdate.get().getAuthor() != author) {
+		// equals y no != (B4, cerrado en la auditoría de la Fase 8.3). Comparar dos
+		// entidades con != pregunta si son *el mismo objeto en memoria*, no si son la
+		// misma fila. Aquí funcionaba de casualidad: dentro de una transacción, el
+		// contexto de persistencia de JPA garantiza una única instancia por fila, así
+		// que las dos referencias coinciden. Deja de funcionar en cuanto una de las dos
+		// entidades venga de fuera de esa transacción — de una sesión anterior, de una
+		// caché, o de un futuro cliente que hable con una API. Y el fallo no avisa: no
+		// lanza nada, simplemente rechaza a un autor que sí lo es.
+		if (!reviewToUpdate.get().getAuthor().getId().equals(author.getId())) {
 			throw new NotTheAuthorException();
 		}
 		

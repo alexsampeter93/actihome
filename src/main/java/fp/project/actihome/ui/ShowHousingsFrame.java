@@ -38,6 +38,7 @@ import net.miginfocom.swing.MigLayout;
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
+import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.ui.catalog.CatalogFilters;
@@ -739,10 +740,14 @@ public class ShowHousingsFrame extends JFrame {
 
 		return resenasPorAlojamiento.computeIfAbsent(housing.getId(), id -> {
 
+			// InstanceNotFoundException y no Exception (Fase 8.3): es la única que
+			// declara showHousingReviews, y el genérico se tragaba además cualquier
+			// fallo de programación — que aquí se vería como una ficha diciendo "0
+			// reseñas" teniendo varias, sin ninguna traza que lo delatara.
 			try {
 				return reviewService.showHousingReviews(id).size();
 
-			} catch (Exception ex) {
+			} catch (InstanceNotFoundException ex) {
 				return 0;
 			}
 		});

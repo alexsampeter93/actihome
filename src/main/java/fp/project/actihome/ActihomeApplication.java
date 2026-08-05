@@ -6,11 +6,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
 import fp.project.actihome.ui.LoginFrame;
 import fp.project.actihome.ui.brand.SplashScreen;
@@ -66,25 +63,27 @@ public class ActihomeApplication {
 		return new BCryptPasswordEncoder();
 	}
 
-	@Bean
-	public MessageSource messageSource() {
-
-		ReloadableResourceBundleMessageSource bean = new ReloadableResourceBundleMessageSource();
-
-		bean.setBasename("classpath:messages");
-		bean.setDefaultEncoding("UTF-8");
-
-		return bean;
-	}
-
-	@Bean
-	public LocalValidatorFactoryBean validator() {
-
-		LocalValidatorFactoryBean bean = new LocalValidatorFactoryBean();
-
-		bean.setValidationMessageSource(messageSource());
-
-		return bean;
-	}
+	// Aquí vivían dos beans más, retirados en la auditoría de la Fase 8.3:
+	// `messageSource()` y `validator()`.
+	//
+	// Eran infraestructura muerta encadenada. `messageSource()` apuntaba a
+	// `classpath:messages`, un fichero que NO EXISTE en el proyecto y que nunca ha
+	// existido; su único consumidor era `validator()`, que a su vez montaba un
+	// `LocalValidatorFactoryBean` para la validación por anotaciones de Bean
+	// Validation. Y la aplicación no tiene **ni una sola** anotación de validación:
+	// ni un `@NotNull`, ni un `@Size`, ni un `@Valid` en 145 ficheros. Toda la
+	// validación es código explícito en los servicios y en las pantallas.
+	//
+	// Merece anotarse por qué duró tanto: cada pieza justificaba a la siguiente
+	// —el validador necesita un origen de mensajes, el origen de mensajes tiene un
+	// consumidor— y leyéndolas por separado las dos parecían tener sentido. Lo que
+	// no lo tenía era el conjunto, porque **nada de fuera llamaba a ninguna de las
+	// dos**. Es la forma más difícil de detectar del código muerto: no un método
+	// suelto sin usar, sino un pequeño sistema coherente conectado a nada.
+	//
+	// Con ellos se retiró también `spring-boot-starter-validation` del `pom.xml`,
+	// que era quien los traía, y con esa dependencia se fue `tomcat-embed-el`: una
+	// implementación de Expression Language para contenedores de servlets, dentro
+	// de una aplicación de escritorio que no levanta ningún servidor web.
 
 }

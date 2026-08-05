@@ -322,12 +322,23 @@ public class HousingDetailsFrame extends JFrame {
 		return enlace;
 	}
 
+	/**
+	 * Cuántas reseñas tiene el alojamiento, o cero si ha dejado de existir.
+	 *
+	 * <p>
+	 * Se captura {@code InstanceNotFoundException} y no {@code Exception} (Fase
+	 * 8.3): es la única excepción que declara {@code showHousingReviews}, así que
+	 * para el caso previsto el comportamiento es idéntico — pero el genérico se
+	 * tragaba además cualquier fallo de programación, que aquí se manifestaba como
+	 * un alojamiento que dice tener cero reseñas teniendo varias, sin ninguna
+	 * traza. B11 daba esto por cerrado y no lo estaba.
+	 */
 	private int contarResenas() {
 
 		try {
 			return reviewService.showHousingReviews(housing.getId()).size();
 
-		} catch (Exception ex) {
+		} catch (InstanceNotFoundException ex) {
 			return 0;
 		}
 	}

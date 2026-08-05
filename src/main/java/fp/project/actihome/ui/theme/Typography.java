@@ -94,23 +94,26 @@ public final class Typography {
 	 */
 	private static final float UMBRAL_OPTICO = 26f;
 
+	// Tres pesos de sans y tres de serif, ni uno más. La auditoría de la Fase 8.3
+	// encontró que sansBold, sansExtraBold y serifSemiBold no se llamaban desde
+	// ningún sitio: cuatro archivos de fuente (~590 KB, un tercio del peso
+	// tipográfico del jar) que se cargaban al arrancar para no dibujarse nunca.
+	// Se retiraron con los métodos. La regla del proyecto es "si algo no existe en
+	// el sistema, se añade al sistema" — añadir *cuando* haga falta, no por si
+	// acaso.
 	private static Font sansRegular;
 	private static Font sansMedium;
 	private static Font sansSemiBold;
-	private static Font sansBold;
-	private static Font sansExtraBold;
 
 	// Serif en dos tallas ópticas. La de texto se usa por debajo del umbral y la
 	// de display por encima; ver la nota de clase sobre por qué esto no es un
 	// adorno.
 	private static Font serifTextoRegular;
 	private static Font serifTextoSemiBold;
-	private static Font serifTextoBold;
 	private static Font serifTextoItalic;
 
 	private static Font serifDisplayRegular;
 	private static Font serifDisplaySemiBold;
-	private static Font serifDisplayBold;
 	private static Font serifDisplayItalic;
 
 	private Typography() {
@@ -125,17 +128,13 @@ public final class Typography {
 		sansRegular = load("Archivo-Regular.ttf", Font.SANS_SERIF);
 		sansMedium = load("Archivo-Medium.ttf", Font.SANS_SERIF);
 		sansSemiBold = load("Archivo-SemiBold.ttf", Font.SANS_SERIF);
-		sansBold = load("Archivo-Bold.ttf", Font.SANS_SERIF);
-		sansExtraBold = load("Archivo-ExtraBold.ttf", Font.SANS_SERIF);
 
 		serifTextoRegular = load("Fraunces9pt-Regular.ttf", Font.SERIF);
 		serifTextoSemiBold = load("Fraunces9pt-SemiBold.ttf", Font.SERIF);
-		serifTextoBold = load("Fraunces9pt-Bold.ttf", Font.SERIF);
 		serifTextoItalic = load("Fraunces9pt-Italic.ttf", Font.SERIF);
 
 		serifDisplayRegular = load("Fraunces144pt-Regular.ttf", Font.SERIF);
 		serifDisplaySemiBold = load("Fraunces144pt-SemiBold.ttf", Font.SERIF);
-		serifDisplayBold = load("Fraunces144pt-Bold.ttf", Font.SERIF);
 		serifDisplayItalic = load("Fraunces144pt-Italic.ttf", Font.SERIF);
 	}
 
@@ -188,14 +187,6 @@ public final class Typography {
 		return sansSemiBold.deriveFont(size);
 	}
 
-	public static Font sansBold(float size) {
-		return sansBold.deriveFont(size);
-	}
-
-	public static Font sansExtraBold(float size) {
-		return sansExtraBold.deriveFont(size);
-	}
-
 	// --- Serif (Fraunces): display, títulos, precios, cifras ---
 	// Cada método elige solo su talla óptica: quien llama pide "serif a 46" y no
 	// necesita saber que por debajo de 26 se sirve otro archivo.
@@ -219,10 +210,6 @@ public final class Typography {
 	 */
 	public static Font serifMedium(float size) {
 		return optica(serifTextoSemiBold, serifDisplaySemiBold, size);
-	}
-
-	public static Font serifSemiBold(float size) {
-		return optica(serifTextoBold, serifDisplayBold, size);
 	}
 
 	public static Font serifItalic(float size) {
