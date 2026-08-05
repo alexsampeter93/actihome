@@ -16,7 +16,7 @@ import fp.project.actihome.ui.theme.Theme;
  *
  * <p>
  * <b>Existe porque el carácter "⇄" (U+21C4) no está en las fuentes del
- * proyecto.</b> Ni Spectral ni Manrope lo incluyen, y cuando a Swing le falta un
+ * proyecto.</b> Ni Fraunces ni Archivo lo incluyen, y cuando a Swing le falta un
  * glifo dibuja un rectángulo vacío. Estuvo así desde la Fase 4 —el enlace
  * "Intercambiar ⇄" del detalle de alojamiento— sin que se notara, porque un
  * cuadradito junto a un texto correcto se lee como un icono raro y no como un

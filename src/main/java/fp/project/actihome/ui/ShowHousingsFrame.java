@@ -430,7 +430,14 @@ public class ShowHousingsFrame extends JFrame {
 		// verdad no es la redonda inclinada, lleva las letras dibujadas aparte, y ese
 		// cambio de forma en mitad de la frase se percibía como que la palabra estaba
 		// en otra tipografía. El titular pierde el énfasis, pero gana uniformidad.
-		JPanel linea = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]push", "[]"));
+		// La separación entre las dos etiquetas es la de un espacio de esta fuente a
+		// este cuerpo, medida — no una constante. Era Space.SM (12px), ajustado a ojo
+		// con Spectral; al cambiar a Fraunces (Fase 8.2), que tiene el espacio más
+		// estrecho, esos mismos 12px se leían como dos espacios seguidos en mitad del
+		// titular.
+		int espacio = Typography.anchoDeEspacio(Typography.serifMedium(TITULAR));
+
+		JPanel linea = new JPanel(new MigLayout(Space.insets(0), "[]" + espacio + "[]push", "[]"));
 		linea.setOpaque(false);
 
 		tituloPrimera = Labels.hero(Textos.t("catalogo.hero.titulo1"));
@@ -470,7 +477,7 @@ public class ShowHousingsFrame extends JFrame {
 		// traducía en que el campo se dibujaba saliéndose por la derecha. Con
 		// "220:340:340" mide lo que el diseño pide mientras haya sitio y se estrecha
 		// hasta un ancho todavía cómodo de escribir cuando no lo hay.
-		panel.add(filtros.extraerBuscador(), "w 220:340:340, h 38!, alignx right");
+		panel.add(filtros.extraerBuscador(), "w 220:340:340, h " + Typography.altoDeControl() + "!, alignx right");
 		panel.add(cifras());
 
 		return panel;

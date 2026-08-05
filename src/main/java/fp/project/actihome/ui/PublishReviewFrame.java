@@ -40,6 +40,7 @@ import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.ReviewPhotos;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
+import fp.project.actihome.ui.theme.Typography;
 
 /**
  * Publicar una reseña sobre un alojamiento.
@@ -175,7 +176,7 @@ public class PublishReviewFrame extends JFrame {
 		fila.setOpaque(false);
 
 		botonPublicar = Buttons.primary(Textos.t("resenas.publicar"), e -> publicar());
-		fila.add(botonPublicar, "height 44!");
+		fila.add(botonPublicar, "height " + Typography.altoDeBoton() + "!");
 		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> volverAlListado());
 		fila.add(botonCancelar);
 

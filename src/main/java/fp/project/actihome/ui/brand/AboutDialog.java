@@ -18,6 +18,7 @@ import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Season;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Theme;
+import fp.project.actihome.ui.theme.Typography;
 
 /**
  * El diálogo "Acerca de": el cuarto y último sitio donde firma CocoBrain.
@@ -68,7 +69,7 @@ public final class AboutDialog {
 		raiz.add(datos(), "growx");
 		raiz.add(new WrappingText("Olaz, la mascota, cambia con la estación que elijas. Ahora mismo es "
 				+ Theme.estacion().nombre().toLowerCase() + "."), "growx");
-		raiz.add(Buttons.primary("Cerrar", e -> dialogo.dispose()), "height 40!, alignx left");
+		raiz.add(Buttons.primary("Cerrar", e -> dialogo.dispose()), "height " + Typography.altoDeBoton() + "!, alignx left");
 
 		dialogo.setContentPane(raiz);
 
@@ -110,7 +111,7 @@ public final class AboutDialog {
 
 		fila(panel, "Interfaz", "Java Swing con FlatLaf y MigLayout");
 		fila(panel, "Datos", "Spring Data JPA sobre H2 embebida");
-		fila(panel, "Tipografía", "Spectral y Manrope, empaquetadas");
+		fila(panel, "Tipografía", "Fraunces y Archivo, empaquetadas");
 		fila(panel, "Estaciones", cuantasEstaciones());
 
 		return panel;

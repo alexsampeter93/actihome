@@ -31,6 +31,7 @@ import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
+import fp.project.actihome.ui.theme.Typography;
 
 /**
  * Bienvenida de una sola vez, la primera vez que se inicia sesión con una
@@ -111,7 +112,7 @@ public class OnboardingFrame extends JFrame {
 		raiz.add(cuerpo, "alignx center, alignc, " + Layout.ancho(Layout.TEXTO));
 
 		botonEmpezar = Buttons.primary(" ", e -> empezar());
-		raiz.add(botonEmpezar, "alignx center, height 44!, w 220!");
+		raiz.add(botonEmpezar, "alignx center, height " + Typography.altoDeBoton() + "!, w 220!");
 
 		setContentPane(raiz);
 	}

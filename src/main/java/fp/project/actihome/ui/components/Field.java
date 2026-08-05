@@ -48,8 +48,15 @@ public class Field extends JPanel {
 	private final JTextComponent input;
 	private final javax.swing.JLabel etiqueta;
 
+	/**
+	 * Campo de una línea. El alto <b>se mide desde la fuente</b>, no se fija en
+	 * píxeles: era el mismo fallo que {@link #textArea(String, int)} ya tenía
+	 * corregido y que a este constructor nunca le llegó. Con un 38 escrito a pelo,
+	 * un Windows al 150 % agranda la letra pero no la caja, y el texto queda
+	 * cortado por arriba y por abajo.
+	 */
 	private Field(String etiqueta, JTextComponent input) {
-		this(etiqueta, input, 38);
+		this(etiqueta, input, Typography.altoDeControl());
 	}
 
 	private Field(String etiqueta, JTextComponent input, int alto) {

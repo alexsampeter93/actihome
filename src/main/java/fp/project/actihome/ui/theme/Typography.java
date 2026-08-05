@@ -12,12 +12,44 @@ import java.util.Collections;
  * Tipografía del sistema de diseño de ActiHome.
  *
  * <p>
- * El handoff define dos familias: <b>Spectral</b> (serif) para display, títulos,
- * precios y cifras, y <b>Manrope</b> (sans) para la interfaz y el cuerpo de
- * texto. Ambas se distribuyen bajo licencia SIL OFL, así que se empaquetan
- * dentro del jar ({@code src/main/resources/fonts/}) en lugar de depender de
- * que estén instaladas en el equipo o de descargarlas de internet: la
- * aplicación debe verse igual en cualquier ordenador y sin conexión.
+ * Dos familias: <b>Fraunces</b> (serif) para display, títulos, precios y
+ * cifras, y <b>Archivo</b> (sans) para la interfaz y el cuerpo de texto. Ambas
+ * se distribuyen bajo licencia SIL OFL, así que se empaquetan dentro del jar
+ * ({@code src/main/resources/fonts/}) en lugar de depender de que estén
+ * instaladas en el equipo o de descargarlas de internet: la aplicación debe
+ * verse igual en cualquier ordenador y sin conexión.
+ *
+ * <p>
+ * <b>Por qué se cambiaron Spectral y Manrope (Fase 8.2).</b> La razón la dio el
+ * usuario y es certera: se leían como «las fuentes típicas de IA». No es una
+ * impresión vaga. Manrope pertenece a la misma familia de grotescas geométricas
+ * que Inter, Plus Jakarta y Space Grotesk, que son literalmente las que traen
+ * por defecto las plantillas de las que salen las interfaces generadas, y el
+ * ojo entrenado las reconoce aunque no sepa nombrarlas. Un sistema de diseño
+ * que se declara «editorial premium, explícitamente anti-plantilla SaaS»
+ * (CLAUDE.md §6) y luego usa la tipografía canónica de esa estética se está
+ * contradiciendo en el elemento más visible que tiene.
+ *
+ * <p>
+ * Las sustitutas no son «otra sans y otra serif cualquiera», están elegidas por
+ * lo contrario de lo que se descartó. <b>Archivo</b> es una grotesca de origen
+ * periodístico —diseñada para titulares y texto de prensa impresa—, así que
+ * aporta la neutralidad que una interfaz necesita sin el redondeo geométrico
+ * que delata a las otras. <b>Fraunces</b> es una serif de contraste alto con
+ * rasgos deliberadamente irregulares: es lo más lejos de «genérica» que se
+ * puede llegar manteniendo la legibilidad de un texto largo.
+ *
+ * <p>
+ * <b>Tamaños ópticos, que es lo que Spectral no tenía.</b> Fraunces se dibuja
+ * en varias versiones según el tamaño al que vaya a leerse, y esto es
+ * tipografía de verdad, no un adorno: una letra pensada para 46px tiene los
+ * trazos finos <em>más</em> finos y las letras <em>más</em> juntas, porque a ese
+ * tamaño el ojo ya distingue el detalle y el aire sobra. La misma letra a 15px
+ * se rompería — los trazos finos desaparecerían y las letras se empastarían.
+ * Por eso {@link #serif(float)} y sus hermanas <b>eligen el archivo según el
+ * tamaño que se les pide</b>: por debajo de {@value #UMBRAL_OPTICO}px usan la
+ * variante de texto (9pt) y por encima la de display (144pt). Quien llama no se
+ * entera de nada, sigue pidiendo «serif a 46».
  *
  * <p>
  * <b>Por qué se guardan los objetos {@link Font} en campos</b> en vez de
@@ -55,16 +87,31 @@ public final class Typography {
 	/** Separación entre letras de las etiquetas en versalita (0,18 em). */
 	public static final float LABEL_TRACKING = 0.18f;
 
+	/**
+	 * A partir de aquí, la serif se pide en su variante de display en vez de en la
+	 * de texto. El corte está donde la escala del handoff separa el «nombre de
+	 * ficha» pequeño (21px) de los títulos de pantalla (28px en adelante).
+	 */
+	private static final float UMBRAL_OPTICO = 26f;
+
 	private static Font sansRegular;
 	private static Font sansMedium;
 	private static Font sansSemiBold;
 	private static Font sansBold;
 	private static Font sansExtraBold;
 
-	private static Font serifRegular;
-	private static Font serifMedium;
-	private static Font serifSemiBold;
-	private static Font serifItalic;
+	// Serif en dos tallas ópticas. La de texto se usa por debajo del umbral y la
+	// de display por encima; ver la nota de clase sobre por qué esto no es un
+	// adorno.
+	private static Font serifTextoRegular;
+	private static Font serifTextoSemiBold;
+	private static Font serifTextoBold;
+	private static Font serifTextoItalic;
+
+	private static Font serifDisplayRegular;
+	private static Font serifDisplaySemiBold;
+	private static Font serifDisplayBold;
+	private static Font serifDisplayItalic;
 
 	private Typography() {
 	}
@@ -75,16 +122,26 @@ public final class Typography {
 	 */
 	static void register() {
 
-		sansRegular = load("Manrope-Regular.ttf", Font.SANS_SERIF);
-		sansMedium = load("Manrope-Medium.ttf", Font.SANS_SERIF);
-		sansSemiBold = load("Manrope-SemiBold.ttf", Font.SANS_SERIF);
-		sansBold = load("Manrope-Bold.ttf", Font.SANS_SERIF);
-		sansExtraBold = load("Manrope-ExtraBold.ttf", Font.SANS_SERIF);
+		sansRegular = load("Archivo-Regular.ttf", Font.SANS_SERIF);
+		sansMedium = load("Archivo-Medium.ttf", Font.SANS_SERIF);
+		sansSemiBold = load("Archivo-SemiBold.ttf", Font.SANS_SERIF);
+		sansBold = load("Archivo-Bold.ttf", Font.SANS_SERIF);
+		sansExtraBold = load("Archivo-ExtraBold.ttf", Font.SANS_SERIF);
 
-		serifRegular = load("Spectral-Regular.ttf", Font.SERIF);
-		serifMedium = load("Spectral-Medium.ttf", Font.SERIF);
-		serifSemiBold = load("Spectral-SemiBold.ttf", Font.SERIF);
-		serifItalic = load("Spectral-Italic.ttf", Font.SERIF);
+		serifTextoRegular = load("Fraunces9pt-Regular.ttf", Font.SERIF);
+		serifTextoSemiBold = load("Fraunces9pt-SemiBold.ttf", Font.SERIF);
+		serifTextoBold = load("Fraunces9pt-Bold.ttf", Font.SERIF);
+		serifTextoItalic = load("Fraunces9pt-Italic.ttf", Font.SERIF);
+
+		serifDisplayRegular = load("Fraunces144pt-Regular.ttf", Font.SERIF);
+		serifDisplaySemiBold = load("Fraunces144pt-SemiBold.ttf", Font.SERIF);
+		serifDisplayBold = load("Fraunces144pt-Bold.ttf", Font.SERIF);
+		serifDisplayItalic = load("Fraunces144pt-Italic.ttf", Font.SERIF);
+	}
+
+	/** Elige entre la talla de texto y la de display según el tamaño pedido. */
+	private static Font optica(Font texto, Font display, float size) {
+		return (size < UMBRAL_OPTICO ? texto : display).deriveFont(size);
 	}
 
 	/**
@@ -139,22 +196,37 @@ public final class Typography {
 		return sansExtraBold.deriveFont(size);
 	}
 
-	// --- Serif (Spectral): display, títulos, precios, cifras ---
+	// --- Serif (Fraunces): display, títulos, precios, cifras ---
+	// Cada método elige solo su talla óptica: quien llama pide "serif a 46" y no
+	// necesita saber que por debajo de 26 se sirve otro archivo.
 
 	public static Font serif(float size) {
-		return serifRegular.deriveFont(size);
+		return optica(serifTextoRegular, serifDisplayRegular, size);
 	}
 
+	/**
+	 * El peso de trabajo de los títulos: 29 de los 37 usos de la serif en la
+	 * aplicación pasan por aquí.
+	 *
+	 * <p>
+	 * <b>Fraunces no tiene Medium (500)</b>, que es lo que tenía Spectral, así que
+	 * este método sirve SemiBold (600). No es una equivalencia perezosa: Fraunces
+	 * es de contraste más alto que Spectral —sus trazos finos son más finos—, y a
+	 * igual peso nominal se ve más ligera. El 600 de Fraunces pesa en pantalla
+	 * aproximadamente lo que pesaba el 500 de Spectral; conservar el nombre del
+	 * método es lo correcto porque lo que nombra es <em>el papel</em> («el peso de
+	 * los títulos»), no el número del eje.
+	 */
 	public static Font serifMedium(float size) {
-		return serifMedium.deriveFont(size);
+		return optica(serifTextoSemiBold, serifDisplaySemiBold, size);
 	}
 
 	public static Font serifSemiBold(float size) {
-		return serifSemiBold.deriveFont(size);
+		return optica(serifTextoBold, serifDisplayBold, size);
 	}
 
 	public static Font serifItalic(float size) {
-		return serifItalic.deriveFont(size);
+		return optica(serifTextoItalic, serifDisplayItalic, size);
 	}
 
 	/**
@@ -176,6 +248,89 @@ public final class Typography {
 		return label(LABEL);
 	}
 
+	// --- Altos de control, medidos desde la fuente ---
+	// Regla del proyecto (CLAUDE.md §4): ningún tamaño que dependa de texto puede
+	// ser una constante. Los altos de 38 (campo), 44 (botón) y 32 (control
+	// compacto) estaban escritos a pelo en veinte sitios, ajustados mirando una
+	// pantalla al 100 %. Con el escalado de Windows al 150 % la fuente mide vez y
+	// media y la caja seguía midiendo lo mismo, así que el texto quedaba cortado
+	// por arriba y por abajo. Es el mismo fallo que ya se corrigió en
+	// Field.textArea y que al campo de una línea nunca le llegó.
+	//
+	// Lo que se declara aquí no es un número de píxeles, es la intención: una
+	// línea de texto más el aire que le corresponde.
+
+	/**
+	 * Etiqueta de usar y tirar, solo para preguntarle a Swing cuánto mide una
+	 * fuente. {@code JComponent.getFontMetrics(Font)} funciona sin que el
+	 * componente llegue a mostrarse nunca, así que no hace falta ninguna ventana.
+	 */
+	private static javax.swing.JLabel regla;
+
+	/** Alto real de una línea de la sans al tamaño dado, según la fuente cargada. */
+	public static int altoDeLinea(float size) {
+
+		if (regla == null) {
+			regla = new javax.swing.JLabel();
+		}
+
+		return regla.getFontMetrics(sans(size)).getHeight();
+	}
+
+	/**
+	 * Ancho de un espacio en la fuente dada: la separación natural entre dos
+	 * palabras.
+	 *
+	 * <p>
+	 * Hace falta cuando dos palabras de una misma frase van en <b>etiquetas
+	 * distintas</b> —el titular del catálogo lo hace, porque el renderizado HTML de
+	 * Swing se lleva mal con las fuentes registradas en tiempo de ejecución—. Ahí
+	 * no hay ningún carácter de espacio entre ellas: la separación la pone el
+	 * layout, y si se declara como un número deja de ser un espacio y pasa a ser
+	 * una coincidencia. Con Spectral, {@code Space.SM} (12px) pasaba por espacio; al
+	 * cambiar a Fraunces, que lo tiene más estrecho, la misma constante se leía como
+	 * dos espacios seguidos.
+	 */
+	public static int anchoDeEspacio(Font fuente) {
+
+		if (regla == null) {
+			regla = new javax.swing.JLabel();
+		}
+
+		return regla.getFontMetrics(fuente).charWidth(' ');
+	}
+
+	/**
+	 * Alto de un control de una línea: campo de texto, desplegable, buscador.
+	 *
+	 * <p>
+	 * El sumando es aire, no un ajuste: es lo que separa el texto del borde de la
+	 * caja por arriba y por abajo. Se recalibró al cambiar de tipografía (Fase 8.2)
+	 * y el motivo merece anotarse, porque es justo lo que este método existe para
+	 * absorber: <b>Archivo tiene la interlínea más apretada que Manrope</b> (18px
+	 * frente a 21 al mismo cuerpo de 15), así que con el aire de antes las cajas
+	 * habrían encogido de 38 a 34 píxeles sin que nadie lo pidiera. Cambiar de
+	 * fuente no debe cambiar el tamaño de los controles.
+	 */
+	public static int altoDeControl() {
+		return altoDeLinea(BODY) + Space.LG;
+	}
+
+	/**
+	 * Alto de un botón de acción. Se define <b>a partir del campo</b> y no desde
+	 * cero, porque la intención del diseño es exactamente esa: un botón pesa un
+	 * peldaño más que un campo. Escrito así, la relación se conserva sola aunque
+	 * vuelva a cambiar la tipografía.
+	 */
+	public static int altoDeBoton() {
+		return altoDeControl() + Space.XS;
+	}
+
+	/** Alto de un control compacto: los filtros del catálogo, que van en cuerpo pequeño. */
+	public static int altoDeControlCompacto() {
+		return altoDeLinea(BODY_SM) + Space.MD;
+	}
+
 	/**
 	 * Serif con las letras separadas: el tratamiento del wordmark "ACTIHOME".
 	 *
@@ -192,6 +347,6 @@ public final class Typography {
 	 * letras sueltas en vez de en una palabra.
 	 */
 	public static Font serifTracked(float size) {
-		return serifMedium.deriveFont(size).deriveFont(Collections.singletonMap(TextAttribute.TRACKING, 0.14f));
+		return serifMedium(size).deriveFont(Collections.singletonMap(TextAttribute.TRACKING, 0.14f));
 	}
 }

@@ -36,6 +36,7 @@ import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.ReviewPhotos;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
+import fp.project.actihome.ui.theme.Typography;
 
 /**
  * Editar una reseña propia.
@@ -163,7 +164,7 @@ public class UpdateReviewFrame extends JFrame {
 		fila.setOpaque(false);
 
 		botonGuardar = Buttons.primary(Textos.t("ajustes.guardar"), e -> guardar());
-		fila.add(botonGuardar, "height 44!");
+		fila.add(botonGuardar, "height " + Typography.altoDeBoton() + "!");
 		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> volverAlDetalle());
 		fila.add(botonCancelar);
 

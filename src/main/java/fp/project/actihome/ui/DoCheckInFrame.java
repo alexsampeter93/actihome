@@ -215,7 +215,7 @@ public class DoCheckInFrame extends JFrame {
 		fila.setOpaque(false);
 
 		botonConfirmar = Buttons.primary(Textos.t("checkin.confirmar"), e -> confirmar());
-		fila.add(botonConfirmar, "height 44!");
+		fila.add(botonConfirmar, "height " + Typography.altoDeBoton() + "!");
 		fila.add(volver());
 
 		return fila;

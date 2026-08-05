@@ -322,7 +322,7 @@ public class ReserveHousingFrame extends JFrame {
 		fila.setOpaque(false);
 
 		botonConfirmar = Buttons.primary(Textos.t("reservar.confirmar"), e -> reservar());
-		fila.add(botonConfirmar, "height 44!");
+		fila.add(botonConfirmar, "height " + Typography.altoDeBoton() + "!");
 		fila.add(enlaceCancelar());
 
 		return fila;

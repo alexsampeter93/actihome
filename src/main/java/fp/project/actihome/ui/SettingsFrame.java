@@ -45,6 +45,7 @@ import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Particulas;
+import fp.project.actihome.ui.theme.Preferencias;
 import fp.project.actihome.ui.theme.Season;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
@@ -221,7 +222,7 @@ public class SettingsFrame extends JFrame {
 		});
 
 		panel.add(etiquetaEstacion);
-		panel.add(estacion, "gaptop " + Space.XXS + ", height 38!");
+		panel.add(estacion, "gaptop " + Space.XXS + ", height " + Typography.altoDeControl() + "!");
 
 		return panel;
 	}
@@ -264,7 +265,7 @@ public class SettingsFrame extends JFrame {
 		});
 
 		panel.add(etiquetaIdioma);
-		panel.add(idioma, "gaptop " + Space.XXS + ", height 38!");
+		panel.add(idioma, "gaptop " + Space.XXS + ", height " + Typography.altoDeControl() + "!");
 
 		return panel;
 	}
@@ -383,7 +384,7 @@ public class SettingsFrame extends JFrame {
 		guardar = Buttons.primary(" ", e -> guardar());
 		cancelar = Buttons.link(" ", e -> navigator.ir(ShowHousingsFrame.class));
 
-		fila.add(guardar, "height 44!");
+		fila.add(guardar, "height " + Typography.altoDeBoton() + "!");
 		fila.add(cancelar);
 
 		return fila;
@@ -463,6 +464,11 @@ public class SettingsFrame extends JFrame {
 			Theme.cambiarA(estacionElegida);
 			Particulas.activar(particulasActivas);
 			Textos.cambiarA(idiomaElegido == Idioma.EN ? Locale.ENGLISH : new Locale("es"));
+
+			// Deja copia en disco de lo que se acaba de aplicar (Fase 8.1). Sin esto,
+			// elegir "invierno" aquí se notaba en toda la aplicación menos en la
+			// pantalla que se ve al abrirla, que es donde más canta.
+			Preferencias.recordar();
 
 			navigator.ir(ShowHousingsFrame.class, ShowHousingsFrame::olvidarVistaAplicada);
 			Toast.mostrar(navigator.ventanaVisible(), Textos.t("ajustes.confirmacion.guardado"));

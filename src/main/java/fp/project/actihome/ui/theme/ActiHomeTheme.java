@@ -50,7 +50,14 @@ public final class ActiHomeTheme {
 		// Las fuentes deben estar cargadas antes de fijarlas como fuente por defecto.
 		Typography.register();
 
-		// Pinta la aplicación con la estación que toque según la fecha de hoy.
+		// Recupera estación, idioma y partículas de la última sesión. Va antes de
+		// aplicar la paleta a propósito: si se restaurara después, FlatLaf ya habría
+		// derivado sus decenas de colores del acento equivocado y habría que
+		// recalcularlo todo otra vez, con un parpadeo visible en el arranque.
+		Preferencias.restaurar();
+
+		// Pinta la aplicación con la estación activa: la recién restaurada si había
+		// algo guardado, o la que toque según la fecha de hoy si es la primera vez.
 		aplicarPaleta(Theme.estacion());
 
 		// A partir de aquí, cualquier cambio de estación repinta la aplicación entera.

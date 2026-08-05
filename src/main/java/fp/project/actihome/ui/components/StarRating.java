@@ -43,7 +43,7 @@ import fp.project.actihome.ui.theme.Typography;
  *
  * <p>
  * Las estrellas se dibujan con geometría, no con el carácter "★". Un glifo
- * depende de que la fuente lo incluya —Spectral y Manrope están empaquetadas y
+ * depende de que la fuente lo incluya —Fraunces y Archivo están empaquetadas y
  * no tienen por qué—, y cuando falta, Swing lo sustituye por un recuadro vacío.
  * Un polígono se ve igual en cualquier equipo y además se puede teñir con el
  * acento de la estación activa.

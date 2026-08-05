@@ -10,6 +10,7 @@ import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
+import fp.project.actihome.ui.theme.Typography;
 
 /**
  * Un diálogo modal de sí/no antes de una acción que no se puede deshacer.
@@ -80,7 +81,7 @@ public final class Confirmacion {
 		fila.add(Buttons.primary(textoConfirmar, e -> {
 			confirmado[0] = true;
 			dialogo.dispose();
-		}), "height 44!");
+		}), "height " + Typography.altoDeBoton() + "!");
 
 		fila.add(Buttons.link(Textos.t("confirmacion.cancelar"), e -> dialogo.dispose()));
 

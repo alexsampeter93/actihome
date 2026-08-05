@@ -34,6 +34,7 @@ import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
+import fp.project.actihome.ui.theme.Typography;
 
 /**
  * Dar de alta un alojamiento (rol ADMIN).
@@ -149,7 +150,7 @@ public class UploadHousingFrame extends JFrame {
 		fila.setOpaque(false);
 
 		botonPublicar = Buttons.primary(Textos.t("alojamientoAlta.publicar"), e -> publicar());
-		fila.add(botonPublicar, "height 44!");
+		fila.add(botonPublicar, "height " + Typography.altoDeBoton() + "!");
 		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> navigator.ir(ShowHousingsFrame.class));
 		fila.add(botonCancelar);
 

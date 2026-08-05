@@ -144,20 +144,20 @@ public class StyleGuidePanel extends JPanel {
 		panel.setBorder(BorderFactory.createLineBorder(Theme.HAIRLINE));
 
 		panel.add(Labels.hero("Elige dónde quieres despertar"));
-		panel.add(pie("Spectral Medium · 46 · hero"), "gapbottom " + Space.XL);
+		panel.add(pie("Fraunces Display SemiBold · 46 · hero"), "gapbottom " + Space.XL);
 
 		panel.add(Labels.title("Casa Rural El Pinar"));
-		panel.add(pie("Spectral Medium · 32 · título de pantalla"), "gapbottom " + Space.XL);
+		panel.add(pie("Fraunces Display SemiBold · 32 · título de pantalla"), "gapbottom " + Space.XL);
 
 		panel.add(Labels.price("75,00 €"));
-		panel.add(pie("Spectral Regular · 34 · precio"), "gapbottom " + Space.XL);
+		panel.add(pie("Fraunces Display Regular · 34 · precio"), "gapbottom " + Space.XL);
 
 		panel.add(Labels.body("Un caserón de piedra a media hora de la sierra, con chimenea y "
 				+ "vistas al valle. El desayuno se sirve en el porche."));
-		panel.add(pie("Manrope Regular · 15 · cuerpo"), "gapbottom " + Space.XL);
+		panel.add(pie("Archivo Regular · 15 · cuerpo"), "gapbottom " + Space.XL);
 
 		panel.add(Labels.caps("Disponible · 3 habitaciones · Sierra Nevada"));
-		panel.add(pie("Manrope SemiBold · 11 · versalita con tracking 0,18em"));
+		panel.add(pie("Archivo SemiBold · 11 · versalita con tracking 0,18em"));
 
 		return panel;
 	}

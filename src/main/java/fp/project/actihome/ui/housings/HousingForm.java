@@ -263,7 +263,7 @@ public class HousingForm extends JPanel {
 
 		etiquetaTipo = Labels.caps(Textos.t("catalogo.filtro.tipo"));
 		panel.add(etiquetaTipo);
-		panel.add(tipo, "gaptop " + Space.XXS + ", height 38!");
+		panel.add(tipo, "gaptop " + Space.XXS + ", height " + Typography.altoDeControl() + "!");
 
 		return panel;
 	}

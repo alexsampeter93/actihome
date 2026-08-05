@@ -32,6 +32,7 @@ import fp.project.actihome.ui.components.Segmented;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
+import fp.project.actihome.ui.theme.Typography;
 
 /**
  * Los filtros del catálogo: el estado y los dos controles que lo manejan.
@@ -236,7 +237,7 @@ public class CatalogFilters extends JPanel {
 		// ahorra tener que explicar después por qué no vale.
 		minimoHabitaciones = new JSpinner(new SpinnerNumberModel(1, 1, 20, 1));
 		minimoHabitaciones.addChangeListener(e -> notificar());
-		fila.add(minimoHabitaciones, "w 62!, h 32!, aligny center");
+		fila.add(minimoHabitaciones, "w 62!, h " + Typography.altoDeControlCompacto() + "!, aligny center");
 
 		masFiltros = new Chip(Textos.t("catalogo.filtro.masFiltros"));
 		masFiltros.addActionListener(e -> alternarComodidades());
@@ -305,7 +306,7 @@ public class CatalogFilters extends JPanel {
 			refrescarEtiquetaDeMasFiltros();
 			notificar();
 		});
-		fila.add(precioMinimo, "w 76!, h 32!, aligny center");
+		fila.add(precioMinimo, "w 76!, h " + Typography.altoDeControlCompacto() + "!, aligny center");
 
 		fila.add(Labels.muted("–"), "aligny center");
 
@@ -314,7 +315,7 @@ public class CatalogFilters extends JPanel {
 			refrescarEtiquetaDeMasFiltros();
 			notificar();
 		});
-		fila.add(precioMaximo, "w 76!, h 32!, aligny center");
+		fila.add(precioMaximo, "w 76!, h " + Typography.altoDeControlCompacto() + "!, aligny center");
 
 		etiquetaCiudad = Labels.caps(Textos.t("catalogo.filtro.ciudad"));
 		fila.add(etiquetaCiudad, "aligny center");
@@ -339,7 +340,7 @@ public class CatalogFilters extends JPanel {
 				notificar();
 			}
 		});
-		fila.add(ciudad, "height 32!, aligny center, growx");
+		fila.add(ciudad, "height " + Typography.altoDeControlCompacto() + "!, aligny center, growx");
 
 		return fila;
 	}

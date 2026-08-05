@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+  <script src="./image-slot.js"></script>
+  <style>
+    body { margin: 0; background: #E7E2D3; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    a { color: #3E7D3B; }
+    a:hover { color: #2E5C2C; }
+  </style>
+</helmet>
+
+<section style="padding:40px 40px 120px;">
+  <div style="max-width:1400px; margin:0 auto 28px; display:flex; align-items:baseline; gap:14px;">
+    <span style="font-family:'Spectral',serif; font-size:26px; color:#232B1B;">Mejoras sobre la app actual</span>
+    <span style="font-size:13px; color:#6f6656;">Turno 1 — Catálogo · Detalle · Reseñas · Intercambio · Perfil &amp; Ajustes</span>
+  </div>
+
+  <div style="display:flex; flex-wrap:wrap; gap:36px; align-items:flex-start;">
+
+    <!-- ══════════════ 1A — CATÁLOGO ══════════════ -->
+    <div id="1a" style="width:900px; flex:0 0 auto;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        <span style="background:#232B1B; color:#F3F1E6; font-family:ui-monospace,monospace; font-size:11px; letter-spacing:.08em; padding:4px 9px;">1A</span>
+        <span style="font-family:'Spectral',serif; font-size:17px; color:#232B1B;">Catálogo</span>
+        <span style="font-size:12px; color:#6f6656;">precio más visible, host con avatar, badge estacional</span>
+      </div>
+      <div style="position:relative; width:900px; background:#F3F1E6; box-shadow:0 18px 44px rgba(0,0,0,.18); overflow:hidden;">
+        <span style="position:absolute; top:66px; left:120px; font-size:13px; color:#E39FC0; opacity:.5;">✳</span>
+        <span style="position:absolute; top:210px; right:60px; font-size:10px; color:#E39FC0; opacity:.6;">•</span>
+        <span style="position:absolute; top:400px; left:40px; font-size:12px; color:#E39FC0; opacity:.45;">✳</span>
+        <span style="position:absolute; top:520px; right:140px; font-size:11px; color:#E39FC0; opacity:.5;">•</span>
+        <span style="position:absolute; top:300px; right:280px; font-size:12px; color:#E39FC0; opacity:.4;">✳</span>
+        <!-- header -->
+        <div style="position:relative; display:flex; align-items:center; padding:18px 32px; background:#1F2A18; color:#F3F1E6;">
+          <div style="display:flex; align-items:center; gap:10px; flex:1;">
+            <span style="color:#6f9c5b; font-size:16px;">⚲</span>
+            <div style="display:flex; flex-direction:column; line-height:1.15;">
+              <span style="font-family:'Spectral',serif; font-size:15px; letter-spacing:.14em; text-transform:uppercase;">ActiHome</span>
+              <span style="font-size:8.5px; letter-spacing:.16em; color:#9aa88f;">BY COCOBRAIN</span>
+            </div>
+          </div>
+          <div style="display:flex; gap:22px; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;">
+            <span style="border-bottom:1.5px solid #F3F1E6; padding-bottom:3px;">Catálogo</span>
+            <span style="color:#c9c2ac;">Intercambio</span>
+          </div>
+          <div style="display:flex; gap:14px; margin-left:22px; font-size:10px; letter-spacing:.08em; color:#c9c2ac;">
+            <span style="color:#6f9c5b; border-bottom:1.5px solid #6f9c5b; padding-bottom:3px;">PRIMAVERA</span>
+            <span>VERANO</span><span>OTOÑO</span><span>INVIERNO</span>
+          </div>
+          <span style="width:26px; height:26px; border-radius:50%; border:1px solid #6f9c5b; display:flex; align-items:center; justify-content:center; font-size:9.5px; margin-left:20px;">AS</span>
+        </div>
+        <!-- hero -->
+        <div style="position:relative; padding:22px 32px 16px;">
+          <div style="font-size:11px; letter-spacing:.1em; color:#3E7D3B; margin-bottom:6px;">ESTANCIAS DE PRIMAVERA — brotes, campo verde y días largos</div>
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-family:'Spectral',serif; font-size:27px; color:#232B1B;">Elige dónde quieres despertar</span>
+            <div style="display:flex; gap:22px; font-family:'Spectral',serif;">
+              <div style="text-align:center;"><div style="font-size:19px; color:#232B1B;">10</div><div style="font-size:9px; letter-spacing:.08em; color:#6f6656; font-family:'Segoe UI',sans-serif;">EN CATÁLOGO</div></div>
+              <div style="text-align:center;"><div style="font-size:19px; color:#3E7D3B;">10</div><div style="font-size:9px; letter-spacing:.08em; color:#6f6656; font-family:'Segoe UI',sans-serif;">DISPONIBLES</div></div>
+              <div style="text-align:center;"><div style="font-size:19px; color:#232B1B;">4,2</div><div style="font-size:9px; letter-spacing:.08em; color:#6f6656; font-family:'Segoe UI',sans-serif;">MEDIA</div></div>
+            </div>
+          </div>
+        </div>
+        <!-- filters -->
+        <div style="position:relative; display:flex; align-items:center; justify-content:space-between; padding:12px 32px; border-top:1px solid rgba(0,0,0,.08); border-bottom:1px solid rgba(0,0,0,.08);">
+          <div style="display:flex; gap:8px;">
+            <span style="background:#3E7D3B; color:#fff; font-size:10.5px; padding:6px 13px;">Todos</span>
+            <span style="border:1px solid rgba(0,0,0,.18); font-size:10.5px; padding:6px 13px; color:#3a3a2e;">Casa</span>
+            <span style="border:1px solid rgba(0,0,0,.18); font-size:10.5px; padding:6px 13px; color:#3a3a2e;">Villa</span>
+          </div>
+          <div style="display:flex; gap:16px; font-size:10.5px; align-items:center;">
+            <span style="color:#3E7D3B; border-bottom:1.5px solid #3E7D3B;">MEJOR VALORADOS</span>
+            <span style="color:#6f6656;">PRECIO</span>
+          </div>
+        </div>
+        <!-- cards -->
+        <div style="position:relative; display:flex; flex-direction:column;">
+          <div style="display:grid; grid-template-columns:280px 1fr; gap:22px; align-items:center; padding:20px 32px; border-bottom:1px solid rgba(0,0,0,.08);">
+            <div style="position:relative;">
+              <image-slot id="am-cat-1" style="width:280px; height:170px;" shape="rect" placeholder="Foto apartamento"></image-slot>
+              <span style="position:absolute; top:9px; left:9px; background:rgba(0,0,0,.5); color:#fff; font-size:8.5px; letter-spacing:.14em; padding:4px 8px; text-transform:uppercase;">Apartamento</span>
+              <span style="position:absolute; top:9px; right:9px; background:#3E7D3B; color:#fff; font-size:8px; letter-spacing:.1em; padding:4px 8px; text-transform:uppercase;">Ideal en primavera</span>
+              <span style="position:absolute; bottom:9px; left:9px; background:#3E7D3B; color:#fff; font-size:8.5px; letter-spacing:.1em; padding:4px 8px; text-transform:uppercase;">Disponible</span>
+            </div>
+            <div>
+              <div style="font-size:10px; letter-spacing:.1em; color:#3E7D3B;">N° 10002 — MÁLAGA</div>
+              <div style="font-family:'Spectral',serif; font-size:20px; color:#232B1B; margin:2px 0 8px;">Apartamento Playa Centro</div>
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                <span style="width:22px; height:22px; border-radius:50%; background:#c9a15c; color:#fff; display:flex; align-items:center; justify-content:center; font-size:9px;">M</span>
+                <span style="font-size:11.5px; color:#232B1B;">Marcos</span>
+                <span style="font-size:11.5px; color:#3E7D3B;">4,9 ★</span>
+                <span style="font-size:11px; color:#6f6656;">3 reseñas · 2 habitaciones</span>
+              </div>
+              <div style="display:flex; gap:6px; margin-bottom:12px;">
+                <span style="border:1px solid rgba(0,0,0,.15); font-size:9.5px; padding:4px 9px; color:#3a3a2e;">Piscina</span>
+                <span style="border:1px solid rgba(0,0,0,.15); font-size:9.5px; padding:4px 9px; color:#3a3a2e;">Wifi</span>
+                <span style="border:1px solid rgba(0,0,0,.15); font-size:9.5px; padding:4px 9px; color:#3a3a2e;">Desayuno</span>
+              </div>
+              <div style="display:flex; align-items:baseline; justify-content:space-between;">
+                <span style="font-family:'Spectral',serif; font-size:26px; color:#3E7D3B;">95 € <span style="font-family:'Segoe UI',sans-serif; font-size:11px; color:#6f6656;">por noche</span></span>
+                <span style="font-size:10px; letter-spacing:.1em; color:#232B1B; border-bottom:1px solid #232B1B; padding-bottom:2px;">VER FICHA →</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:280px 1fr; gap:22px; align-items:center; padding:20px 32px;">
+            <div style="position:relative;">
+              <image-slot id="am-cat-2" style="width:280px; height:170px;" shape="rect" placeholder="Foto villa"></image-slot>
+              <span style="position:absolute; top:9px; left:9px; background:rgba(0,0,0,.5); color:#fff; font-size:8.5px; letter-spacing:.14em; padding:4px 8px; text-transform:uppercase;">Villa</span>
+              <span style="position:absolute; bottom:9px; left:9px; background:#3E7D3B; color:#fff; font-size:8.5px; letter-spacing:.1em; padding:4px 8px; text-transform:uppercase;">Disponible</span>
+            </div>
+            <div>
+              <div style="font-size:10px; letter-spacing:.1em; color:#3E7D3B;">N° 10008 — MARBELLA, MÁLAGA</div>
+              <div style="font-family:'Spectral',serif; font-size:20px; color:#232B1B; margin:2px 0 8px;">Villa Costa del Sol</div>
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                <span style="width:22px; height:22px; border-radius:50%; background:#9c6fc9; color:#fff; display:flex; align-items:center; justify-content:center; font-size:9px;">L</span>
+                <span style="font-size:11.5px; color:#232B1B;">Lucia</span>
+                <span style="font-size:11.5px; color:#3E7D3B;">4,8 ★</span>
+                <span style="font-size:11px; color:#6f6656;">2 reseñas · 5 habitaciones</span>
+              </div>
+              <div style="display:flex; gap:6px; margin-bottom:12px;">
+                <span style="border:1px solid rgba(0,0,0,.15); font-size:9.5px; padding:4px 9px; color:#3a3a2e;">Piscina</span>
+                <span style="border:1px solid rgba(0,0,0,.15); font-size:9.5px; padding:4px 9px; color:#3a3a2e;">Aire ac.</span>
+              </div>
+              <div style="display:flex; align-items:baseline; justify-content:space-between;">
+                <span style="font-family:'Spectral',serif; font-size:26px; color:#3E7D3B;">210 € <span style="font-family:'Segoe UI',sans-serif; font-size:11px; color:#6f6656;">por noche</span></span>
+                <span style="font-size:10px; letter-spacing:.1em; color:#232B1B; border-bottom:1px solid #232B1B; padding-bottom:2px;">VER FICHA →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px; font-size:12px; color:#4a4636; line-height:1.5;">Precio en Spectral y color acento para que pese más que el resto de metadatos. Avatar de anfitrión con iniciales junto a la puntuación — humaniza y evita el texto suelto "de Marcos". Badge "Ideal en primavera" reutiliza el sistema estacional para curar, no solo decorar.</div>
+    </div>
+
+    <!-- ══════════════ 1B — DETALLE ══════════════ -->
+    <div id="1b" style="width:900px; flex:0 0 auto;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        <span style="background:#232B1B; color:#F3F1E6; font-family:ui-monospace,monospace; font-size:11px; letter-spacing:.08em; padding:4px 9px;">1B</span>
+        <span style="font-family:'Spectral',serif; font-size:17px; color:#232B1B;">Detalle de alojamiento</span>
+        <span style="font-size:12px; color:#6f6656;">galería, anfitrión, amenidades, disponibilidad, reseña destacada</span>
+      </div>
+      <div style="position:relative; width:900px; background:#F3F1E6; box-shadow:0 18px 44px rgba(0,0,0,.18); overflow:hidden;">
+        <span style="position:absolute; top:80px; right:80px; font-size:13px; color:#E39FC0; opacity:.5;">✳</span>
+        <span style="position:absolute; top:460px; left:40px; font-size:11px; color:#E39FC0; opacity:.5;">•</span>
+        <div style="position:relative; display:flex; align-items:center; padding:18px 32px; background:#1F2A18; color:#F3F1E6;">
+          <span style="font-family:'Spectral',serif; font-size:15px; letter-spacing:.14em; text-transform:uppercase; flex:1;">ActiHome</span>
+          <span style="font-size:10px; color:#c9c2ac;">Catálogo &gt; <span style="color:#F3F1E6;">Casa Rural El Pinar</span></span>
+        </div>
+        <div style="position:relative; padding:26px 32px 0;">
+          <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:6px; height:280px; margin-bottom:22px;">
+            <image-slot id="am-det-hero" style="width:100%; height:280px;" shape="rect" placeholder="Foto principal"></image-slot>
+            <div style="display:grid; grid-template-rows:1fr 1fr; gap:6px;">
+              <image-slot id="am-det-2" style="width:100%; height:137px;" shape="rect" placeholder="Interior"></image-slot>
+              <div style="position:relative;">
+                <image-slot id="am-det-3" style="width:100%; height:137px;" shape="rect" placeholder="Exterior"></image-slot>
+                <span style="position:absolute; inset:0; background:rgba(0,0,0,.45); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; letter-spacing:.08em;">+6 fotos</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 300px; gap:36px;">
+            <div>
+              <div style="font-size:10px; letter-spacing:.1em; color:#3E7D3B;">N° 10001 — SIERRA NEVADA, GRANADA</div>
+              <div style="font-family:'Spectral',serif; font-size:28px; color:#232B1B; margin:3px 0 10px;">Casa Rural El Pinar</div>
+              <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                <span style="width:30px; height:30px; border-radius:50%; background:#9c6fc9; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px;">L</span>
+                <div style="line-height:1.2;"><div style="font-size:12.5px; color:#232B1B;">Anfitriona Lucia</div><div style="font-size:10.5px; color:#6f6656;">4,2 ★ · 2 reseñas · responde en &lt; 1 día</div></div>
+              </div>
+              <div style="font-size:13.5px; color:#3a3a2e; line-height:1.6; margin-bottom:18px;">Casa de piedra restaurada a media ladera, con chimenea, huerto y vistas abiertas a la sierra. El pueblo queda a diez minutos a pie.</div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px;">
+                <span style="border:1px solid rgba(0,0,0,.15); font-size:10px; padding:5px 11px;">3 habitaciones</span>
+                <span style="border:1px solid rgba(0,0,0,.15); font-size:10px; padding:5px 11px;">Desayuno, Cena</span>
+                <span style="border:1px solid rgba(0,0,0,.15); font-size:10px; padding:5px 11px;">Wifi</span>
+                <span style="border:1px solid rgba(0,0,0,.15); font-size:10px; padding:5px 11px;">Parking</span>
+              </div>
+              <div style="border-top:1px solid rgba(0,0,0,.1); padding-top:16px;">
+                <div style="font-family:'Spectral',serif; font-style:italic; font-size:18px; color:#232B1B; line-height:1.45;">"La casa es tal cual las fotos y el desayuno con pan de la panadería del pueblo merece madrugar."</div>
+                <div style="font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:#6f6656; margin-top:8px;">— Customer · Silencio y buen desayuno · 4,4 ★</div>
+              </div>
+            </div>
+            <div>
+              <div style="border:1px solid rgba(0,0,0,.12); padding:20px; margin-bottom:16px;">
+                <div style="font-family:'Spectral',serif; font-size:24px; color:#3E7D3B; margin-bottom:2px;">75 € <span style="font-family:'Segoe UI',sans-serif; font-size:11px; color:#6f6656;">/ noche</span></div>
+                <div style="font-size:10.5px; color:#3E7D3B; margin-bottom:14px;">● Disponible ahora</div>
+                <div style="background:#232B1B; color:#F3F1E6; text-align:center; padding:12px; font-size:11px; letter-spacing:.1em; text-transform:uppercase;">Reservar</div>
+              </div>
+              <div style="border:1px solid rgba(0,0,0,.12); padding:16px 18px;">
+                <div style="font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:#6f6656; margin-bottom:10px;">Julio 2026 · disponibilidad</div>
+                <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:3px; font-size:10px; text-align:center; color:#3a3a2e;">
+                  <span style="color:#a39c86;">L</span><span style="color:#a39c86;">M</span><span style="color:#a39c86;">X</span><span style="color:#a39c86;">J</span><span style="color:#a39c86;">V</span><span style="color:#a39c86;">S</span><span style="color:#a39c86;">D</span>
+                  <span></span><span></span>
+                  <span>1</span><span>2</span><span style="background:rgba(0,0,0,.08); text-decoration:line-through; color:#a39c86;">3</span><span style="background:rgba(0,0,0,.08); text-decoration:line-through; color:#a39c86;">4</span><span>5</span>
+                  <span>6</span><span>7</span><span>8</span><span>9</span><span style="background:rgba(0,0,0,.08); text-decoration:line-through; color:#a39c86;">10</span><span style="background:rgba(0,0,0,.08); text-decoration:line-through; color:#a39c86;">11</span><span>12</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px; font-size:12px; color:#4a4636; line-height:1.5;">La ficha original solo tenía dos filas de datos. Galería, tarjeta de anfitrión, cita de reseña y mini-calendario le dan sustancia real sin inventar contenido — todo sale de datos que ya existen (reseñas, disponibilidad).</div>
+    </div>
+
+    <!-- ══════════════ 1C — RESEÑAS ══════════════ -->
+    <div id="1c" style="width:760px; flex:0 0 auto;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        <span style="background:#232B1B; color:#F3F1E6; font-family:ui-monospace,monospace; font-size:11px; letter-spacing:.08em; padding:4px 9px;">1C</span>
+        <span style="font-family:'Spectral',serif; font-size:17px; color:#232B1B;">Reseñas</span>
+        <span style="font-size:12px; color:#6f6656;">resumen visual antes de la lista</span>
+      </div>
+      <div style="position:relative; width:760px; background:#F3F1E6; box-shadow:0 18px 44px rgba(0,0,0,.18); overflow:hidden;">
+        <span style="position:absolute; top:60px; right:60px; font-size:12px; color:#E39FC0; opacity:.5;">✳</span>
+        <div style="position:relative; display:flex; align-items:center; padding:18px 32px; background:#1F2A18; color:#F3F1E6;">
+          <span style="font-family:'Spectral',serif; font-size:15px; letter-spacing:.14em; text-transform:uppercase;">ActiHome</span>
+        </div>
+        <div style="position:relative; padding:26px 32px 30px;">
+          <div style="font-size:10.5px; color:#6f6656; margin-bottom:6px;">Catálogo &gt; Casa Rural El Pinar</div>
+          <div style="font-family:'Spectral',serif; font-size:24px; color:#232B1B; margin-bottom:18px;">Reseñas · Casa Rural El Pinar</div>
+          <div style="display:grid; grid-template-columns:140px 1fr; gap:28px; border:1px solid rgba(0,0,0,.12); padding:22px; margin-bottom:24px;">
+            <div style="text-align:center; border-right:1px solid rgba(0,0,0,.1);">
+              <div style="font-family:'Spectral',serif; font-size:40px; color:#3E7D3B;">4,2</div>
+              <div style="font-size:10.5px; color:#6f6656;">2 reseñas</div>
+            </div>
+            <div>
+              <div style="display:flex; flex-direction:column; gap:5px; margin-bottom:14px;">
+                <div style="display:grid; grid-template-columns:14px 1fr 24px; align-items:center; gap:8px; font-size:10px; color:#6f6656;"><span>5</span><span style="height:5px; background:rgba(0,0,0,.08);"><span style="display:block; height:100%; width:50%; background:#3E7D3B;"></span></span><span>1</span></div>
+                <div style="display:grid; grid-template-columns:14px 1fr 24px; align-items:center; gap:8px; font-size:10px; color:#6f6656;"><span>4</span><span style="height:5px; background:rgba(0,0,0,.08);"><span style="display:block; height:100%; width:50%; background:#3E7D3B;"></span></span><span>1</span></div>
+                <div style="display:grid; grid-template-columns:14px 1fr 24px; align-items:center; gap:8px; font-size:10px; color:#6f6656;"><span>3</span><span style="height:5px; background:rgba(0,0,0,.08);"><span style="display:block; height:100%; width:0%; background:#3E7D3B;"></span></span><span>0</span></div>
+              </div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <span style="background:#EDE8D8; font-size:10px; padding:5px 10px; color:#3a3a2e;">Silencio ↑</span>
+                <span style="background:#EDE8D8; font-size:10px; padding:5px 10px; color:#3a3a2e;">Buen desayuno ↑</span>
+                <span style="background:#EDE8D8; font-size:10px; padding:5px 10px; color:#3a3a2e;">Wifi ↓</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <div style="border-bottom:1px solid rgba(0,0,0,.1); padding-bottom:16px;">
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                <span style="width:26px; height:26px; border-radius:50%; background:#c9a15c; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px;">C</span>
+                <span style="font-family:'Spectral',serif; font-size:15px; color:#232B1B;">Perfecta para desconectar</span>
+                <span style="font-size:12px; color:#3E7D3B;">4,0 ★</span>
+              </div>
+              <div style="font-size:10.5px; color:#6f6656; margin-bottom:6px;">por Customer10 · 16 de julio de 2026</div>
+              <div style="font-size:13px; color:#3a3a2e; line-height:1.55;">Fuimos con el perro y no hubo ningún problema. El wifi va justo, pero tampoco íbamos buscando eso. Volveríamos en otoño.</div>
+            </div>
+            <div>
+              <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                <span style="width:26px; height:26px; border-radius:50%; background:#6f9c5b; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px;">C</span>
+                <span style="font-family:'Spectral',serif; font-size:15px; color:#232B1B;">Silencio y buen desayuno</span>
+                <span style="font-size:12px; color:#3E7D3B;">4,4 ★</span>
+              </div>
+              <div style="font-size:10.5px; color:#6f6656; margin-bottom:6px;">por Customer · 24 de junio de 2026</div>
+              <div style="font-size:13px; color:#3a3a2e; line-height:1.55;">La casa es tal cual las fotos y el desayuno con pan de la panadería del pueblo merece madrugar.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px; font-size:12px; color:#4a4636; line-height:1.5;">Media grande + histograma 5→1 + dos etiquetas destacadas ("lo mejor / lo peor mencionado"), calculadas de las mismas notas por categoría que ya guarda cada reseña. Avatar por autor para que la lista no sea solo texto.</div>
+    </div>
+
+    <!-- ══════════════ 1D — INTERCAMBIO VACÍO ══════════════ -->
+    <div id="1d" style="width:760px; flex:0 0 auto;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        <span style="background:#232B1B; color:#F3F1E6; font-family:ui-monospace,monospace; font-size:11px; letter-spacing:.08em; padding:4px 9px;">1D</span>
+        <span style="font-family:'Spectral',serif; font-size:17px; color:#232B1B;">Intercambio — estado vacío</span>
+        <span style="font-size:12px; color:#6f6656;">explica el flujo y muestra propuestas reales de otros</span>
+      </div>
+      <div style="position:relative; width:760px; background:#F3F1E6; box-shadow:0 18px 44px rgba(0,0,0,.18); overflow:hidden;">
+        <span style="position:absolute; top:80px; left:60px; font-size:13px; color:#E39FC0; opacity:.5;">✳</span>
+        <span style="position:absolute; top:320px; right:40px; font-size:11px; color:#E39FC0; opacity:.5;">•</span>
+        <div style="position:relative; display:flex; align-items:center; padding:18px 32px; background:#1F2A18; color:#F3F1E6;">
+          <span style="font-family:'Spectral',serif; font-size:15px; letter-spacing:.14em; text-transform:uppercase;">ActiHome</span>
+        </div>
+        <div style="position:relative; padding:30px 36px 34px;">
+          <div style="font-size:10.5px; letter-spacing:.1em; color:#3E7D3B; margin-bottom:5px;">INTERCAMBIO</div>
+          <div style="font-family:'Spectral',serif; font-size:24px; color:#232B1B; margin-bottom:22px;">Cambia tu estancia por otra</div>
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:26px;">
+            <div style="text-align:center; padding:16px 10px; background:#fff; border:1px solid rgba(0,0,0,.1);">
+              <div style="font-family:'Spectral',serif; font-size:17px; color:#3E7D3B; margin-bottom:6px;">1</div>
+              <div style="font-size:11.5px; color:#3a3a2e;">Publica tu alojamiento</div>
+            </div>
+            <div style="text-align:center; padding:16px 10px; background:#fff; border:1px solid rgba(0,0,0,.1);">
+              <div style="font-family:'Spectral',serif; font-size:17px; color:#3E7D3B; margin-bottom:6px;">2</div>
+              <div style="font-size:11.5px; color:#3a3a2e;">Propón un intercambio</div>
+            </div>
+            <div style="text-align:center; padding:16px 10px; background:#fff; border:1px solid rgba(0,0,0,.1);">
+              <div style="font-family:'Spectral',serif; font-size:17px; color:#3E7D3B; margin-bottom:6px;">3</div>
+              <div style="font-size:11.5px; color:#3a3a2e;">El otro anfitrión acepta</div>
+            </div>
+          </div>
+          <div style="background:#fff; border:1px solid rgba(0,0,0,.1); padding:20px 22px; margin-bottom:20px;">
+            <div style="font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:#6f6656; margin-bottom:12px;">Intercambios abiertos ahora mismo</div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; align-items:center; gap:12px; font-size:12.5px; color:#3a3a2e;"><span style="width:8px; height:8px; border-radius:50%; background:#3E7D3B;"></span>Loft Barrio Gótico busca casa rural para agosto</div>
+              <div style="display:flex; align-items:center; gap:12px; font-size:12.5px; color:#3a3a2e;"><span style="width:8px; height:8px; border-radius:50%; background:#3E7D3B;"></span>Villa Costa del Sol busca apartamento urbano</div>
+            </div>
+          </div>
+          <div style="text-align:center;">
+            <div style="background:#232B1B; color:#F3F1E6; display:inline-block; padding:13px 28px; font-size:11px; letter-spacing:.1em; text-transform:uppercase;">Publicar un alojamiento</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px; font-size:12px; color:#4a4636; line-height:1.5;">El vacío pasaba de "no tienes nada" al botón directamente. Los 3 pasos explican la mecánica una sola vez, y el listado de intercambios abiertos da prueba social — usar el sistema no requiere imaginación.</div>
+    </div>
+
+    <!-- ══════════════ 1E — PERFIL & AJUSTES ══════════════ -->
+    <div id="1e" style="width:760px; flex:0 0 auto;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        <span style="background:#232B1B; color:#F3F1E6; font-family:ui-monospace,monospace; font-size:11px; letter-spacing:.08em; padding:4px 9px;">1E</span>
+        <span style="font-family:'Spectral',serif; font-size:17px; color:#232B1B;">Perfil &amp; Ajustes</span>
+        <span style="font-size:12px; color:#6f6656;">secciones agrupadas en tarjeta, no formulario plano</span>
+      </div>
+      <div style="position:relative; width:760px; background:#F3F1E6; box-shadow:0 18px 44px rgba(0,0,0,.18); overflow:hidden;">
+        <span style="position:absolute; top:100px; right:70px; font-size:13px; color:#E39FC0; opacity:.5;">✳</span>
+        <div style="position:relative; display:flex; align-items:center; padding:18px 32px; background:#1F2A18; color:#F3F1E6;">
+          <span style="font-family:'Spectral',serif; font-size:15px; letter-spacing:.14em; text-transform:uppercase;">ActiHome</span>
+        </div>
+        <div style="position:relative; padding:30px 36px 34px;">
+          <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
+            <image-slot id="am-avatar" style="width:64px; height:64px;" shape="circle" placeholder="Foto"></image-slot>
+            <div>
+              <div style="font-family:'Spectral',serif; font-size:20px; color:#232B1B;">Alejandro Sampedro Calo</div>
+              <div style="font-size:11.5px; color:#6f6656;">@Alex · Cliente · A Coruña</div>
+            </div>
+            <span style="margin-left:auto; font-size:10px; letter-spacing:.1em; text-transform:uppercase; border:1px solid rgba(0,0,0,.18); padding:8px 14px; color:#3a3a2e;">Cambiar a admin</span>
+          </div>
+          <div style="background:#fff; border:1px solid rgba(0,0,0,.1); margin-bottom:14px;">
+            <div style="padding:14px 20px; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:#6f6656; border-bottom:1px solid rgba(0,0,0,.08);">Datos personales</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:18px 20px;">
+              <div><div style="font-size:10px; color:#6f6656; margin-bottom:5px;">Nombre</div><div style="font-size:13px; color:#232B1B; padding-bottom:6px; border-bottom:1px solid rgba(0,0,0,.12);">Alejandro</div></div>
+              <div><div style="font-size:10px; color:#6f6656; margin-bottom:5px;">Apellido</div><div style="font-size:13px; color:#232B1B; padding-bottom:6px; border-bottom:1px solid rgba(0,0,0,.12);">Sampedro Calo</div></div>
+              <div><div style="font-size:10px; color:#6f6656; margin-bottom:5px;">Correo</div><div style="font-size:13px; color:#232B1B; padding-bottom:6px; border-bottom:1px solid rgba(0,0,0,.12);">alejsamcalo@hotmail.com</div></div>
+              <div><div style="font-size:10px; color:#6f6656; margin-bottom:5px;">Teléfono</div><div style="font-size:13px; color:#232B1B; padding-bottom:6px; border-bottom:1px solid rgba(0,0,0,.12);">604053472</div></div>
+            </div>
+          </div>
+          <div style="background:#fff; border:1px solid rgba(0,0,0,.1); margin-bottom:14px;">
+            <div style="padding:14px 20px; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:#6f6656; border-bottom:1px solid rgba(0,0,0,.08);">Preferencias</div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid rgba(0,0,0,.06);">
+              <span style="font-size:13px; color:#232B1B;">Estación por defecto</span>
+              <span style="font-size:12.5px; color:#3E7D3B;">Primavera ▾</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid rgba(0,0,0,.06);">
+              <span style="font-size:13px; color:#232B1B;">Vista de catálogo por defecto</span>
+              <div style="display:flex; gap:6px;"><span style="background:#3E7D3B; color:#fff; font-size:9.5px; padding:5px 11px;">Lista</span><span style="border:1px solid rgba(0,0,0,.15); font-size:9.5px; padding:5px 11px;">Cuadrícula</span></div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 20px;">
+              <span style="font-size:13px; color:#232B1B;">Partículas decorativas</span>
+              <span style="width:34px; height:19px; border-radius:10px; background:#3E7D3B; display:inline-flex; align-items:center; padding:2px;"><span style="width:15px; height:15px; border-radius:50%; background:#fff; margin-left:auto;"></span></span>
+            </div>
+          </div>
+          <div style="display:flex; gap:16px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:#6f6656; padding:2px 4px;">
+            <span>Cambiar contraseña</span><span>Cerrar sesión</span>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px; font-size:12px; color:#4a4636; line-height:1.5;">"Editar perfil" y "Ajustes" eran dos pantallas iguales en forma pero distintas en contenido, con menú de usuario largo (6 acciones) para llegar. Aquí viven juntas en tarjetas por tema, y el toggle de partículas es un control real en vez de checkbox suelto.</div>
+    </div>
+
+  </div>
+</section>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#1F2A18"/><text x="50" y="58" font-size="34" text-anchor="middle" fill="#F3F1E6" font-family="serif">AH</text></svg>
+</template>
+
+</x-dc>
+</body>
+</html>

@@ -232,7 +232,7 @@ public class SignUpFrame extends JFrame {
 
 		etiquetaNacimiento = Labels.caps(Textos.t("registro.fechaNacimiento"));
 		panel.add(etiquetaNacimiento);
-		panel.add(nacimiento, "gaptop " + Space.XXS + ", height 38!");
+		panel.add(nacimiento, "gaptop " + Space.XXS + ", height " + Typography.altoDeControl() + "!");
 
 		return panel;
 	}
@@ -311,9 +311,9 @@ public class SignUpFrame extends JFrame {
 		JPanel acciones = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
 		acciones.setOpaque(false);
 		botonCrearCuenta = Buttons.primary(Textos.t("registro.crearCuenta"), e -> registrar());
-		acciones.add(botonCrearCuenta, "height 44!");
+		acciones.add(botonCrearCuenta, "height " + Typography.altoDeBoton() + "!");
 		botonCancelar = Buttons.secondary(Textos.t("ajustes.cancelar"), e -> navigator.ir(LoginFrame.class));
-		acciones.add(botonCancelar, "height 44!");
+		acciones.add(botonCancelar, "height " + Typography.altoDeBoton() + "!");
 
 		panel.add(acciones, "gaptop " + Space.XS);
 		panel.add(enlaceALogin(), "gaptop " + Space.SM);

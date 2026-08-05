@@ -421,12 +421,12 @@ public class HousingDetailsFrame extends JFrame {
 		boolean esPropietario = usuario != null && usuario.getId().equals(housing.getOwner().getId());
 
 		if (usuario != null && usuario.getRole() == RoleType.CUSTOMER) {
-			izquierda.add(Buttons.primary(Textos.t("detalle.accion.reservar"), e -> reservar()), "height 44!");
+			izquierda.add(Buttons.primary(Textos.t("detalle.accion.reservar"), e -> reservar()), "height " + Typography.altoDeBoton() + "!");
 			izquierda.add(Buttons.linkAccent(Textos.t("detalle.accion.preguntar"), e -> preguntar()),
 					"gapleft " + Space.XL);
 
 		} else if (usuario != null && usuario.getRole() == RoleType.ADMIN && esPropietario) {
-			izquierda.add(Buttons.secondary(Textos.t("detalle.accion.actualizar"), e -> actualizar()), "height 44!");
+			izquierda.add(Buttons.secondary(Textos.t("detalle.accion.actualizar"), e -> actualizar()), "height " + Typography.altoDeBoton() + "!");
 			izquierda.add(Buttons.linkAccent(Textos.t("catalogo.row.intercambiar"), e -> intercambiar()),
 					"gapleft " + Space.XL);
 		}

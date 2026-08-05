@@ -36,6 +36,7 @@ import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Particulas;
+import fp.project.actihome.ui.theme.Preferencias;
 import fp.project.actihome.ui.theme.Season;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
@@ -314,7 +315,7 @@ public class LoginFrame extends JFrame {
 		panel.add(error);
 
 		botonEntrar = Buttons.primary(Textos.t("login.entrar"), e -> entrar());
-		panel.add(botonEntrar, "growx, height 44!");
+		panel.add(botonEntrar, "growx, height " + Typography.altoDeBoton() + "!");
 
 		panel.add(enlaceARegistro());
 
@@ -416,6 +417,12 @@ public class LoginFrame extends JFrame {
 	 * (Fase 7.6). Si {@code getDefaultSeason()} es {@code null} —cuenta que nunca
 	 * ha abierto Ajustes— la estación no se toca: se queda como estuviera, que es
 	 * el comportamiento de siempre ({@link Season#actual()}, calculada por fecha).
+	 *
+	 * <p>
+	 * Al final se replica lo aplicado en {@link Preferencias} (Fase 8.1). Esta
+	 * pantalla es justo la que <em>no</em> puede leer la base de datos —se ve antes
+	 * de que exista sesión—, así que la única forma de que respete la preferencia
+	 * es que la sesión anterior se la haya dejado escrita en algún sitio.
 	 */
 	private void aplicarPreferencias(User usuario) {
 
@@ -425,5 +432,7 @@ public class LoginFrame extends JFrame {
 
 		Particulas.activar(usuario.isParticlesEnabled());
 		Textos.cambiarA(usuario.getLanguage() == User.Idioma.EN ? Locale.ENGLISH : new Locale("es"));
+
+		Preferencias.recordar();
 	}
 }

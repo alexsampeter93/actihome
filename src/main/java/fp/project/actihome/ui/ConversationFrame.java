@@ -36,6 +36,7 @@ import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
+import fp.project.actihome.ui.theme.Typography;
 
 /**
  * Una conversación (F10): todos los mensajes entre dos personas sobre un
@@ -181,7 +182,7 @@ public class ConversationFrame extends JFrame {
 		panel.add(mensaje, "aligny top");
 
 		botonEnviar = Buttons.primary(Textos.t("mensajes.enviar"), e -> enviar());
-		panel.add(botonEnviar, "aligny top, height 38!");
+		panel.add(botonEnviar, "aligny top, height " + Typography.altoDeControl() + "!");
 
 		error = Labels.error(" ");
 		panel.add(error, "span 2, growx");

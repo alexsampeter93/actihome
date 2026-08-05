@@ -19,7 +19,7 @@ import fp.project.actihome.ui.theme.Typography;
  * que leerla.
  *
  * <p>
- * <b>La cifra se destaca, el rótulo se retira.</b> El número va en Spectral a
+ * <b>La cifra se destaca, el rótulo se retira.</b> El número va en la serif a
  * 26px y el rótulo en 11px con el color secundario. Esa diferencia de peso es lo
  * que hace que la vista caiga primero en el dato y solo después en qué dato es
  * —que es el orden en que uno lee de verdad una cifra.

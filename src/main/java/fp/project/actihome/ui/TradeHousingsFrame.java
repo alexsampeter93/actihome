@@ -222,7 +222,7 @@ public class TradeHousingsFrame extends JFrame {
 
 		panel.add(codigo);
 		botonBuscar = Buttons.secondary(Textos.t("intercambio.buscar"), e -> buscar());
-		panel.add(botonBuscar, "height 38!, gaptop 18");
+		panel.add(botonBuscar, "height " + Typography.altoDeControl() + "!, gaptop 18");
 
 		return panel;
 	}
@@ -233,7 +233,7 @@ public class TradeHousingsFrame extends JFrame {
 		fila.setOpaque(false);
 
 		confirmar = Buttons.primary(Textos.t("intercambio.confirmar"), e -> intercambiar());
-		fila.add(confirmar, "height 44!");
+		fila.add(confirmar, "height " + Typography.altoDeBoton() + "!");
 		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> volverAlDetalle());
 		fila.add(botonCancelar);
 

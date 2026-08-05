@@ -30,6 +30,7 @@ import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
+import fp.project.actihome.ui.theme.Typography;
 
 /**
  * Cambiar la contraseña.
@@ -165,7 +166,7 @@ public class ChangePasswordFrame extends JFrame {
 		fila.setOpaque(false);
 
 		botonCambiar = Buttons.primary(Textos.t("contrasena.titulo"), e -> cambiar());
-		fila.add(botonCambiar, "height 44!");
+		fila.add(botonCambiar, "height " + Typography.altoDeBoton() + "!");
 		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> navigator.ir(ShowHousingsFrame.class));
 		fila.add(botonCancelar);
 
