@@ -17,6 +17,7 @@ import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.WrappingText;
+import fp.project.actihome.ui.theme.Contenido;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
@@ -68,7 +69,7 @@ public class ReviewRow extends JPanel {
 
 		add(cabecera(review, alAbrir), "growx");
 		add(autoria(review), "growx");
-		add(new WrappingText(extracto(review.getBody())), "growx");
+		add(new WrappingText(extracto(Contenido.de(review.getBody()))), "growx");
 		add(subNotas(review), "growx");
 
 		addMouseListener(new MouseAdapter() {
@@ -110,7 +111,7 @@ public class ReviewRow extends JPanel {
 				new MigLayout(Space.insets(0), "[]" + Space.MD + "[]" + Space.MD + "[]push[]", "[]"));
 		panel.setOpaque(false);
 
-		JLabel titulo = Labels.cardTitle(review.getTitle());
+		JLabel titulo = Labels.cardTitle(Contenido.de(review.getTitle()));
 		titulo.setFont(Typography.serifMedium(20f));
 		panel.add(titulo);
 

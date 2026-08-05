@@ -197,3 +197,26 @@ CREATE TABLE IF NOT EXISTS PASSWORD_RESET_CODES (
 	usedAt DATETIME,
 	CONSTRAINT ResetCodeUserIdFK FOREIGN KEY(userId) REFERENCES USERS(id)
 );
+
+-- Caché de traducciones de contenido (Fase 8.7).
+--
+-- Es lo que hace viable traducir el contenido y no solo la interfaz. Sin caché,
+-- entrar en el catálogo en inglés serían treinta llamadas al traductor cada vez;
+-- con 5.000 palabras al día de cuota, eso se agota en dos sesiones. Con caché se
+-- traduce una vez por texto y para siempre.
+--
+-- La clave es un HASH del texto original, no el texto: un índice único sobre una
+-- columna de 500 caracteres es frágil entre motores (MySQL tiene límite de bytes
+-- por índice) y además obliga a comparar cadenas largas en cada búsqueda. El
+-- hash es de longitud fija y compara rápido.
+--
+-- No hay clave ajena a ninguna tabla a propósito: esto traduce TEXTOS, no
+-- campos de entidades. La misma descripción escrita en dos alojamientos se
+-- traduce una sola vez, y borrar un alojamiento no invalida nada.
+CREATE TABLE IF NOT EXISTS TRANSLATIONS (
+	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	sourceHash VARCHAR(64) NOT NULL,
+	targetLanguage VARCHAR(5) NOT NULL,
+	translatedText VARCHAR(1000) NOT NULL,
+	CONSTRAINT UniqueTranslation UNIQUE (sourceHash, targetLanguage)
+);

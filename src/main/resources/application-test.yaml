@@ -16,7 +16,12 @@ spring:
     password: ""
     driverClassName: org.h2.Driver
     schema: classpath:schema.sql
-    data: classpath:data.sql
+    data:
+      - classpath:data.sql
+      # Precarga de la cache de traducciones (Fase 8.7), generada por
+      # ui/dev/SembrarTraducciones. Va DESPUES de data.sql porque no depende de
+      # ninguna fila suya: traduce textos, no campos de entidades.
+      - classpath:traducciones.sql
     initialization-mode: always
 
   jpa:

@@ -66,6 +66,7 @@ public class RecoverPasswordFrame extends JFrame {
 	private JLabel superTitulo;
 	private JLabel titulo;
 	private JLabel ayuda;
+	private JLabel dondeConseguirlo;
 
 	private Field usuario;
 	private JButton pedirCodigo;
@@ -112,12 +113,14 @@ public class RecoverPasswordFrame extends JFrame {
 		superTitulo = Labels.capsAccent(" ");
 		titulo = Labels.title(" ");
 		ayuda = Labels.muted(" ");
+		dondeConseguirlo = Labels.muted(" ");
 
 		formulario.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA),
 				"w 56!, h 56!, gapbottom " + Space.MD);
 		formulario.add(superTitulo);
 		formulario.add(titulo, "gaptop " + Space.XXS + ", gapbottom " + Space.XS);
-		formulario.add(ayuda, "gapbottom " + Space.XL);
+		formulario.add(ayuda, "gapbottom " + Space.XS);
+		formulario.add(dondeConseguirlo, "gapbottom " + Space.XL);
 
 		usuario = Field.text(" ");
 		formulario.add(usuario, "gapbottom " + Space.SM);
@@ -173,6 +176,14 @@ public class RecoverPasswordFrame extends JFrame {
 		boolean conCorreo = passwordResetService.puedeEnviarCorreo();
 
 		ayuda.setText(Textos.t(conCorreo ? "recuperar.ayuda.conCorreo" : "recuperar.ayuda.sinCorreo"));
+
+		// El "dónde" del camino sin correo. Sin esto, la pantalla decía "pídele un
+		// código a un administrador" sin explicar dónde se genera, y quedaba un
+		// callejón sin salida: para generarlo hay que entrar como administrador, y
+		// quien no puede entrar es precisamente el que lo necesita. La nota dice las
+		// dos cosas — dónde está la opción y qué hacer si el bloqueado eres tú.
+		dondeConseguirlo.setText(Textos.t("recuperar.donde"));
+		dondeConseguirlo.setVisible(!conCorreo);
 		pedirCodigo.setVisible(conCorreo);
 		pedirCodigo.setText(Textos.t("recuperar.pedirCodigo"));
 

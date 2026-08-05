@@ -41,6 +41,7 @@ import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.housings.Galeria;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
+import fp.project.actihome.ui.theme.Contenido;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
@@ -197,6 +198,11 @@ public class HousingDetailsFrame extends JFrame {
 		}
 
 		reconstruir();
+
+		// Traduce en segundo plano la descripcion y la cita destacada si faltan, y
+		// repinta cuando lleguen. Va despues de reconstruir, no antes: la pantalla se
+		// ve al instante y mejora sola.
+		Contenido.precalentar(java.util.Arrays.asList(housing.getDescription()), this::reconstruir);
 	}
 
 	/**
@@ -442,7 +448,7 @@ public class HousingDetailsFrame extends JFrame {
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XS + "[]"));
 		panel.setOpaque(false);
 
-		WrappingText cita = new WrappingText("«" + mejor.getTitle() + "»");
+		WrappingText cita = new WrappingText("«" + Contenido.de(mejor.getTitle()) + "»");
 		cita.setFont(Typography.serifItalic(18f));
 		panel.add(cita, "growx, wmin 0");
 
@@ -515,7 +521,7 @@ public class HousingDetailsFrame extends JFrame {
 	}
 
 	private WrappingText descripcion() {
-		return new WrappingText(housing.getDescription());
+		return new WrappingText(Contenido.de(housing.getDescription()));
 	}
 
 	/** Rejilla 2×2: habitaciones, disponibilidad, pensión y titular. */

@@ -1,6 +1,7 @@
 package fp.project.actihome.ui;
 
 import java.awt.Dimension;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JComponent;
@@ -35,6 +36,7 @@ import fp.project.actihome.ui.reviews.ResumenDeResenas;
 import fp.project.actihome.ui.reviews.ReviewRow;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
+import fp.project.actihome.ui.theme.Contenido;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
@@ -192,6 +194,36 @@ public class ShowReviewsFrame extends JFrame {
 
 		reconstruirTitular(resenas);
 		reconstruirLista(resenas);
+
+		precalentarTraducciones(resenas);
+	}
+
+	/**
+	 * Pide en segundo plano las traducciones que falten y repinta si llega alguna.
+	 *
+	 * <p>
+	 * Va <b>después</b> de haber pintado la lista, no antes, y ese orden es todo:
+	 * la pantalla se ve al instante con lo que haya en la caché —o en español si no
+	 * hay nada— y mejora sola cuando llegan las traducciones. Esperar a traducir
+	 * para pintar convertiría abrir una pantalla en una espera de varios segundos.
+	 *
+	 * <p>
+	 * A partir de la segunda visita no se llama a nadie: todo está ya en la caché,
+	 * {@code precalentar} devuelve cero y ni siquiera se repinta.
+	 */
+	private void precalentarTraducciones(List<Review> resenas) {
+
+		List<String> textos = new ArrayList<>();
+
+		for (Review resena : resenas) {
+			textos.add(resena.getTitle());
+			textos.add(resena.getBody());
+		}
+
+		Contenido.precalentar(textos, () -> {
+			reconstruirTitular(resenas);
+			reconstruirLista(resenas);
+		});
 	}
 
 	// ------------------------------------------------------------------

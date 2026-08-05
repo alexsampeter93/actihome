@@ -40,6 +40,7 @@ import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets;
+import fp.project.actihome.ui.theme.Contenido;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
@@ -203,7 +204,7 @@ public class ReviewDetailsFrame extends JFrame {
 
 		columna.add(migaDePan(), "growx");
 		columna.add(cabecera(), "growx");
-		columna.add(new WrappingText(review.getBody()), "growx, " + Layout.ancho(Layout.TEXTO));
+		columna.add(new WrappingText(Contenido.de(review.getBody())), "growx, " + Layout.ancho(Layout.TEXTO));
 
 		if (conFoto) {
 			columna.add(foto(), "h 0:260:260, " + Layout.ancho(Layout.TEXTO));
@@ -258,7 +259,7 @@ public class ReviewDetailsFrame extends JFrame {
 		JPanel texto = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]"));
 		texto.setOpaque(false);
 
-		JLabel titulo = Labels.title(review.getTitle());
+		JLabel titulo = Labels.title(Contenido.de(review.getTitle()));
 		titulo.setFont(Typography.serifMedium(28f));
 		texto.add(titulo);
 
@@ -454,7 +455,7 @@ public class ReviewDetailsFrame extends JFrame {
 				new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]"));
 		panel.setOpaque(false);
 
-		panel.add(new WrappingText(review.getOwnerResponse()));
+		panel.add(new WrappingText(Contenido.de(review.getOwnerResponse())));
 		panel.add(Labels.muted(formatoFecha().format(review.getOwnerResponseDate())));
 
 		return panel;

@@ -9,11 +9,13 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import fp.project.actihome.model.services.ContentTranslationService;
 import fp.project.actihome.ui.LoginFrame;
 import fp.project.actihome.ui.brand.SplashScreen;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.reminders.TrayReminders;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
+import fp.project.actihome.ui.theme.Contenido;
 
 @SpringBootApplication
 public class ActihomeApplication {
@@ -47,6 +49,13 @@ public class ActihomeApplication {
 		// Los recordatorios de bandeja (F11) arrancan aquí mismo, una sola vez en toda
 		// la sesión: no pertenecen a ninguna pantalla, así que no tienen un
 		// setVisible(true) natural del que colgarse.
+		// Contenido traduce lo que escriben los usuarios (descripciones, reseñas), y
+		// lo llaman componentes que no son beans de Spring, así que recibe su servicio
+		// una sola vez aquí en lugar de por constructor. Va antes de abrir la primera
+		// ventana: sin esto, el catálogo se pintaría en español aunque la cuenta tenga
+		// el inglés guardado.
+		Contenido.instalar(context.getBean(ContentTranslationService.class));
+
 		EventQueue.invokeLater(() -> {
 			context.getBean(Navigator.class).ir(LoginFrame.class);
 			context.getBean(TrayReminders.class).iniciar();
