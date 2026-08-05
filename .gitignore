@@ -1,5 +1,32 @@
 HELP.md
 target/
+
+### Documentacion de trabajo interno ###
+#
+# Estos tres archivos existen en el disco, se siguen escribiendo en cada sesion
+# y NO entran en el repositorio. El 05-08-2026 se borraron ademas de toda la
+# historia (git filter-repo), asi que no aparecen en ningun commit: se hizo con
+# el repositorio en privado, sin tenedores, sin otros colaboradores y con una
+# sola rama, que es la unica situacion en la que reescribir la historia no le
+# rompe el clon a nadie.
+#
+# CLAUDE.md y PLAN.md son andamiaje del proceso: un manual operativo y un plan
+# de fases con pendientes y propuestas sin aprobar. No le dicen nada a quien
+# venga a ver la aplicacion.
+#
+# LEARNING_LOG.md sale por un motivo distinto: son 3.300 lineas de material
+# didactico -- errores cometidos y por que se corrigieron asi -- destinadas a
+# convertirse en un libro. En un repositorio publico el copyright es automatico
+# pero no se puede hacer valer en la practica, y los rastreadores de datos se
+# llevan los repositorios publicos enteros.
+#
+# AUDITORIA.md y README.md SI se versionan, y la diferencia es de genero: son
+# entregables sobre este proyecto concreto, no material de ensenanza
+# reutilizable. El README es el que cuenta el criterio tecnico de cara a quien
+# lo mire, en lugar del diario.
+CLAUDE.md
+PLAN.md
+LEARNING_LOG.md
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
