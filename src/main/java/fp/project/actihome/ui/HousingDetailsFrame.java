@@ -18,12 +18,16 @@ import org.springframework.stereotype.Component;
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.Review;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.services.HousingService;
+import fp.project.actihome.model.services.ReservationService;
 import fp.project.actihome.model.services.ReviewService;
+import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.CalendarioRango;
 import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.InlineScore;
@@ -44,10 +48,28 @@ import fp.project.actihome.ui.theme.Typography;
  * Detalle de un alojamiento.
  *
  * <p>
- * Dos columnas: la foto a la izquierda, los datos y las acciones a la derecha.
- * Es la pantalla que decide si alguien reserva, así que el orden de la columna
- * derecha va de lo que sitúa a lo que convence: referencia, título,
- * puntuación, descripción, datos clave, precio y por último la acción.
+ * Dos columnas: a la izquierda la foto y el calendario de ocupación, a la
+ * derecha los datos y las acciones. Es la pantalla que decide si alguien
+ * reserva, así que el orden de la columna derecha va de lo que sitúa a lo que
+ * convence: referencia, título, anfitrión, descripción, cita destacada, datos
+ * clave, precio y por último la acción.
+ *
+ * <p>
+ * <b>Tres piezas de la Fase 8.4</b>, las tres pensadas para el mismo momento —
+ * el de decidir:
+ *
+ * <ul>
+ * <li><b>Tarjeta de anfitrión</b> junto al título, con avatar. En un alojamiento
+ * de particular, quién te recibe es parte de lo que se decide; antes el
+ * propietario era una celda más de la rejilla de datos, entre las habitaciones y
+ * la pensión.</li>
+ * <li><b>Cita de la mejor reseña</b>, en cursiva. Una media dice cuánto gustó;
+ * una cita dice <em>qué</em> gustó, que es lo que aquí se está averiguando.</li>
+ * <li><b>Calendario de ocupación</b> en modo solo lectura, bajo la foto. Saber
+ * qué días están cogidos es información del alojamiento, igual que el precio, y
+ * tenerla antes de entrar en el flujo de reserva evita el viaje de ida y vuelta
+ * de descubrir que las fechas que querías no estaban libres.</li>
+ * </ul>
  *
  * <p>
  * <b>Reescrita entera</b>, no retocada: la versión anterior tenía dos bugs de
@@ -79,6 +101,10 @@ public class HousingDetailsFrame extends JFrame {
 
 	private final transient HousingService housingService;
 	private final transient ReviewService reviewService;
+
+	/** Solo para pintar la ocupación del calendario: aquí no se reserva nada. */
+	private final transient ReservationService reservationService;
+
 	private final transient SessionManager sessionManager;
 	private final transient Navigator navigator;
 	private final HeaderPanel headerPanel;
@@ -89,10 +115,12 @@ public class HousingDetailsFrame extends JFrame {
 	private JPanel contenido;
 
 	public HousingDetailsFrame(HousingService housingService, ReviewService reviewService,
-			SessionManager sessionManager, Navigator navigator, HeaderPanel headerPanel) {
+			ReservationService reservationService, SessionManager sessionManager, Navigator navigator,
+			HeaderPanel headerPanel) {
 
 		this.housingService = housingService;
 		this.reviewService = reviewService;
+		this.reservationService = reservationService;
 		this.sessionManager = sessionManager;
 		this.navigator = navigator;
 		this.headerPanel = headerPanel;
@@ -231,7 +259,19 @@ public class HousingDetailsFrame extends JFrame {
 				new MigLayout(Space.insets(0), "[grow,fill]" + Space.XXXL + "[grow,fill]", "[grow,fill]"));
 		panel.setOpaque(false);
 
-		panel.add(foto(), "grow");
+		// Columna izquierda: la foto y, debajo, el calendario de ocupación. Los dos
+		// son "cómo es y cuándo está libre"; la derecha es "qué ofrece y cuánto
+		// cuesta". El calendario no cabía en la columna derecha sin empujar el precio
+		// y el botón de reservar fuera de la ventana, y eso la regla de escritorio del
+		// proyecto no lo permite.
+		JPanel izquierda = new JPanel(
+				new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[grow,fill]" + Space.LG + "[]"));
+		izquierda.setOpaque(false);
+
+		izquierda.add(foto(), "grow");
+		izquierda.add(calendarioDeOcupacion());
+
+		panel.add(izquierda, "grow");
 		panel.add(informacion(), "aligny top");
 
 		return panel;
@@ -249,24 +289,36 @@ public class HousingDetailsFrame extends JFrame {
 
 	private JPanel informacion() {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.SM + "[]" + Space.MD + "[]" + Space.LG + "[]" + Space.XXL + "[]" + Space.XXL + "[]"
-						+ Space.SM + "[]push[]"));
+		// Las separaciones van en cada componente ("gapbottom") y no en la lista de
+		// filas del layout. Es un cambio de la Fase 8.4 y tiene motivo: la cita
+		// destacada solo se añade si hay reseñas, y una lista de filas escrita a mano
+		// deja de corresponderse con los componentes en cuanto uno es condicional —el
+		// resultado son separaciones desplazadas una posición, que es un fallo
+		// silencioso y difícil de leer en el código.
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]push[]"));
 		panel.setOpaque(false);
 
-		panel.add(referencia());
-		panel.add(titulo());
-		panel.add(valoracion());
+		panel.add(referencia(), "gapbottom " + Space.SM);
+		panel.add(titulo(), "gapbottom " + Space.MD);
+		panel.add(anfitrion(), "gapbottom " + Space.LG);
 
 		// "wmin 0" es imprescindible aquí: un JTextArea sin ese freno reporta como
 		// ancho mínimo el de su texto sin partir en líneas, que para una descripción
 		// de tres frases es enorme. Sin este freno, MigLayout respeta esa demanda y dejaba
 		// la columna del texto invadir la de la foto —el mismo problema, ya documentado en
 		// Layout.ancho(), que en su día se llevó por delante el panel oscuro del login—.
-		panel.add(descripcion(), "growx, wmin 0");
+		panel.add(descripcion(), "growx, wmin 0, gapbottom " + Space.LG);
 
-		panel.add(miniGrid());
-		panel.add(precio());
+		// Solo si hay alguna reseña: un hueco con comillas vacías sería peor que la
+		// ausencia. Al no añadirse, el layout no le reserva sitio.
+		JPanel cita = citaDestacada();
+
+		if (cita != null) {
+			panel.add(cita, "growx, wmin 0, gapbottom " + Space.XL);
+		}
+
+		panel.add(miniGrid(), "gapbottom " + Space.XXL);
+		panel.add(precio(), "gapbottom " + Space.SM);
 		panel.add(acciones());
 
 		return panel;
@@ -291,15 +343,108 @@ public class HousingDetailsFrame extends JFrame {
 		return etiqueta;
 	}
 
-	private JPanel valoracion() {
+	/**
+	 * La tarjeta de anfitrión: avatar, quién es, la nota y el enlace a las reseñas
+	 * (Fase 8.4).
+	 *
+	 * <p>
+	 * Antes aquí solo estaba la nota y el enlace, y el propietario aparecía como
+	 * una celda más de la rejilla de datos, entre las habitaciones y la pensión. El
+	 * cambio no es de maquetación: <b>en un alojamiento de particular, quién te
+	 * recibe es parte de lo que se decide al reservar</b>, no un atributo del
+	 * inmueble. Subirlo junto al título y darle cara es lo que separa esta pantalla
+	 * de la ficha de un hotel.
+	 */
+	private JPanel anfitrion() {
 
-		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.MD + "[]", ""));
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0),
+				"[]" + Space.SM + "[]" + Space.LG + "[]" + Space.MD + "[]", "[]"));
 		fila.setOpaque(false);
 
-		fila.add(new InlineScore(housing.getScore(), 24f, 90));
-		fila.add(enlaceAResenas());
+		User propietario = housing.getOwner();
+
+		fila.add(Avatar.relleno(propietario.getName(), propietario.getSurname(), 30), "w 30!, h 30!, aligny center");
+		fila.add(Labels.body(Textos.t("detalle.anfitrion", propietario.getUsername())), "aligny center");
+		fila.add(new InlineScore(housing.getScore(), 24f, 90), "aligny center");
+		fila.add(enlaceAResenas(), "aligny center");
 
 		return fila;
+	}
+
+	/**
+	 * La reseña mejor valorada, en cursiva y con su autoría.
+	 *
+	 * <p>
+	 * Una cita concreta convence más que una media: "4,2" dice cuánto gustó, pero
+	 * "Silencio y buen desayuno" dice <em>qué</em> gustó, que es lo que alguien
+	 * está intentando averiguar en esta pantalla.
+	 *
+	 * <p>
+	 * Se elige la de <b>mejor nota</b> y no la más reciente. Las dos opciones son
+	 * defendibles y esta es más honesta de lo que parece: lo que se está enseñando
+	 * es la mejor cara del alojamiento, y quien quiera el resto tiene el enlace a
+	 * las reseñas justo encima — donde además hay un histograma que enseña de un
+	 * vistazo si esa reseña es representativa o un caso aislado.
+	 *
+	 * <p>
+	 * Devuelve {@code null} si no hay ninguna reseña. Quien llama no pinta nada
+	 * entonces: un hueco con comillas vacías sería peor que la ausencia.
+	 */
+	private JPanel citaDestacada() {
+
+		List<Review> resenas;
+
+		try {
+			resenas = reviewService.showHousingReviews(housing.getId());
+
+		} catch (InstanceNotFoundException ex) {
+			return null;
+		}
+
+		Review mejor = null;
+
+		for (Review resena : resenas) {
+			if (mejor == null || resena.getTotalScore() > mejor.getTotalScore()) {
+				mejor = resena;
+			}
+		}
+
+		if (mejor == null) {
+			return null;
+		}
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XS + "[]"));
+		panel.setOpaque(false);
+
+		WrappingText cita = new WrappingText("«" + mejor.getTitle() + "»");
+		cita.setFont(Typography.serifItalic(18f));
+		panel.add(cita, "growx, wmin 0");
+
+		panel.add(Labels.caps(Textos.t("resenas.row.por", mejor.getAuthor().getUsername()) + " · "
+				+ Formato.nota(mejor.getTotalScore())));
+
+		return panel;
+	}
+
+	/**
+	 * Mini-calendario informativo con los días ya cogidos.
+	 *
+	 * <p>
+	 * Es el mismo {@link CalendarioRango} de la pantalla de reservar, en modo solo
+	 * lectura. Reutilizarlo en vez de escribir un calendario más pequeño evita que
+	 * dos componentes puedan discrepar sobre qué día está ocupado, que es
+	 * exactamente la clase de incoherencia que el usuario detecta y no perdona.
+	 */
+	private CalendarioRango calendarioDeOcupacion() {
+
+		CalendarioRango calendario = new CalendarioRango(() -> {
+			// Sin acción: en esta pantalla el calendario informa, no selecciona.
+		});
+
+		calendario.setOcupacion(reservationService.showHousingReservations(housing.getId()));
+		calendario.soloLectura();
+
+		return calendario;
 	}
 
 	private JLabel enlaceAResenas() {
@@ -360,8 +505,11 @@ public class HousingDetailsFrame extends JFrame {
 				housingService.isAvailableNow(housing.getId()) ? Textos.t("detalle.grid.si")
 						: Textos.t("detalle.grid.noReservado")));
 		panel.add(celda(Textos.t("catalogo.row.pension"), resumenPension()));
-		panel.add(celda(Textos.t("detalle.grid.titular"), housing.getOwner().getUsername()));
 
+		// El titular estaba aquí como cuarta celda y salió en la Fase 8.4: la tarjeta
+		// de anfitrión de arriba dice lo mismo, con cara y con nota. Repetir un dato a
+		// dos centímetros de sí mismo no informa el doble, hace dudar de si son dos
+		// datos distintos.
 		return panel;
 	}
 

@@ -106,6 +106,9 @@ public class CalendarioRango extends JPanel {
 	private LocalDate inicio;
 	private LocalDate fin;
 
+	/** Modo informativo: se ve la ocupación pero no se elige nada. Ver {@link #soloLectura()}. */
+	private boolean soloLectura;
+
 	private JButton botonAnterior;
 	private final JLabel[] etiquetasMes = new JLabel[MESES_VISIBLES];
 	private final JPanel[] rejillas = new JPanel[MESES_VISIBLES];
@@ -307,7 +310,28 @@ public class CalendarioRango extends JPanel {
 	}
 
 	private boolean seleccionable(LocalDate dia) {
-		return !dia.isBefore(minimoSeleccionable()) && !ocupado(dia);
+		return !soloLectura && !dia.isBefore(minimoSeleccionable()) && !ocupado(dia);
+	}
+
+	/**
+	 * Convierte el calendario en informativo: se ve la ocupación pero no se puede
+	 * elegir nada (Fase 8.4).
+	 *
+	 * <p>
+	 * Lo usa la ficha del alojamiento, que enseña qué días están cogidos como parte
+	 * de la información —igual que el precio o las comodidades— pero no es el sitio
+	 * donde se reserva. Elegir fechas aquí llevaría a un callejón: no hay ningún
+	 * botón de confirmar al lado.
+	 *
+	 * <p>
+	 * Es un modo del mismo componente y no un calendario aparte a propósito. Toda
+	 * la parte difícil —qué día cae en qué columna, qué semana empieza el mes, qué
+	 * días cubre una reserva— es idéntica, y de un componente gemelo lo que se
+	 * acaba obteniendo es que un día los dos discrepen sobre qué está ocupado.
+	 */
+	public void soloLectura() {
+		this.soloLectura = true;
+		pintarMeses();
 	}
 
 	/**
