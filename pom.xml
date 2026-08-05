@@ -72,6 +72,20 @@
 			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
+		<!-- Correo, para enviar el codigo de recuperacion por SMTP (Fase 8.6).
+
+			Se usa el starter porque es la unica forma de que el BOM de Spring Boot
+			gestione la version de JavaMail; el artefacto suelto no esta en el BOM. Del
+			starter se usa SOLO la API de JavaMail: el JavaMailSender que autoconfigura
+			no se inyecta en ninguna parte, porque su bean se crea lea o no la
+			configuracion y entonces "estas configurado?" deja de tener respuesta clara,
+			que es justo la pregunta de la que depende todo este flujo. Sin
+			spring.mail.host esa autoconfiguracion ni siquiera se activa. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+
 		<!-- H2: base de datos embebida, escrita en Java puro. Es la de por defecto:
 			viaja dentro del jar y guarda los datos en un fichero del usuario, así que la
 			aplicación se abre sin instalar ni configurar nada. -->

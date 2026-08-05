@@ -29,6 +29,7 @@ import fp.project.actihome.ui.ConversationFrame;
 import fp.project.actihome.ui.DoCheckInFrame;
 import fp.project.actihome.ui.HousingDetailsFrame;
 import fp.project.actihome.ui.LoginFrame;
+import fp.project.actihome.ui.RecoverPasswordFrame;
 import fp.project.actihome.ui.MessagesFrame;
 import fp.project.actihome.ui.OnboardingFrame;
 import fp.project.actihome.ui.OwnerPanelFrame;
@@ -166,6 +167,7 @@ public class MedirResponsive {
 			pantallas.add(new Pantalla("Contrasena", c.getBean(ChangePasswordFrame.class), null));
 			pantallas.add(new Pantalla("Ajustes", c.getBean(SettingsFrame.class), null));
 			pantallas.add(new Pantalla("Login", c.getBean(LoginFrame.class), null));
+			pantallas.add(new Pantalla("Recuperar", c.getBean(RecoverPasswordFrame.class), null));
 			pantallas.add(new Pantalla("Registro", c.getBean(SignUpFrame.class), null));
 			pantallas.add(new Pantalla("Bienvenida", c.getBean(OnboardingFrame.class), null));
 			pantallas.add(new Pantalla("Panel propietario", c.getBean(OwnerPanelFrame.class), null));

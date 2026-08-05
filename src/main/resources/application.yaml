@@ -76,3 +76,33 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
+
+# -----------------------------------------------------------------------------
+# Envío de correo para el código de recuperación de contraseña (Fase 8.6)
+#
+# Los cinco valores salen de VARIABLES DE ENTORNO y por defecto están vacíos.
+# Vacíos significa "esta instalación no envía correo", y la aplicación usa
+# entonces el otro camino: un administrador genera el código y lo entrega.
+#
+# No es solo una buena práctica genérica de no meter secretos en el repositorio.
+# ActiHome se reparte como un .exe, es decir, como un fichero en el disco de otra
+# persona: cualquier credencial que viajara dentro se puede extraer
+# descompilándolo, y quien la extrajera podría enviar correo haciéndose pasar por
+# el dueño de la cuenta hasta que el proveedor la cerrara. Fuera del ejecutable,
+# el ejecutable repartido no lleva nada que robar.
+#
+# Para activarlo en tu máquina, con una cuenta gratuita de Brevo:
+#
+#     $env:ACTIHOME_MAIL_HOST     = "smtp-relay.brevo.com"
+#     $env:ACTIHOME_MAIL_PORT     = "587"
+#     $env:ACTIHOME_MAIL_USER     = "el usuario SMTP que da Brevo"
+#     $env:ACTIHOME_MAIL_PASSWORD = "la clave SMTP de Brevo"
+#     $env:ACTIHOME_MAIL_FROM     = "tu-remitente-verificado@dominio"
+# -----------------------------------------------------------------------------
+actihome:
+  mail:
+    host: ${ACTIHOME_MAIL_HOST:}
+    port: ${ACTIHOME_MAIL_PORT:587}
+    user: ${ACTIHOME_MAIL_USER:}
+    password: ${ACTIHOME_MAIL_PASSWORD:}
+    from: ${ACTIHOME_MAIL_FROM:}

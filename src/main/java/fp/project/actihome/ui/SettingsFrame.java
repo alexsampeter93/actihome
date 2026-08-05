@@ -30,6 +30,7 @@ import fp.project.actihome.model.exceptions.BackupNotAvailableException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.services.BackupService;
+import fp.project.actihome.model.services.PasswordResetService;
 import fp.project.actihome.model.services.UserService;
 import fp.project.actihome.ui.catalog.CatalogFilters;
 import fp.project.actihome.ui.components.Avatar;
@@ -90,6 +91,7 @@ public class SettingsFrame extends JFrame {
 
 	private final transient UserService userService;
 	private final transient BackupService backupService;
+	private final transient PasswordResetService passwordResetService;
 	private final transient SessionManager sessionManager;
 	private final transient Navigator navigator;
 	private final HeaderPanel headerPanel;
@@ -124,17 +126,27 @@ public class SettingsFrame extends JFrame {
 	private JLabel descripcionCopiaDeSeguridad;
 	private JButton exportarCopiaDeSeguridad;
 	private JLabel errorCopiaDeSeguridad;
+
+	// Codigo de recuperacion para otro usuario (Fase 8.6), solo ADMIN
+	private JPanel bloqueCodigo;
+	private JLabel etiquetaCodigo;
+	private JLabel descripcionCodigo;
+	private Field usuarioDelCodigo;
+	private JButton generarCodigo;
+	private JLabel resultadoCodigo;
 	private JButton guardar;
 	private JButton cancelar;
 	private JButton enlaceContrasena;
 	private JButton enlaceCerrarSesion;
 	private JLabel error;
 
-	public SettingsFrame(UserService userService, BackupService backupService, SessionManager sessionManager,
+	public SettingsFrame(UserService userService, BackupService backupService,
+			PasswordResetService passwordResetService, SessionManager sessionManager,
 			Navigator navigator, HeaderPanel headerPanel) {
 
 		this.userService = userService;
 		this.backupService = backupService;
+		this.passwordResetService = passwordResetService;
 		this.sessionManager = sessionManager;
 		this.navigator = navigator;
 		this.headerPanel = headerPanel;
@@ -285,9 +297,75 @@ public class SettingsFrame extends JFrame {
 		tarjeta.add(campoIdioma(), "gapbottom " + Space.MD);
 		tarjeta.add(campoVistaPorDefecto(), "gapbottom " + Space.MD);
 		tarjeta.add(campoParticulas(), "gapbottom " + Space.MD);
-		tarjeta.add(campoCopiaDeSeguridad());
+		tarjeta.add(campoCopiaDeSeguridad(), "gapbottom " + Space.MD);
+		tarjeta.add(campoCodigoDeRecuperacion());
 
 		return tarjeta;
+	}
+
+	/**
+	 * Generar un código de recuperación para otro usuario (Fase 8.6), solo ADMIN.
+	 *
+	 * <p>
+	 * Vive junto a la copia de seguridad y no en una pantalla propia porque las dos
+	 * son lo mismo: tareas de administración de la instalación, no de la cuenta de
+	 * quien las usa. Y por eso el bloque entero se oculta para CUSTOMER en lugar de
+	 * enseñarse desactivado.
+	 *
+	 * <p>
+	 * <b>El código aparece en pantalla y no se envía a ninguna parte.</b> Es el
+	 * camino para cuando no hay correo configurado —el caso del ejecutable
+	 * repartido—, así que el administrador lo lee y se lo dice a quien lo necesite
+	 * por el medio que sea. Es también el único punto de todo el sistema donde un
+	 * código se ve sin cifrar: a partir de que se guarda, ni la aplicación puede
+	 * volver a leerlo.
+	 */
+	private JPanel campoCodigoDeRecuperacion() {
+
+		bloqueCodigo = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		bloqueCodigo.setOpaque(false);
+
+		etiquetaCodigo = Labels.caps(" ");
+		descripcionCodigo = Labels.muted(" ");
+		usuarioDelCodigo = Field.text(" ");
+		generarCodigo = Buttons.secondary(" ", e -> generarCodigoDeRecuperacion());
+		resultadoCodigo = Labels.body(" ");
+
+		bloqueCodigo.add(etiquetaCodigo, "gapbottom " + Space.XXS);
+		bloqueCodigo.add(descripcionCodigo, "gapbottom " + Space.SM);
+		bloqueCodigo.add(usuarioDelCodigo, "gapbottom " + Space.SM);
+		bloqueCodigo.add(generarCodigo, "gapbottom " + Space.XS);
+		bloqueCodigo.add(resultadoCodigo);
+
+		return bloqueCodigo;
+	}
+
+	private void generarCodigoDeRecuperacion() {
+
+		String nombre = usuarioDelCodigo.getText().trim();
+
+		if (nombre.isEmpty()) {
+			resultadoCodigo.setText(Textos.t("recuperar.error.usuarioVacio"));
+			return;
+		}
+
+		try {
+			String codigo = passwordResetService.generarCodigoParaEntregar(nombre,
+					sessionManager.getLoggedInUser().getId());
+
+			resultadoCodigo.setText(Textos.t("admin.codigo.resultado", nombre, codigo));
+
+		} catch (InstanceNotFoundException ex) {
+			// Aquí SÍ se dice que el usuario no existe, al revés que en la pantalla de
+			// recuperación. La diferencia es quién pregunta: allí es cualquiera y
+			// contestarlo convertiría la pantalla en un comprobador de cuentas; aquí es
+			// un administrador identificado que necesita saber si se ha equivocado al
+			// teclear el nombre.
+			resultadoCodigo.setText(Textos.t("admin.codigo.error.noExiste"));
+
+		} catch (NotAuthorizedUserException ex) {
+			resultadoCodigo.setText(Textos.t("admin.codigo.error.soloAdmin"));
+		}
 	}
 
 	private JPanel campoEstacion() {
@@ -562,6 +640,10 @@ public class SettingsFrame extends JFrame {
 		etiquetaCopiaDeSeguridad.setText(Textos.t("ajustes.backup.titulo"));
 		descripcionCopiaDeSeguridad.setText(Textos.t("ajustes.backup.descripcion"));
 		exportarCopiaDeSeguridad.setText(Textos.t("ajustes.backup.boton"));
+		etiquetaCodigo.setText(Textos.t("admin.codigo.titulo"));
+		descripcionCodigo.setText(Textos.t("admin.codigo.descripcion"));
+		usuarioDelCodigo.setEtiqueta(Textos.t("admin.codigo.usuario"));
+		generarCodigo.setText(Textos.t("admin.codigo.generar"));
 		guardar.setText(Textos.t("ajustes.guardar"));
 		cancelar.setText(Textos.t("ajustes.cancelar"));
 		enlaceContrasena.setText(Textos.t("header.menu.contrasena"));
@@ -596,6 +678,9 @@ public class SettingsFrame extends JFrame {
 		idioma.setSelectedItem(actual.getLanguage());
 		vistaPorDefecto.setActivo(actual.isDefaultGridView() ? CatalogFilters.VISTA_CUADRICULA : 0);
 		bloqueCopiaDeSeguridad.setVisible(actual.getRole() == RoleType.ADMIN);
+		bloqueCodigo.setVisible(actual.getRole() == RoleType.ADMIN);
+		resultadoCodigo.setText(" ");
+		usuarioDelCodigo.setText("");
 		errorCopiaDeSeguridad.setVisible(false);
 
 		usuario.setText(actual.getUsername());

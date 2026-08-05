@@ -176,3 +176,24 @@ CREATE TABLE IF NOT EXISTS HOUSING_PHOTOS (
 	position INTEGER NOT NULL,
 	CONSTRAINT PhotoHousingIdFK FOREIGN KEY(housingId) REFERENCES HOUSINGS(id)
 );
+
+-- Códigos de recuperación de contraseña (Fase 8.6).
+--
+-- El código se guarda HASHEADO, no en claro, y por el mismo motivo que las
+-- contraseñas: quien pueda leer esta tabla —una copia de seguridad, el fichero
+-- de la base— no debe poder usar lo que lee para entrar en ninguna cuenta.
+--
+-- "attempts" existe porque un código corto sin límite de intentos no protege de
+-- nada: se prueban todos en segundos. Con cinco intentos, adivinarlo deja de ser
+-- viable sin necesidad de alargar el código hasta hacerlo incómodo de teclear.
+CREATE TABLE IF NOT EXISTS PASSWORD_RESET_CODES (
+	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	userId BIGINT NOT NULL,
+	codeHash VARCHAR(200) NOT NULL,
+	expiresAt DATETIME NOT NULL,
+	attempts INTEGER DEFAULT 0 NOT NULL,
+	-- Nulo mientras no se haya usado. Un código es de un solo uso: una vez
+	-- cambiada la contraseña deja de valer, aunque no haya caducado todavía.
+	usedAt DATETIME,
+	CONSTRAINT ResetCodeUserIdFK FOREIGN KEY(userId) REFERENCES USERS(id)
+);

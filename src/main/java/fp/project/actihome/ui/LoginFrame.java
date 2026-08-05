@@ -87,6 +87,7 @@ public class LoginFrame extends JFrame {
 	private JButton botonEntrar;
 	private JLabel etiquetaPrimeraVez;
 	private JLabel enlaceRegistro;
+	private JButton enlaceOlvidada;
 
 	/**
 	 * La frase editorial de la estación. Es texto, no color, así que no se resuelve
@@ -328,9 +329,25 @@ public class LoginFrame extends JFrame {
 		return exterior;
 	}
 
+	/**
+	 * La fila de pie: "¿Primera vez? Regístrate" a la izquierda y "¿Has olvidado la
+	 * contraseña?" empujado a la derecha.
+	 *
+	 * <p>
+	 * <b>Los dos comparten fila y no ocupan una cada uno</b>, y no es solo estética.
+	 * Ponerlos en filas distintas hacía el formulario 42px más alto, y a 1024×600
+	 * —el mínimo que la aplicación se compromete a soportar— eso dejaba cuatro
+	 * componentes rotos. Lo detectó {@code MedirResponsive} en el mismo momento de
+	 * añadirlo; a ojo, en una ventana normal, no se veía nada.
+	 *
+	 * <p>
+	 * El de recuperar va como enlace discreto y no como botón: es la salida de un
+	 * problema, no una acción que se ofrezca. Darle el mismo peso que a "Entrar"
+	 * sugeriría que olvidarse es lo normal.
+	 */
 	private JPanel enlaceARegistro() {
 
-		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XXS + "[]", ""));
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XXS + "[]push[]", ""));
 		fila.setOpaque(false);
 
 		etiquetaPrimeraVez = Labels.muted(Textos.t("login.primeraVez"));
@@ -354,6 +371,10 @@ public class LoginFrame extends JFrame {
 		fila.add(enlace);
 
 		enlaceRegistro = enlace;
+
+		enlaceOlvidada = Buttons.link(Textos.t("login.olvidada"), e -> navigator.ir(RecoverPasswordFrame.class));
+		fila.add(enlaceOlvidada);
+
 		return fila;
 	}
 
@@ -409,6 +430,7 @@ public class LoginFrame extends JFrame {
 		contrasena.setEtiqueta(Textos.t("login.contrasena"));
 		botonEntrar.setText(Textos.t("login.entrar"));
 		etiquetaPrimeraVez.setText(Textos.t("login.primeraVez"));
+		enlaceOlvidada.setText(Textos.t("login.olvidada"));
 		enlaceRegistro.setText(Textos.t("login.registrate"));
 	}
 
