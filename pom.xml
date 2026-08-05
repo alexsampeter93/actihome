@@ -54,8 +54,22 @@
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.security</groupId> 
+			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-crypto</artifactId>
+		</dependency>
+
+		<!-- Jackson: para leer la respuesta del servicio de traduccion (Fase 8.5).
+			Sin version: la gestiona el BOM de Spring Boot, igual que el resto.
+
+			Se anade una dependencia por UN campo de UNA respuesta, y aun asi es la
+			decision correcta. La alternativa era extraerlo con una expresion regular, y
+			ahi es donde se rompe: MyMemory devuelve el texto con escapes Unicode
+			("café"), comillas escapadas y saltos de linea. Un parser a mano funciona
+			con la primera respuesta que pruebas y falla con la primera resena que lleve
+			una tilde, que en espanol es practicamente la primera. -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
 		<!-- H2: base de datos embebida, escrita en Java puro. Es la de por defecto:

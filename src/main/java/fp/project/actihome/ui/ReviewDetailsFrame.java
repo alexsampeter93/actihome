@@ -1,11 +1,14 @@
 package fp.project.actihome.ui;
 
+import java.util.concurrent.ExecutionException;
 import java.awt.Dimension;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 import javax.swing.JFrame;
+import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.SwingWorker;
 import javax.swing.JPanel;
 
 import org.springframework.context.annotation.Lazy;
@@ -20,8 +23,9 @@ import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.exceptions.NotTheOwnerException;
-import fp.project.actihome.model.exceptions.TranslationNotConfiguredException;
+import fp.project.actihome.model.services.TranslatedReview;
 import fp.project.actihome.model.services.ReviewService;
+import fp.project.actihome.model.services.TranslationService;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Foco;
@@ -73,6 +77,9 @@ public class ReviewDetailsFrame extends JFrame {
 	}
 
 	private final transient ReviewService reviewService;
+
+	/** Solo para el enlace "Traducir". No toca la base de datos (Fase 8.5). */
+	private final transient TranslationService translationService;
 	private final transient SessionManager sessionManager;
 	private final transient Navigator navigator;
 	private final HeaderPanel headerPanel;
@@ -82,10 +89,12 @@ public class ReviewDetailsFrame extends JFrame {
 
 	private JPanel contenido;
 
-	public ReviewDetailsFrame(ReviewService reviewService, SessionManager sessionManager, Navigator navigator,
+	public ReviewDetailsFrame(ReviewService reviewService, TranslationService translationService,
+			SessionManager sessionManager, Navigator navigator,
 			HeaderPanel headerPanel) {
 
 		this.reviewService = reviewService;
+		this.translationService = translationService;
 		this.sessionManager = sessionManager;
 		this.navigator = navigator;
 		this.headerPanel = headerPanel;
@@ -262,35 +271,118 @@ public class ReviewDetailsFrame extends JFrame {
 	}
 
 	/**
-	 * Enlace "Traducir" junto a un mensaje de estado, vacío hasta que se pulsa.
+	 * Enlace "Traducir" con su mensaje de estado al lado (Fase 8.5).
 	 *
 	 * <p>
-	 * Fase 7.7: no hay todavía proveedor de traducción elegido, así que el
-	 * servicio siempre responde {@link TranslationNotConfiguredException} — lo
-	 * que sí queda montado es el hueco en la pantalla y la captura de esa
-	 * excepción como un error de negocio más, igual que el resto de la UI.
+	 * <b>Es el único sitio de toda la aplicación con un {@link SwingWorker}</b>, y
+	 * la excepción está justificada. En 145 ficheros no hay un solo hilo aparte:
+	 * todo ocurre en el hilo de la interfaz, y es lo correcto mientras lo único que
+	 * se hace son consultas a una H2 local que tardan microsegundos. <b>Una llamada
+	 * por internet no es eso</b>: puede tardar segundos o no contestar nunca, y
+	 * hecha aquí congelaría la aplicación entera — sin repintar, sin responder al
+	 * ratón, marcada por Windows como "no responde". No es un riesgo teórico, es el
+	 * comportamiento garantizado en cuanto la red vaya lenta.
+	 *
+	 * <p>
+	 * El reparto de {@code SwingWorker} es exactamente el que hace falta:
+	 * {@code doInBackground} corre fuera del hilo de la interfaz y es el único
+	 * sitio donde se llama al servicio; {@code done} vuelve a correr <em>dentro</em>
+	 * de él, que es la única forma legal de tocar un componente de Swing. Todo lo
+	 * que hay entre medias —el "Traduciendo…", desactivar el enlace— pasa en el
+	 * hilo correcto sin que haya que pensarlo.
+	 *
+	 * <p>
+	 * <b>Si falla, se enseña la reseña original y se dice por qué.</b> Degradar así
+	 * no es un adorno: la traducción es una ayuda de lectura, y perder la ayuda no
+	 * puede costar el contenido. Por eso tampoco se sustituye el texto original —se
+	 * añade debajo—: quien traduce quiere entender, no perder de vista lo que
+	 * escribió la persona.
 	 */
 	private JPanel traduccion() {
 
-		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]", "[]"));
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		panel.setOpaque(false);
 
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]", "[]"));
+		fila.setOpaque(false);
+
 		JLabel mensaje = Labels.muted(" ");
+		JPanel destino = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		destino.setOpaque(false);
 
-		panel.add(Buttons.link(Textos.t("detalleResena.traducir"), e -> {
-			try {
-				reviewService.translateReview(review.getId(), Textos.idioma().getLanguage());
+		JButton traducir = Buttons.link(Textos.t("detalleResena.traducir"), null);
+		traducir.addActionListener(e -> traducir(traducir, mensaje, destino));
 
-			} catch (TranslationNotConfiguredException ex) {
-				mensaje.setText(Textos.t("detalleResena.error.traduccionNoConfigurada"));
+		fila.add(traducir, "aligny center");
+		fila.add(mensaje, "aligny center");
 
-			} catch (InstanceNotFoundException ex) {
-				navigator.ir(ShowHousingsFrame.class);
-			}
-		}));
-		panel.add(mensaje);
+		panel.add(fila);
+		panel.add(destino, "growx, wmin 0");
 
 		return panel;
+	}
+
+	/** Lanza la traducción en segundo plano y vuelca el resultado al terminar. */
+	private void traducir(JButton traducir, JLabel mensaje, JPanel destino) {
+
+		// El idioma de origen es "el otro": la aplicación tiene exactamente dos, así
+		// que está bien definido y no hace falta detectarlo. Los textos se pasan tal
+		// cual porque esta pantalla los está mostrando; releerlos de la base de datos
+		// para traducirlos sería trabajo de más para confirmar algo que ya se sabe.
+		String desde = Textos.idioma().getLanguage().equals("en") ? "es" : "en";
+		String hasta = Textos.idioma().getLanguage();
+		String titulo = review.getTitle();
+		String cuerpo = review.getBody();
+
+		traducir.setEnabled(false);
+		mensaje.setText(Textos.t("detalleResena.traduciendo"));
+		destino.removeAll();
+		destino.revalidate();
+		destino.repaint();
+
+		new SwingWorker<TranslatedReview, Void>() {
+
+			@Override
+			protected TranslatedReview doInBackground() throws Exception {
+				return translationService.traducirResena(titulo, cuerpo, desde, hasta);
+			}
+
+			@Override
+			protected void done() {
+
+				traducir.setEnabled(true);
+
+				try {
+					pintarTraduccion(destino, get());
+					mensaje.setText(Textos.t("detalleResena.traducidoPor"));
+
+				} catch (InterruptedException ex) {
+					Thread.currentThread().interrupt();
+					mensaje.setText(Textos.t("detalleResena.error.traduccionFallida"));
+
+				} catch (ExecutionException ex) {
+					// get() envuelve en ExecutionException lo que lanzara doInBackground. Aquí
+					// solo puede ser TranslationFailedException, que ya agrupa todas las
+					// causas posibles (sin red, tiempo agotado, respuesta ilegible) porque al
+					// usuario le sirve el mismo mensaje para todas.
+					mensaje.setText(Textos.t("detalleResena.error.traduccionFallida"));
+				}
+			}
+		}.execute();
+	}
+
+	private void pintarTraduccion(JPanel destino, TranslatedReview traducida) {
+
+		destino.removeAll();
+
+		JLabel titulo = Labels.cardTitle(traducida.getTitle());
+		titulo.setFont(Typography.serifMedium(20f));
+
+		destino.add(titulo, "gaptop " + Space.SM);
+		destino.add(new WrappingText(traducida.getBody()), "growx, wmin 0, gaptop " + Space.XS);
+
+		destino.revalidate();
+		destino.repaint();
 	}
 
 	private JPanel subNotas() {

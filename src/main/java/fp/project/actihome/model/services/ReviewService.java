@@ -10,7 +10,6 @@ import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.exceptions.NotTheAuthorException;
 import fp.project.actihome.model.exceptions.NotTheOwnerException;
 import fp.project.actihome.model.exceptions.ScoreOutOfBoundsException;
-import fp.project.actihome.model.exceptions.TranslationNotConfiguredException;
 
 public interface ReviewService {
 
@@ -28,20 +27,11 @@ public interface ReviewService {
 			throws InstanceNotFoundException, ScoreOutOfBoundsException, NotAuthorizedUserException,
 			NotTheAuthorException;
 
-	/**
-	 * Traduce el título y el cuerpo de una reseña al idioma indicado.
-	 *
-	 * <p>
-	 * Seam pendiente de la Fase 7.7 (04-08-2026): el usuario pidió dejar la
-	 * infraestructura lista sin decidir todavía con qué proveedor se traduce, así
-	 * que hoy valida que la reseña exista y siempre lanza
-	 * {@link TranslationNotConfiguredException}. Devuelve {@code void} a propósito
-	 * en vez de comprometerse ya a una forma de resultado (¿un texto suelto? ¿se
-	 * persiste en la reseña?): esa forma la decide el proveedor elegido, no esta
-	 * pantalla vacía.
-	 */
-	void translateReview(Long reviewId, String targetLanguage)
-			throws InstanceNotFoundException, TranslationNotConfiguredException;
+	// La traducción vivía aquí desde la Fase 7.7 y salió en la 8.5, a
+	// TranslationService. El motivo, con detalle, está en el javadoc de esa
+	// interfaz: leer de la base de datos y llamar por internet no pueden convivir
+	// en la misma transacción, y cuando dos cosas no pueden convivir en una
+	// transacción es que no son la misma operación.
 
 	/**
 	 * Adjunta o quita la foto de una reseña (F15).

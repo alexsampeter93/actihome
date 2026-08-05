@@ -32,7 +32,6 @@ import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.exceptions.NotTheAuthorException;
 import fp.project.actihome.model.exceptions.NotTheOwnerException;
 import fp.project.actihome.model.exceptions.ScoreOutOfBoundsException;
-import fp.project.actihome.model.exceptions.TranslationNotConfiguredException;
 import fp.project.actihome.model.exceptions.WrongCreditCardNumberException;
 
 @SpringBootTest
@@ -429,36 +428,6 @@ public class ReviewServiceTests {
 
 		assertEquals(author, review.getAuthor());
 	}
-
-	/**
-	 * Fase 7.7 (04-08-2026): sin proveedor de traducción elegido todavía, el
-	 * método siempre responde {@link TranslationNotConfiguredException} — pero
-	 * solo después de comprobar que la reseña existe de verdad, no antes.
-	 */
-	@Test
-	public void testTranslateReviewNotConfiguredYet()
-			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
-			NegativePrizeException, NotAuthorizedUserException, AlreadyPublishedException, ScoreOutOfBoundsException,
-			MustHaveStayedException {
-
-		User author = signUpUser("Author", RoleType.CUSTOMER);
-		User owner = signUpUser("Owner", RoleType.ADMIN);
-		Housing housing = createHousing(Long.valueOf(50), owner.getId());
-		createCompletedStay(author, housing);
-
-		Review review = reviewService.publishReview(author.getId(), housing.getId(), "Título", "Cuerpo", 3.5, 3.5, 3.5,
-				3.5, 3.5);
-
-		assertThrows(TranslationNotConfiguredException.class,
-				() -> reviewService.translateReview(review.getId(), "en"));
-	}
-
-	@Test
-	public void testTranslateNonExistentReview() {
-
-		assertThrows(InstanceNotFoundException.class, () -> reviewService.translateReview(Long.valueOf(60), "en"));
-	}
-
 	// ------------------------------------------------------------------
 	// F15: foto adjunta y respuesta del propietario
 	// ------------------------------------------------------------------
