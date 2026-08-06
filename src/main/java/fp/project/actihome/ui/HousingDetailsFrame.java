@@ -277,7 +277,9 @@ public class HousingDetailsFrame extends JFrame {
 
 		JPanel panel = new JPanel(
 				new MigLayout(Space.insets(0),
-						"[grow,fill]" + Space.MD + ":" + Space.XXXL + ":" + Space.XXXL + "[grow,fill]", "[grow,fill]"));
+						"[260::,grow,fill]" + Space.MD + ":" + Space.XXXL + ":" + Space.XXXL
+								+ "[grow,fill]",
+						"[grow,fill]"));
 		panel.setOpaque(false);
 
 		// Columna izquierda: la foto y, debajo, el calendario de ocupación. Los dos

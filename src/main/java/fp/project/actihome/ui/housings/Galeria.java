@@ -1,5 +1,6 @@
 package fp.project.actihome.ui.housings;
 
+import java.awt.Dimension;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Graphics;
@@ -59,6 +60,9 @@ public class Galeria extends JPanel {
 	private final boolean disponible;
 	private final transient String destacado;
 
+	/** Por debajo de esto una foto de alojamiento deja de enseñar nada util. */
+	private static final int MINIMO_UTIL = 260;
+
 	private int principal;
 
 	/**
@@ -72,6 +76,20 @@ public class Galeria extends JPanel {
 
 		super(new MigLayout(Space.insets(0), "[grow,fill]" + Space.XS + "[]", "[grow,fill]"));
 		setOpaque(false);
+
+		// **La galería puede encogerse, y esta línea es la que se lo permite.** Sin un
+		// mínimo declarado lo hereda de sus fotos, y entre la foto grande y la columna
+		// de miniaturas exigía más de seiscientos puntos. En la ficha de alojamiento
+		// eso significaba que la galería y la columna de información no cabían juntas
+		// en una ventana de 1024, y la de la derecha se salía por el borde — donde no
+		// hay barra de desplazamiento que la rescate.
+		//
+		// El número no es un tamaño de diseño, es un SUELO: por debajo de 260 puntos
+		// una foto de alojamiento deja de enseñar nada útil. Por encima manda el
+		// preferido, que sigue siendo el de siempre, así que en una ventana normal no
+		// cambia nada. Es la regla de siempre: cuando falta sitio cede el aire, y aquí
+		// cede la imagen antes que el precio y el botón de reservar.
+		setMinimumSize(new Dimension(MINIMO_UTIL, MINIMO_UTIL * 2 / 3));
 
 		this.tipo = tipo;
 		this.estado = estado;
