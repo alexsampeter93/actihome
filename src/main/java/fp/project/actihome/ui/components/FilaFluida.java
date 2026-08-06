@@ -7,6 +7,8 @@ import java.awt.Insets;
 import java.awt.LayoutManager;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -174,6 +176,26 @@ public class FilaFluida extends JPanel {
 			recorrer(padre, padre.getWidth(), true);
 		}
 
+		/**
+		 * Alinea verticalmente los elementos de una linea por su CENTRO.
+		 *
+		 * <p>
+		 * Sin esto, cada hijo se coloca en el borde superior de la linea, y como no
+		 * todos miden lo mismo -una etiqueta y un boton de enlace, que lleva su propio
+		 * relleno vertical- sus textos quedan a alturas distintas. En el pie del login
+		 * se veia: "¿Has olvidado la contraseña?" caia unos pixeles por debajo de
+		 * "Registrate", y dos textos de la misma frase a distinta altura se leen como
+		 * un descuido.
+		 */
+		private void centrarEnLaLinea(List<Component> linea, int y, int altoDeLinea, int margenSuperior) {
+
+			for (Component hijo : linea) {
+
+				int alto = hijo.getHeight();
+				hijo.setLocation(hijo.getX(), margenSuperior + y + (altoDeLinea - alto) / 2);
+			}
+		}
+
 		int lineasCon(Container padre, int ancho) {
 
 			int lineas = 1;
@@ -227,6 +249,8 @@ public class FilaFluida extends JPanel {
 			Insets margenes = padre.getInsets();
 			int util = disponible(padre, ancho);
 
+			List<Component> enEstaLinea = new ArrayList<>();
+
 			int x = 0;
 			int y = 0;
 			int altoDeLinea = 0;
@@ -242,6 +266,13 @@ public class FilaFluida extends JPanel {
 				Dimension tamano = hijo.getPreferredSize();
 
 				if (!primero && x + gapH + tamano.width > util) {
+
+					// Se cierra la linea anterior antes de empezar la siguiente.
+					if (colocar) {
+						centrarEnLaLinea(enEstaLinea, y, altoDeLinea, margenes.top);
+						enEstaLinea.clear();
+					}
+
 					y += altoDeLinea + gapV;
 					x = 0;
 					altoDeLinea = 0;
@@ -253,6 +284,9 @@ public class FilaFluida extends JPanel {
 				}
 
 				if (colocar) {
+					// Se anota y se coloca despues: el centrado vertical necesita saber el alto
+					// de la linea ENTERA, y eso no se sabe hasta haberla recorrido toda.
+					enEstaLinea.add(hijo);
 					hijo.setBounds(margenes.left + x, margenes.top + y, tamano.width, tamano.height);
 				}
 
@@ -260,6 +294,10 @@ public class FilaFluida extends JPanel {
 				altoDeLinea = Math.max(altoDeLinea, tamano.height);
 				anchoMaximo = Math.max(anchoMaximo, x);
 				primero = false;
+			}
+
+			if (colocar) {
+				centrarEnLaLinea(enEstaLinea, y, altoDeLinea, margenes.top);
 			}
 
 			return new Dimension(anchoMaximo + margenes.left + margenes.right,

@@ -147,6 +147,11 @@ public final class ScreenSnapshots {
 			} else if ("fase6".equals(prefijo)) {
 				capturarFase6(context);
 
+			} else if ("login".equals(prefijo)) {
+
+				Theme.cambiarA(Season.INVIERNO);
+				guardar(context.getBean(fp.project.actihome.ui.LoginFrame.class), "login");
+
 			} else if ("ajustes".equals(prefijo)) {
 				capturarAjustes(context);
 

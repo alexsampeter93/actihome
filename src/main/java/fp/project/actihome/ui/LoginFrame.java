@@ -42,6 +42,7 @@ import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
+import fp.project.actihome.ui.components.FilaFluida;
 
 /**
  * Pantalla de entrada.
@@ -345,10 +346,19 @@ public class LoginFrame extends JFrame {
 	 * problema, no una acción que se ofrezca. Darle el mismo peso que a "Entrar"
 	 * sugeriría que olvidarse es lo normal.
 	 */
-	private JPanel enlaceARegistro() {
+	private FilaFluida enlaceARegistro() {
 
-		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XXS + "[]push[]", ""));
-		fila.setOpaque(false);
+		// **FilaFluida, y antes era una fila rigida con un "push".** Tres textos
+		// -"¿Es tu primera vez aqui?", "Registrate" y "¿Has olvidado la contraseña?"-
+		// suman mas de lo que mide la columna del formulario, y una fila rigida exige
+		// esa suma. Cuando no cabia pasaban las dos cosas a la vez: el "push" se
+		// colapsaba a cero, dejando "Registrate¿Has olvidado" pegados sin espacio, y
+		// el tercer enlace se salia del panel blanco y quedaba cortado a media
+		// palabra.
+		//
+		// Con la fila fluida el minimo pasa a ser el enlace mas ancho y el conjunto
+		// baja a dos lineas cuando hace falta, en vez de desbordar.
+		FilaFluida fila = new FilaFluida(Typography.anchoDeEspacio(Typography.sans(Typography.BODY_SM)), Space.XS);
 
 		etiquetaPrimeraVez = Labels.muted(Textos.t("login.primeraVez"));
 		fila.add(etiquetaPrimeraVez);
