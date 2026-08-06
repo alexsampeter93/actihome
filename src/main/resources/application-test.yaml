@@ -9,14 +9,10 @@
 # Este perfil desactiva además los beans de interfaz (@Profile("!test")), para
 # que levantar el contexto de test no construya ventanas de Swing.
 
-# El registro se desvía a target/, que es desechable y ya está en el .gitignore.
-# Sin esto los tests heredarían la ruta de application.yaml y escribirían en
-# ~/.actihome/logs/, o sea en la carpeta personal de quien los ejecute: mezclado
-# con el registro de la aplicación de verdad y sin que nadie lo haya pedido.
-# Un test no debe dejar rastro fuera del directorio de construcción.
-logging:
-  file:
-    name: target/test-logs/actihome-test.log
+# El registro a fichero se desactiva en este perfil, y eso vive en
+# logback-spring.xml (<springProfile name="!test">). Sin ello, cualquiera que
+# ejecute los tests dejaría rastro en su carpeta personal, mezclado con el
+# registro de la aplicación de verdad.
 
 spring:
   datasource:

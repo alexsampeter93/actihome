@@ -5,22 +5,10 @@ logging:
       hibernate:
         SQL: warn
 
-  # El registro va a un FICHERO, y no es una comodidad: ActiHome se reparte como
-  # un .exe generado con jpackage SIN CONSOLA, así que todo lo que se escriba por
-  # la salida estándar no lo lee nadie, nunca. Sin esto, cuando a un usuario le
-  # falla algo no hay absolutamente nada que poder pedirle.
-  #
-  # Va junto a la base de datos, en ~/.actihome/, que es el único sitio donde
-  # esta aplicación escribe en tiempo de ejecución. Dentro del jar no puede ir:
-  # ya está construido y es de solo lectura.
-  file:
-    name: ${user.home}/.actihome/logs/actihome.log
-
-    # Con rotación, porque un registro sin límite acaba siendo un fichero de
-    # gigabytes en el disco de otra persona. Siete archivos de 5 MB es de sobra
-    # para diagnosticar algo que pasó hace unos días, que es el caso real.
-    max-size: 5MB
-    max-history: 7
+  # El destino del registro NO se configura aquí sino en logback-spring.xml.
+  # El motivo está explicado en ese fichero: los nombres de estas propiedades
+  # cambiaron en Spring Boot 2.3, y este proyecto tiene pendiente la migración a
+  # Spring Boot 3. Aquí solo quedan los niveles, que sí son estables.
 
 spring:
   main:

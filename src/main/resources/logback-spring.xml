@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Configuración del registro de ActiHome.
+
+  ¿Por qué un fichero XML en vez de cuatro líneas en application.yaml? Se
+  intentó primero con `logging.file.name` y `logging.file.max-size`, que es lo
+  corto, y tenía dos problemas:
+
+  1. Spring Boot 2.2 imprime un aviso de Logback en CADA arranque
+     ("No context given for ... SizeAndTimeBasedRollingPolicy"). Es inofensivo,
+     pero sale siempre y en una aplicación acabada eso es ruido que alguien
+     acabará investigando.
+
+  2. Esos nombres de propiedad CAMBIARON en Spring Boot 2.3: la rotación se
+     movió a `logging.logback.rollingpolicy.*`. Como este proyecto tiene la
+     migración a Spring Boot 3 pendiente, dejar la configuración atada a nombres
+     de una versión concreta es sembrar un fallo silencioso para ese día — no
+     daría error, simplemente dejaría de rotar.
+
+  Un fichero de Logback dice lo mismo, no depende de la versión de Spring Boot y
+  quita el aviso. Se llama logback-spring.xml y no logback.xml a propósito: solo
+  la variante con "-spring" la procesa Spring Boot, que es lo que permite usar
+  <springProfile> más abajo.
+-->
+<configuration>
+
+    <!-- Formato, colores y niveles por defecto de Spring Boot. Sin esto habría
+         que reescribir a mano el patrón de consola que ya viene bien. -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <!-- Junto a la base de datos: el único sitio donde esta aplicación escribe
+         en tiempo de ejecución. Dentro del jar no puede ir, ya está construido. -->
+    <property name="RUTA_DE_REGISTRO" value="${user.home}/.actihome/logs"/>
+
+
+    <!-- El fichero NO se escribe durante los tests.
+
+         Sin esto, cualquiera que ejecute `mvnw test` -incluido el servidor de
+         integración continua- dejaría rastro en su carpeta personal, mezclado
+         con el registro de la aplicación de verdad. Un test no debe escribir
+         fuera del directorio de construcción. -->
+    <springProfile name="!test">
+
+    <!-- OJO: la DEFINICIÓN del appender va dentro del springProfile, no solo su
+         <appender-ref>.
+
+         Dejarla fuera y condicionar únicamente la referencia parece equivalente
+         y no lo es: Logback instancia todo appender que encuentre, y un
+         RollingFileAppender ABRE SU FICHERO al instanciarse. El resultado era
+         que `mvnw test` creaba un ~/.actihome/logs/actihome.log vacío —nunca
+         recibía un evento, pero ahí estaba— en la carpeta personal de quien
+         ejecutara los tests. Se detectó comprobando que el fichero no aparecía,
+         y aparecía. -->
+    <appender name="FICHERO" class="ch.qos.logback.core.rolling.RollingFileAppender">
+
+        <file>${RUTA_DE_REGISTRO}/actihome.log</file>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+
+            <!-- Un archivo por día, y si un día se pasa de 5 MB, se parte. -->
+            <fileNamePattern>${RUTA_DE_REGISTRO}/actihome-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>5MB</maxFileSize>
+
+            <!-- Siete días es de sobra para diagnosticar algo que pasó hace unos
+                 días, que es el caso real. Y totalSizeCap es el cinturón de
+                 seguridad: pase lo que pase, el registro no se come más de
+                 50 MB del disco de otra persona. -->
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>50MB</totalSizeCap>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FICHERO"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="test">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+</configuration>
