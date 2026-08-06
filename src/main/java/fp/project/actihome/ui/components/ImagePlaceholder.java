@@ -135,19 +135,45 @@ public class ImagePlaceholder extends JComponent {
 			pintarEtiqueta(g2, tipo, Space.SM, Space.SM, new Color(0, 0, 0, 107), Color.WHITE);
 		}
 
+		int altoEtiqueta = altoDeEtiqueta(g2);
+
 		if (estado != null) {
-			int altoEtiqueta = 24;
 			pintarEtiqueta(g2, estado, Space.SM, alto - Space.SM - altoEtiqueta,
 					disponible ? Theme.acc() : new Color(0, 0, 0, 107), Theme.onAccent());
 		}
 
-		// Arriba a la derecha, la esquina que quedaba libre. Se calcula el ancho de la
-		// caja para anclarla al borde derecho, porque el texto cambia con la estación
-		// y con el idioma ("Ideal en primavera" / "Perfect in spring") y una posición
-		// fija dejaría la etiqueta descolgada o fuera de la foto.
+		// **Abajo a la derecha, y antes estaba arriba a la derecha por un error de
+		// premisa.** El comentario que había aquí decía "la esquina que quedaba libre",
+		// y esa esquina no está libre: en la vista de cuadrícula, `HousingCard` ancla
+		// ahí el disco de puntuación. El resultado era que el disco tapaba el final del
+		// texto y en pantalla se leía "IDEAL EN VER" — un distintivo cortado, que se
+		// interpreta como un fallo de la aplicación y no como lo que es.
+		//
+		// No lo detectó ninguna herramienta, y merece anotarse por qué: `MedirResponsive`
+		// busca componentes fuera del área visible, y aquí no hay ningún componente
+		// fuera de nada. Son dos cosas **dibujadas** en las mismas coordenadas, una
+		// dentro de un `paintComponent` y la otra colocada por MigLayout. Nadie las ve
+		// a la vez salvo el ojo.
+		//
+		// El ancho se sigue midiendo en vez de fijarse, porque el texto cambia con la
+		// estación y con el idioma ("Ideal en primavera" / "Perfect in spring").
 		if (destacado != null) {
-			pintarEtiqueta(g2, destacado, ancho - Space.SM - anchoDeEtiqueta(g2, destacado), Space.SM, Theme.acc(),
-					Theme.onAccent());
+
+			int anchoDestacado = anchoDeEtiqueta(g2, destacado);
+			int x = ancho - Space.SM - anchoDestacado;
+			int y = alto - Space.SM - altoEtiqueta;
+
+			// Y si tampoco cabe al lado del estado —fotos estrechas, textos largos en
+			// inglés, escalado del sistema al 150 %— sube una fila en lugar de solaparse.
+			// Es el mismo criterio que en el resto del proyecto: cuando falta sitio, lo
+			// que cede es la composición, nunca la legibilidad de un dato.
+			int finDelEstado = estado != null ? Space.SM + anchoDeEtiqueta(g2, estado) : 0;
+
+			if (x < finDelEstado + Space.XS) {
+				y -= altoEtiqueta + Space.XS;
+			}
+
+			pintarEtiqueta(g2, destacado, x, y, Theme.acc(), Theme.onAccent());
 		}
 
 		g2.setColor(Theme.HAIRLINE);
@@ -202,24 +228,50 @@ public class ImagePlaceholder extends JComponent {
 	}
 
 	/** Lo que va a ocupar una etiqueta, para poder anclarla a un borde derecho. */
+	/** El cuerpo de las etiquetas que van encima de la foto. */
+	private static final float CUERPO_DE_ETIQUETA = 10f;
+
 	private int anchoDeEtiqueta(Graphics2D g2, String texto) {
 
-		g2.setFont(Typography.label(10f));
+		g2.setFont(Typography.label(CUERPO_DE_ETIQUETA));
 
 		return g2.getFontMetrics().stringWidth(texto.toUpperCase()) + Space.SM * 2;
 	}
 
+	/**
+	 * El alto de una etiqueta, <b>medido</b> y no fijado en 24 píxeles como estaba.
+	 *
+	 * <p>
+	 * Era uno de los altos escritos a mano que quedaban vivos: el 24 salía de mirar
+	 * una captura en un equipo sin escalado, y en un Windows al 150 % la letra crece
+	 * pero la caja no, así que el texto quedaba pegado a los bordes y luego cortado.
+	 * Es la regla más repetida del proyecto — ningún tamaño que dependa de texto
+	 * puede ser una constante— y esta pieza se la había saltado desde la Fase 3.
+	 */
+	private int altoDeEtiqueta(Graphics2D g2) {
+
+		g2.setFont(Typography.label(CUERPO_DE_ETIQUETA));
+
+		return g2.getFontMetrics().getHeight() + Space.SM;
+	}
+
 	private void pintarEtiqueta(Graphics2D g2, String texto, int x, int y, Color fondo, Color tinta) {
 
-		g2.setFont(Typography.label(10f));
-		int anchoTexto = g2.getFontMetrics().stringWidth(texto.toUpperCase());
-		int anchoCaja = anchoTexto + Space.SM * 2;
-		int altoCaja = 24;
+		g2.setFont(Typography.label(CUERPO_DE_ETIQUETA));
+
+		int anchoCaja = anchoDeEtiqueta(g2, texto);
+		int altoCaja = altoDeEtiqueta(g2);
 
 		g2.setColor(fondo);
 		g2.fillRect(x, y, anchoCaja, altoCaja);
 
+		// La línea base se calcula desde la métrica real: el descendente es lo que hay
+		// que dejar por debajo para que las letras con cola (g, p, j) no se corten, y
+		// centrar de verdad exige repartir el sobrante entre arriba y abajo.
+		int descendente = g2.getFontMetrics().getDescent();
+		int sobrante = altoCaja - g2.getFontMetrics().getHeight();
+
 		g2.setColor(tinta);
-		g2.drawString(texto.toUpperCase(), x + Space.SM, y + altoCaja - 8);
+		g2.drawString(texto.toUpperCase(), x + Space.SM, y + altoCaja - descendente - sobrante / 2);
 	}
 }
