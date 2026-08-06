@@ -23,7 +23,7 @@ La interfaz se repinta entera según la estación del año, que el usuario elige
 
 ```powershell
 .\mvnw.cmd spring-boot:run     # arrancar
-.\mvnw.cmd test                # 120 tests
+.\mvnw.cmd test                # 137 tests
 .\empaquetar.ps1               # generar dist\ActiHome\ActiHome.exe
 ```
 
@@ -35,7 +35,7 @@ Usuarios de ejemplo (contraseña `1234`): `Admin`, `Customer`, `Lucia`, `Marcos`
 
 ## Qué hace
 
-Dos roles (ADMIN / CUSTOMER) sobre 18 pantallas:
+Dos roles (ADMIN / CUSTOMER) sobre 23 pantallas:
 
 | | |
 |---|---|
@@ -49,17 +49,32 @@ Dos roles (ADMIN / CUSTOMER) sobre 18 pantallas:
 
 ---
 
+## Alcance: es monopuesto, y conviene decirlo antes de que se note
+
+ActiHome modela un **mercado de dos lados** —propietarios que publican, huéspedes que reservan, mensajería entre ambos, intercambios— y se despliega como una **aplicación de escritorio con su base de datos en el disco del usuario** (`~/.actihome/actihome.mv.db`).
+
+Las dos cosas juntas tienen una consecuencia que no se ve en una demo: **dos personas en dos ordenadores no comparten datos.** La mensajería huésped ↔ propietario funciona porque los dos usuarios viven en la misma base; para probarla, se cambia de sesión en la misma máquina.
+
+**Es una decisión de alcance, no un defecto pendiente de arreglar.** Lo que la hace defendible es que el diseño no la da por buena para siempre:
+
+- La **regla de dependencia** se cumple sin excepciones, así que la capa de servicio se puede mover tal cual a un backend sin tocarla. Lo único que se reescribiría es el trozo entre la interfaz y los servicios.
+- El perfil `mysql` ya existe, aunque **compartir una base de datos entre clientes no es la salida buena**: obligaría a repartir credenciales de BD dentro del `.exe`, que es justo el problema que la recuperación de contraseña ya evita.
+
+**Y el mismo límite explica una cosa del correo.** Las credenciales SMTP se leen de variables de entorno para que el ejecutable repartido *no lleve nada que robar* — un secreto dentro de un `.exe` se extrae descompilándolo. La consecuencia honesta es que, en una instalación normal, esas variables no están y **el envío por correo no se activa**: el camino que funciona es el código de recuperación que genera un administrador. Un secreto necesita un sitio donde vivir que no sea el ordenador del usuario, y ese sitio es un servidor que este proyecto, a día de hoy, no tiene.
+
+---
+
 ## Arquitectura
 
-Tres capas estrictamente unidireccionales, **sin una sola excepción en 145 ficheros**:
+Tres capas estrictamente unidireccionales, **sin una sola excepción en 172 ficheros**:
 
 ```
 ui  →  services  →  DAOs  →  H2 / MySQL
 ```
 
-Ningún servicio importa nada de `ui`. Eso es lo que permitió **rediseñar las 18 pantallas enteras sin tocar una línea de lógica de negocio**, y lo que abarataría partir la aplicación en cliente y servidor el día que hiciera falta.
+Ningún servicio importa nada de `ui`. Eso es lo que permitió **rediseñar las 23 pantallas enteras sin tocar una línea de lógica de negocio**, y lo que abarataría partir la aplicación en cliente y servidor el día que hiciera falta.
 
-- Las reglas de negocio viven solo en los servicios, con **19 excepciones propias** —una por regla— que la interfaz captura de una en una. No hay ningún `catch (Exception)` genérico en acciones de usuario.
+- Las reglas de negocio viven solo en los servicios, con **29 excepciones propias** —una por regla— que la interfaz captura de una en una. No hay ningún `catch (Exception)` genérico en acciones de usuario.
 - Las actualizaciones se apoyan en el *dirty checking* de JPA: `updateHousing` muta la entidad dentro de la transacción y **nunca llama a `save`**.
 - Los servicios reciben objetos de datos con nombre, nunca listas de argumentos posicionales. Añadir un campo al modelo no cambia ninguna llamada existente — y evitó un fallo real que activaba desayuno, comida y cena al editar el precio.
 - `schema.sql` y `data.sql` son **portables entre H2 y MySQL e idempotentes**: se ejecutan en cada arranque sin duplicar nada.
@@ -120,7 +135,7 @@ Sustituyeron a Spectral y Manrope por una razón concreta: Manrope pertenece a l
 | Swing + FlatLaf | 3.7.2 | Interfaz y Look & Feel base |
 | MigLayout | 11.4.2 | Gestor de layout de todas las pantallas |
 | H2 / MySQL 8 | | H2 embebida por defecto; MySQL disponible por perfil, con credenciales desde variables de entorno |
-| JUnit 5 | | 120 tests sobre la capa de servicio, en H2 en memoria |
+| JUnit 5 | | 137 tests, casi todos sobre la capa de servicio, en H2 en memoria |
 
 ---
 
