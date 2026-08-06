@@ -109,8 +109,13 @@ public class MedirResponsive {
 
 		int problemas = 0;
 
+		// La previsión meteorológica va con el cliente de ejemplo y no con el de
+		// verdad. Dos motivos: una comprobación automática no puede depender de que un
+		// servicio de un tercero esté de pie, y una respuesta que llega por red hace la
+		// medición indeterminista —el panel aparecería a mitad del recorrido del árbol
+		// según lo rápida que fuera la red—. Ver WeatherClientDeEjemplo.
 		try (ConfigurableApplicationContext c = app.run("--spring.datasource.url=jdbc:h2:mem:responsive;DB_CLOSE_DELAY=-1;MODE=MySQL",
-				"--spring.datasource.username=sa")) {
+				"--spring.datasource.username=sa", "--actihome.meteorologia.habilitada=false")) {
 
 			SessionManager sesion = c.getBean(SessionManager.class);
 			UserService usuarios = c.getBean(UserService.class);

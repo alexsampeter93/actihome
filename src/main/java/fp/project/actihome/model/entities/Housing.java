@@ -98,6 +98,10 @@ public class Housing {
 
 	private String location;
 
+	private Double latitude;
+
+	private Double longitude;
+
 	private User owner;
 
 	/**
@@ -334,6 +338,62 @@ public class Housing {
 
 	public void setLocation(String location) {
 		this.location = location;
+	}
+
+	/**
+	 * Latitud en grados decimales, o {@code null} si el alojamiento no está
+	 * localizado (F17).
+	 *
+	 * <p>
+	 * <b>Por qué hacen falta dos números si ya hay un campo {@code location}.</b>
+	 * Porque {@code location} es texto para leer —"Sierra Nevada, Granada"— y no
+	 * hay forma de preguntarle a un servicio meteorológico o a un mapa por una
+	 * cadena así. Los dos campos no compiten: el texto es lo que se enseña y las
+	 * coordenadas son lo que se consulta. Cambiar el texto por unas coordenadas
+	 * habría sido peor en las dos direcciones.
+	 *
+	 * <p>
+	 * <b>Admite nulo, y esa es la decisión importante.</b> Un alojamiento sin
+	 * coordenadas es un caso normal, no un error: los diez de ejemplo las traen
+	 * sembradas, pero uno publicado desde la aplicación solo las tiene si su
+	 * propietario pulsó "Localizar". Todo lo que dependa de ellas —hoy la
+	 * previsión meteorológica, mañana el mapa— tiene que saber desaparecer sin
+	 * ruido cuando faltan. Exigirlas habría convertido publicar un alojamiento en
+	 * un trámite que además depende de que haya red en ese momento.
+	 *
+	 * <p>
+	 * Se guardan como {@code Double} y no como {@code BigDecimal}, a diferencia
+	 * del precio: aquí no hay dinero que cuadrar y el error de redondeo de un
+	 * {@code double} en la sexta cifra decimal son centímetros sobre el terreno.
+	 */
+	public Double getLatitude() {
+		return latitude;
+	}
+
+	public void setLatitude(Double latitude) {
+		this.latitude = latitude;
+	}
+
+	/** Longitud en grados decimales, o {@code null}. Ver {@link #getLatitude()}. */
+	public Double getLongitude() {
+		return longitude;
+	}
+
+	public void setLongitude(Double longitude) {
+		this.longitude = longitude;
+	}
+
+	/**
+	 * Si tiene las dos coordenadas y por tanto se puede consultar por él.
+	 *
+	 * <p>
+	 * Está aquí y no repetido en cada pantalla porque <b>una sola de las dos no
+	 * sirve para nada</b>: media coordenada no localiza un sitio. Que la pregunta
+	 * viva en la entidad evita que alguien compruebe solo la latitud y acabe
+	 * enviando un {@code null} a la petición.
+	 */
+	public boolean estaLocalizado() {
+		return latitude != null && longitude != null;
 	}
 
 	@ManyToOne(optional = false, fetch = FetchType.EAGER)

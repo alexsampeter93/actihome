@@ -149,6 +149,8 @@ public class HousingServiceImpl implements HousingService {
 		housing.setPricePerNight(data.getPricePerNight());
 		housing.setDescription(data.getDescription());
 		housing.setLocation(data.getLocation());
+		housing.setLatitude(data.getLatitude());
+		housing.setLongitude(data.getLongitude());
 		housing.setImage(data.getImage());
 
 		housing.setBreakfast(data.isBreakfast());

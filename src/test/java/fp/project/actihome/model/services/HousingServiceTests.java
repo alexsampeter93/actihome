@@ -2,6 +2,7 @@ package fp.project.actihome.model.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -269,6 +270,59 @@ public class HousingServiceTests {
 		assertTrue(updated.isPool());
 		assertFalse(updated.isWifi());
 		assertFalse(updated.isTv());
+	}
+
+	/**
+	 * Las coordenadas se guardan y se pueden quitar (F17).
+	 *
+	 * <p>
+	 * <b>La segunda mitad es la que importa.</b> Un alojamiento localizado tiene
+	 * que poder dejar de estarlo: si el propietario cambia la ubicación de Granada
+	 * a Bilbao, el formulario borra las coordenadas viejas y envía nulos, y si el
+	 * servicio los ignorase "porque son nulos" el alojamiento diría Bilbao y su
+	 * previsión sería la de Granada. Un dato derivado que sobrevive a su origen es
+	 * peor que no tener el dato, y este test fija que no puede pasar.
+	 */
+	@Test
+	public void testUpdateHousingGuardaYBorraLasCoordenadas()
+			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
+			NegativePrizeException, NotAuthorizedUserException, NotTheOwnerException {
+
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+
+		Housing housing = housingService.uploadHousing(datos(24019).coordenadas(37.0955, -3.3987), owner.getId());
+
+		assertTrue(housing.estaLocalizado());
+		assertEquals(37.0955, housing.getLatitude());
+		assertEquals(-3.3987, housing.getLongitude());
+
+		Housing sinLocalizar = housingService.updateHousing(housing.getId(), owner.getId(),
+				datos().coordenadas(null, null));
+
+		assertFalse(sinLocalizar.estaLocalizado());
+	}
+
+	/**
+	 * Media coordenada no localiza nada, así que no se guarda ninguna.
+	 *
+	 * <p>
+	 * {@code HousingData.coordenadas} recibe las dos juntas justamente para que no
+	 * exista un objeto con latitud y sin longitud. Sin esta regla,
+	 * {@code estaLocalizado()} diría que no —comprueba las dos— pero la base
+	 * quedaría con una columna a medias, que es un dato que no significa nada y que
+	 * alguien acabaría leyendo suelto algún día.
+	 */
+	@Test
+	public void testUnaCoordenadaSolaNoSeGuarda() throws DuplicateInstanceException, InstanceNotFoundException,
+			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException {
+
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+
+		Housing housing = housingService.uploadHousing(datos(24019).coordenadas(37.0955, null), owner.getId());
+
+		assertNull(housing.getLatitude());
+		assertNull(housing.getLongitude());
+		assertFalse(housing.estaLocalizado());
 	}
 
 	@Test

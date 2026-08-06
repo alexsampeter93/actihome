@@ -133,8 +133,12 @@ public final class ScreenSnapshots {
 		// application.yaml, así que el yaml ganaba y esta herramienta acababa
 		// escribiendo su usuario de prueba en la base de datos real del usuario. Los
 		// argumentos de línea de comandos están arriba del todo y sí mandan.
+		// Y la previsión meteorológica va con el cliente de ejemplo, para que una
+		// captura salga siempre igual: la de verdad llega por red y aparecería o no
+		// según lo rápida que fuese. El de ejemplo devuelve además los cinco estados
+		// del cielo, así que una sola captura enseña los cinco iconos.
 		try (ConfigurableApplicationContext context = app.run("--spring.datasource.url=" + BASE_EN_MEMORIA,
-				"--spring.datasource.username=sa")) {
+				"--spring.datasource.username=sa", "--actihome.meteorologia.habilitada=false")) {
 
 			comprobarQueLaBaseEsDesechable(context);
 

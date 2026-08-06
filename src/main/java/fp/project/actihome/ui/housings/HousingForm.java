@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import javax.imageio.ImageIO;
 import javax.swing.DefaultListCellRenderer;
@@ -17,6 +18,9 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.SwingWorker;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import net.miginfocom.swing.MigLayout;
@@ -26,12 +30,16 @@ import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
+import fp.project.actihome.model.exceptions.LocationNotFoundException;
 import fp.project.actihome.model.exceptions.NotTheOwnerException;
+import fp.project.actihome.model.services.Coordenadas;
+import fp.project.actihome.model.services.GeocodingClient;
 import fp.project.actihome.model.services.HousingData;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.Field;
+import fp.project.actihome.ui.components.FilaFluida;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.theme.BrandAssets;
@@ -135,11 +143,47 @@ public class HousingForm extends JPanel {
 	private String imagenExistente;
 
 	/**
+	 * El buscador de coordenadas (F17), o {@code null} si esta pantalla se
+	 * construyó sin él.
+	 *
+	 * <p>
+	 * Admitir el nulo no es dejadez: {@code ThemePreview} y las herramientas de
+	 * medida construyen formularios sin contexto de Spring, y no tiene sentido que
+	 * dejen de compilar por una función accesoria. Sin buscador, el botón
+	 * sencillamente no aparece.
+	 */
+	private final transient GeocodingClient geocoder;
+
+	private JButton botonLocalizar;
+	private JLabel estadoUbicacion;
+
+	/**
+	 * Dónde está el alojamiento, si se sabe (F17).
+	 *
+	 * <p>
+	 * Se guardan aquí y no se leen del campo de texto porque <b>no están escritas
+	 * en ninguna parte de la pantalla</b>: son el resultado de una consulta, no un
+	 * dato que el usuario teclee. Ver {@link #olvidarCoordenadas()} para la regla
+	 * que las mantiene sincronizadas con el texto.
+	 */
+	private Double latitud;
+	private Double longitud;
+
+	/**
 	 * @param conCodigo si se pide el código del alojamiento. Al dar de alta sí; al
 	 *                  editar no, porque el código es el identificador público del
 	 *                  alojamiento y {@code updateHousing} no lo modifica
 	 */
 	public HousingForm(boolean conCodigo) {
+		this(conCodigo, null);
+	}
+
+	/**
+	 * @param conCodigo si se pide el código del alojamiento
+	 * @param geocoder  buscador de coordenadas (F17), o {@code null} para construir
+	 *                  el formulario sin la función de localizar
+	 */
+	public HousingForm(boolean conCodigo, GeocodingClient geocoder) {
 
 		// Dos columnas y no una sola larga. Con doce controles apilados, el formulario
 		// no cabía en la ventana y los botones quedaban bajo el pliegue —lo que la
@@ -149,6 +193,8 @@ public class HousingForm extends JPanel {
 		// lo describe y lo que ofrece.
 		super(new MigLayout("hidemode 3, " + Space.insets(0), "[grow,fill]" + Space.XXL + "[grow,fill]", "[]"));
 		setOpaque(false);
+
+		this.geocoder = geocoder;
 
 		codigo = Field.text(Textos.t("alojamientoForm.codigo"));
 		nombre = Field.text(Textos.t("alojamientoForm.nombre"));
@@ -209,7 +255,7 @@ public class HousingForm extends JPanel {
 		panel.add(nombre, "gapbottom " + Space.MD);
 		panel.add(campoTipo(), "gapbottom " + Space.MD);
 		panel.add(dosColumnas(habitaciones, precio), "gapbottom " + Space.MD);
-		panel.add(ubicacion, "gapbottom " + Space.MD);
+		panel.add(campoUbicacion(), "gapbottom " + Space.MD);
 		panel.add(campoFoto());
 
 		return panel;
@@ -228,6 +274,159 @@ public class HousingForm extends JPanel {
 	 * llama quien tiene la pantalla: solo entonces se sabe que el resto del
 	 * formulario es válido y merece la pena escribir el archivo.
 	 */
+	/**
+	 * La ubicación, con el botón que la sitúa en el mapa (F17).
+	 *
+	 * <p>
+	 * <b>Por qué un botón y no dos campos para escribir la latitud y la
+	 * longitud.</b> Nadie sabe de memoria las coordenadas de su casa. Pedirlas
+	 * convertiría una función útil en un trámite imposible, y el campo se
+	 * quedaría vacío siempre.
+	 *
+	 * <p>
+	 * <b>Y por qué un botón y no una búsqueda automática al terminar de escribir.</b>
+	 * Porque esto sale por internet. Una pantalla que se conecta sola, sin que
+	 * nadie se lo haya pedido y mientras se teclea, es a la vez una sorpresa y un
+	 * goteo de peticiones a un servicio gratuito: cada letra escrita en el campo
+	 * sería una consulta. Un botón deja claro qué pasa y cuándo.
+	 *
+	 * <p>
+	 * <b>Es opcional de principio a fin.</b> Si no se pulsa, si no hay red o si el
+	 * sitio no está en el índice, el alojamiento se publica igual y simplemente no
+	 * tiene coordenadas; lo que depende de ellas —la previsión de la ficha—
+	 * desaparece sin decir nada. Hacerlo obligatorio habría atado publicar un
+	 * alojamiento a que hubiera internet en ese momento.
+	 */
+	private JPanel campoUbicacion() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		panel.setOpaque(false);
+
+		panel.add(ubicacion);
+
+		if (geocoder == null) {
+			return panel;
+		}
+
+		botonLocalizar = Buttons.secondary(Textos.t("alojamientoForm.ubicacion.localizar"), e -> localizar());
+		estadoUbicacion = Labels.muted(" ");
+
+		// FilaFluida y no una fila rígida: el estado es un texto de ancho muy variable
+		// —desde un espacio en blanco hasta "Granada, Andalucía, España"— y una fila
+		// rígida exigiría la suma del botón más el texto más largo. Es la regla 1 de
+		// la adaptabilidad, y el pie del login es lo que pasa por saltársela.
+		FilaFluida fila = new FilaFluida(Space.SM, Space.XXS);
+		fila.add(botonLocalizar);
+		fila.add(estadoUbicacion);
+
+		panel.add(fila, "gaptop " + Space.XXS);
+
+		// **Cambiar el texto invalida las coordenadas, y esto no es un detalle.** Sin
+		// ello se puede localizar "Granada", cambiar el texto a "Bilbao" y guardar: el
+		// alojamiento diría Bilbao y su previsión sería la de Granada, sin que nada en
+		// la pantalla lo delatara. Un dato derivado que sobrevive a su origen es peor
+		// que no tener el dato.
+		ubicacion.getInput().getDocument().addDocumentListener(new DocumentListener() {
+
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				olvidarCoordenadas();
+			}
+
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				olvidarCoordenadas();
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				olvidarCoordenadas();
+			}
+		});
+
+		return panel;
+	}
+
+	/**
+	 * Busca las coordenadas del texto escrito, sin bloquear la pantalla.
+	 *
+	 * <p>
+	 * <b>El {@code SwingWorker} es obligatorio aquí y no una elección de estilo.</b>
+	 * Swing tiene un único hilo para pintar y para atender al usuario; una llamada
+	 * de red en ese hilo congela la ventana entera —ni se puede cancelar, ni se
+	 * redibuja— hasta que el otro extremo conteste, y puede no contestar nunca.
+	 * {@code doInBackground} corre fuera del hilo de la interfaz y {@code done}
+	 * vuelve a él para tocar los componentes, que es la única forma segura de
+	 * hacerlo.
+	 *
+	 * <p>
+	 * El botón se desactiva mientras tanto: sin eso, tres clics impacientes son
+	 * tres peticiones simultáneas cuyo orden de llegada nadie controla.
+	 */
+	private void localizar() {
+
+		String lugar = ubicacion.getText().trim();
+
+		if (lugar.isEmpty()) {
+			estadoUbicacion.setText(Textos.t("alojamientoForm.ubicacion.vacia"));
+			return;
+		}
+
+		botonLocalizar.setEnabled(false);
+		estadoUbicacion.setText(Textos.t("alojamientoForm.ubicacion.buscando"));
+
+		new SwingWorker<Coordenadas, Void>() {
+
+			@Override
+			protected Coordenadas doInBackground() throws LocationNotFoundException {
+				return geocoder.localizar(lugar);
+			}
+
+			@Override
+			protected void done() {
+
+				botonLocalizar.setEnabled(true);
+
+				try {
+					Coordenadas punto = get();
+
+					// El texto pudo cambiar mientras se esperaba: si ya no es el mismo, el
+					// resultado que ha llegado corresponde a otro sitio y guardarlo sería
+					// exactamente el desajuste que el DocumentListener existe para evitar.
+					if (!ubicacion.getText().trim().equals(lugar)) {
+						return;
+					}
+
+					latitud = punto.latitud();
+					longitud = punto.longitud();
+					estadoUbicacion.setText(Textos.t("alojamientoForm.ubicacion.localizada") + " " + punto.etiqueta());
+
+				} catch (InterruptedException ex) {
+					Thread.currentThread().interrupt();
+					estadoUbicacion.setText(" ");
+
+				} catch (ExecutionException ex) {
+					// Todo lo que lanza doInBackground llega envuelto aquí. No se distingue "no
+					// existe ese sitio" de "no hay red" porque el usuario no puede hacer nada
+					// distinto en cada caso, y en los dos el alojamiento se publica igual.
+					olvidarCoordenadas();
+					estadoUbicacion.setText(Textos.t("alojamientoForm.ubicacion.noEncontrada"));
+				}
+			}
+		}.execute();
+	}
+
+	/** Deja el alojamiento como no localizado. */
+	private void olvidarCoordenadas() {
+
+		latitud = null;
+		longitud = null;
+
+		if (estadoUbicacion != null) {
+			estadoUbicacion.setText(" ");
+		}
+	}
+
 	private JPanel campoFoto() {
 
 		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.MD + "[grow,fill]", ""));
@@ -518,6 +717,10 @@ public class HousingForm extends JPanel {
 		habitaciones.setEtiqueta(Textos.t("alojamientoForm.habitaciones"));
 		precio.setEtiqueta(Textos.t("alojamientoForm.precio"));
 		ubicacion.setEtiqueta(Textos.t("alojamientoForm.ubicacion"));
+
+		if (botonLocalizar != null) {
+			botonLocalizar.setText(Textos.t("alojamientoForm.ubicacion.localizar"));
+		}
 		descripcion.setEtiqueta(Textos.t("alojamientoForm.descripcion"));
 		etiquetaPension.setText(Textos.t("catalogo.row.pension"));
 		etiquetaComodidades.setText(Textos.t("catalogo.filtro.comodidades"));
@@ -548,6 +751,18 @@ public class HousingForm extends JPanel {
 		ubicacion.setText(housing.getLocation() == null ? "" : housing.getLocation());
 		descripcion.setText(housing.getDescription() == null ? "" : housing.getDescription());
 
+		// **Después del setText de arriba, no antes.** Escribir en el campo dispara el
+		// DocumentListener, que borra las coordenadas por diseño; ponerlas primero sería
+		// perderlas y dejar sin previsión cualquier alojamiento que se abriera a editar.
+		// Es la trampa de siempre de precargar un formulario: el orden de las
+		// asignaciones importa cuando unas disparan efectos sobre otras.
+		latitud = housing.getLatitude();
+		longitud = housing.getLongitude();
+
+		if (estadoUbicacion != null) {
+			estadoUbicacion.setText(housing.estaLocalizado() ? Textos.t("alojamientoForm.ubicacion.yaLocalizada") : " ");
+		}
+
 		desayuno.setSelected(housing.isBreakfast());
 		comida.setSelected(housing.isLunch());
 		cena.setSelected(housing.isDinner());
@@ -574,6 +789,7 @@ public class HousingForm extends JPanel {
 		precio.setText("");
 		ubicacion.setText("");
 		descripcion.setText("");
+		olvidarCoordenadas();
 
 		desayuno.setSelected(false);
 		comida.setSelected(false);
@@ -613,7 +829,8 @@ public class HousingForm extends JPanel {
 				.image(fotoElegida != null ? nombreParaFotoNueva(housingCode) : imagenExistente)
 				.idealSeason((User.EstacionPreferida) estacionIdeal.getSelectedItem())
 				.openToExchange(intercambio.isSelected())
-				.exchangeWanted(queBusca.getText().trim().isEmpty() ? null : queBusca.getText().trim());
+				.exchangeWanted(queBusca.getText().trim().isEmpty() ? null : queBusca.getText().trim())
+				.coordenadas(latitud, longitud);
 
 		comodidades.forEach((amenity, chip) -> data.amenity(amenity, chip.isSelected()));
 

@@ -41,7 +41,9 @@ public class MedirPantallas {
 		app.setWebApplicationType(WebApplicationType.NONE);
 		try (ConfigurableApplicationContext c = app.run(
 				"--spring.datasource.url=jdbc:h2:mem:medir;DB_CLOSE_DELAY=-1;MODE=MySQL",
-				"--spring.datasource.username=sa")) {
+				"--spring.datasource.username=sa",
+				// Sin red: ver la nota de WeatherClientDeEjemplo.
+				"--actihome.meteorologia.habilitada=false")) {
 
 			var sm = c.getBean(SessionManager.class);
 			var us = c.getBean(UserService.class);

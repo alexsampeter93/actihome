@@ -101,3 +101,14 @@ ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS idealSeason VARCHAR(20);
 --     ALTER TABLE HOUSINGS ADD COLUMN exchangeWanted VARCHAR(120);
 ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS openToExchange BOOLEAN DEFAULT FALSE NOT NULL;
 ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS exchangeWanted VARCHAR(120);
+
+-- F17: coordenadas del alojamiento, requisito previo de la previsión
+-- meteorológica y del mapa. Sin DEFAULT y sin NOT NULL: no localizado es un
+-- estado válido, y las bases que ya existen se quedan así hasta que alguien
+-- pulse "Localizar" o hasta que la siembra de data.sql les ponga las de los diez
+-- alojamientos de ejemplo. Quien tenga una base MySQL anterior a esta fase
+-- necesita aplicar a mano:
+--     ALTER TABLE HOUSINGS ADD COLUMN latitude DOUBLE;
+--     ALTER TABLE HOUSINGS ADD COLUMN longitude DOUBLE;
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS latitude DOUBLE;
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS longitude DOUBLE;

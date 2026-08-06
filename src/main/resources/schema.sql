@@ -92,6 +92,15 @@ CREATE TABLE IF NOT EXISTS HOUSINGS (
 	-- guardado no distinguía "reservado hoy" de "reservado en marzo de 2027", así
 	-- que una vez reservado un alojamiento quedaba bloqueado para siempre (B5).
 	location VARCHAR(40) NOT NULL,
+	-- Coordenadas en grados decimales (F17). Admiten nulo A PROPÓSITO: "location"
+	-- es texto para leer y no se le puede preguntar a un servicio meteorológico
+	-- ni a un mapa por la cadena "Sierra Nevada, Granada". Los dos campos no
+	-- compiten: el texto es lo que se enseña, las coordenadas son lo que se
+	-- consulta. Un alojamiento sin localizar es un caso normal —solo las tiene
+	-- quien pulsó "Localizar" al publicarlo— y lo que dependa de ellas debe
+	-- desaparecer sin ruido cuando falten.
+	latitude DOUBLE,
+	longitude DOUBLE,
 	ownerId BIGINT NOT NULL,
 	CONSTRAINT UniqueHousingCode UNIQUE (housingCode),
 	CONSTRAINT OwnerIdFK FOREIGN KEY(ownerId) REFERENCES USERS(id)

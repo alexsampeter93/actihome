@@ -93,6 +93,10 @@ public class HousingData {
 
 	private String exchangeWanted;
 
+	private Double latitude;
+
+	private Double longitude;
+
 	public HousingData() {
 
 	}
@@ -279,6 +283,33 @@ public class HousingData {
 	public HousingData exchangeWanted(String exchangeWanted) {
 		this.exchangeWanted = exchangeWanted;
 		return this;
+	}
+
+	/**
+	 * Dónde está el alojamiento, en grados decimales (F17).
+	 *
+	 * <p>
+	 * Las dos van juntas en un solo método a propósito: <b>media coordenada no
+	 * localiza nada</b>, así que dejar dos métodos sueltos permitiría construir un
+	 * objeto con latitud y sin longitud, un estado que no significa nada. Admite
+	 * {@code (null, null)} para "sin localizar", que es un caso normal.
+	 */
+	public HousingData coordenadas(Double latitude, Double longitude) {
+
+		boolean completas = latitude != null && longitude != null;
+
+		this.latitude = completas ? latitude : null;
+		this.longitude = completas ? longitude : null;
+
+		return this;
+	}
+
+	public Double getLatitude() {
+		return latitude;
+	}
+
+	public Double getLongitude() {
+		return longitude;
 	}
 
 	public boolean isOpenToExchange() {

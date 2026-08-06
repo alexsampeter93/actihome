@@ -27,6 +27,7 @@ import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.ReservationService;
 import fp.project.actihome.model.services.ReviewService;
+import fp.project.actihome.model.services.WeatherService;
 import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.catalog.Destacado;
@@ -39,6 +40,7 @@ import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.housings.Galeria;
+import fp.project.actihome.ui.housings.PrevisionPanel;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Contenido;
@@ -110,6 +112,9 @@ public class HousingDetailsFrame extends JFrame {
 	private static final String AIRE_LATERAL = Space.MD + ":" + Space.HUGE + ":" + Space.HUGE;
 
 	private final transient HousingService housingService;
+
+	/** De dónde sale la previsión del {@code PrevisionPanel} (F18). */
+	private final transient WeatherService weatherService;
 	private final transient ReviewService reviewService;
 
 	/** Solo para pintar la ocupación del calendario: aquí no se reserva nada. */
@@ -126,7 +131,7 @@ public class HousingDetailsFrame extends JFrame {
 
 	public HousingDetailsFrame(HousingService housingService, ReviewService reviewService,
 			ReservationService reservationService, SessionManager sessionManager, Navigator navigator,
-			HeaderPanel headerPanel) {
+			HeaderPanel headerPanel, WeatherService weatherService) {
 
 		this.housingService = housingService;
 		this.reviewService = reviewService;
@@ -134,6 +139,7 @@ public class HousingDetailsFrame extends JFrame {
 		this.sessionManager = sessionManager;
 		this.navigator = navigator;
 		this.headerPanel = headerPanel;
+		this.weatherService = weatherService;
 
 		initUI();
 	}
@@ -282,16 +288,20 @@ public class HousingDetailsFrame extends JFrame {
 						"[grow,fill]"));
 		panel.setOpaque(false);
 
-		// Columna izquierda: la foto y, debajo, el calendario de ocupación. Los dos
-		// son "cómo es y cuándo está libre"; la derecha es "qué ofrece y cuánto
-		// cuesta". El calendario no cabía en la columna derecha sin empujar el precio
-		// y el botón de reservar fuera de la ventana, y eso la regla de escritorio del
-		// proyecto no lo permite.
+		// Columna izquierda: la foto y, debajo, el tiempo que hará allí. Las dos cosas
+		// contestan "cómo es"; la derecha contesta "qué ofrece y cuánto cuesta".
+		//
+		// En este hueco estuvo el calendario de ocupación hasta la Fase 8.11 (ver la
+		// nota más abajo, donde vivía). La previsión ocupa su sitio pero NO es su
+		// sustituto: el calendario prometía una interacción que no daba, y esto no
+		// promete ninguna — es información y se lee. Y desaparece sola cuando no la
+		// hay, que es justo lo que aquel no sabía hacer.
 		JPanel izquierda = new JPanel(
-				new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[grow,fill]" + Space.LG + "[]"));
+				new MigLayout("wrap 1, hidemode 3, " + Space.insets(0), "[grow,fill]", "[grow,fill]" + Space.LG + "[]"));
 		izquierda.setOpaque(false);
 
 		izquierda.add(galeria(), "grow");
+		izquierda.add(new PrevisionPanel(housing, weatherService), "growx");
 
 		panel.add(izquierda, "grow");
 		panel.add(informacion(), "aligny top");

@@ -20,6 +20,7 @@ import fp.project.actihome.model.exceptions.LessThanOneRoomException;
 import fp.project.actihome.model.exceptions.NegativePrizeException;
 import fp.project.actihome.model.exceptions.NotAuthorizedUserException;
 import fp.project.actihome.model.exceptions.NotTheOwnerException;
+import fp.project.actihome.model.services.GeocodingClient;
 import fp.project.actihome.model.services.HousingData;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.ui.components.Buttons;
@@ -65,6 +66,9 @@ public class UploadHousingFrame extends JFrame {
 	private final transient Navigator navigator;
 	private final HeaderPanel headerPanel;
 
+	/** Buscador de coordenadas para el botón "Localizar" del formulario (F17). */
+	private final transient GeocodingClient geocodingClient;
+
 	private HousingForm formulario;
 	private JLabel error;
 	private JLabel superTitulo;
@@ -73,12 +77,13 @@ public class UploadHousingFrame extends JFrame {
 	private JButton botonCancelar;
 
 	public UploadHousingFrame(HousingService housingService, SessionManager sessionManager, Navigator navigator,
-			HeaderPanel headerPanel) {
+			HeaderPanel headerPanel, GeocodingClient geocodingClient) {
 
 		this.housingService = housingService;
 		this.sessionManager = sessionManager;
 		this.navigator = navigator;
 		this.headerPanel = headerPanel;
+		this.geocodingClient = geocodingClient;
 
 		initUI();
 	}
@@ -110,7 +115,7 @@ public class UploadHousingFrame extends JFrame {
 
 		exterior.add(cabecera(), Layout.ancho(Layout.CONTENIDO) + ", alignx center");
 
-		formulario = new HousingForm(true);
+		formulario = new HousingForm(true, geocodingClient);
 		exterior.add(formulario, Layout.ancho(Layout.CONTENIDO) + ", alignx center");
 
 		error = Labels.error(" ");

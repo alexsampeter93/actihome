@@ -405,6 +405,43 @@ UPDATE HOUSINGS SET idealSeason = 'OTONO'    WHERE idealSeason IS NULL AND housi
 UPDATE HOUSINGS SET idealSeason = 'PRIMAVERA' WHERE idealSeason IS NULL AND housingCode IN (10005, 10007);
 
 -- ---------------------------------------------------------------------------
+-- Coordenadas de los alojamientos de ejemplo (F17)
+--
+-- Alimentan la previsión meteorológica de la ficha, y mañana el mapa. Sin ellas
+-- ese bloque sencillamente no aparece, que es el comportamiento correcto para un
+-- alojamiento sin localizar pero deja los diez de ejemplo sin enseñar la
+-- función.
+--
+-- POR QUÉ VAN COMO UPDATE Y NO DENTRO DE LOS INSERT DE ARRIBA, que es lo que
+-- parecería natural. Los INSERT están protegidos por WHERE NOT EXISTS, así que
+-- en una base que ya existe NO SE EJECUTAN NUNCA: añadir las columnas allí solo
+-- serviría para instalaciones nuevas y dejaría sin coordenadas a quien ya tenga
+-- la aplicación. Es la regla dura del proyecto —corregir el proceso que genera
+-- un dato no corrige el dato ya generado— y ya se aprendió tres veces: con las
+-- contraseñas en texto plano, con los acentos y con el campo image.
+--
+-- Un UPDATE guardado por "latitude IS NULL" cubre LOS DOS CASOS con un solo
+-- mecanismo: en una base nueva las columnas acaban de nacer vacías, y en una
+-- vieja también. Y respeta a quien haya movido el punto desde la aplicación,
+-- porque entonces ya no es nulo y la condición no se cumple.
+--
+-- Los valores son el centro aproximado de cada sitio, con cuatro decimales:
+-- ~11 metros, de sobra para una previsión meteorológica, cuya rejilla ronda el
+-- kilómetro. Más decimales serían una precisión que el dato no tiene.
+-- ---------------------------------------------------------------------------
+
+UPDATE HOUSINGS SET latitude = 37.0955, longitude = -3.3987 WHERE latitude IS NULL AND housingCode = 10001;
+UPDATE HOUSINGS SET latitude = 36.7213, longitude = -4.4214 WHERE latitude IS NULL AND housingCode = 10002;
+UPDATE HOUSINGS SET latitude = 38.9067, longitude =  1.4206 WHERE latitude IS NULL AND housingCode = 10003;
+UPDATE HOUSINGS SET latitude = 43.1975, longitude = -4.8517 WHERE latitude IS NULL AND housingCode = 10004;
+UPDATE HOUSINGS SET latitude = 41.3874, longitude =  2.1686 WHERE latitude IS NULL AND housingCode = 10005;
+UPDATE HOUSINGS SET latitude = 28.1235, longitude = -15.4363 WHERE latitude IS NULL AND housingCode = 10006;
+UPDATE HOUSINGS SET latitude = 40.4168, longitude = -3.7038 WHERE latitude IS NULL AND housingCode = 10007;
+UPDATE HOUSINGS SET latitude = 36.5101, longitude = -4.8825 WHERE latitude IS NULL AND housingCode = 10008;
+UPDATE HOUSINGS SET latitude = 36.7423, longitude = -5.1673 WHERE latitude IS NULL AND housingCode = 10009;
+UPDATE HOUSINGS SET latitude = 42.7797, longitude = -0.3211 WHERE latitude IS NULL AND housingCode = 10010;
+
+-- ---------------------------------------------------------------------------
 -- Intercambios abiertos de ejemplo (Fase 8.4)
 --
 -- Alimentan la lista de "intercambios abiertos ahora mismo" de la pantalla de
