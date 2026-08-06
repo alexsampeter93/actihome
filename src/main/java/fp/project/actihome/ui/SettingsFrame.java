@@ -36,6 +36,7 @@ import fp.project.actihome.ui.catalog.CatalogFilters;
 import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Card;
+import fp.project.actihome.ui.components.CodigoCopiable;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Interruptor;
 import fp.project.actihome.ui.components.Foco;
@@ -45,6 +46,7 @@ import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.components.Segmented;
 import fp.project.actihome.ui.components.Toast;
+import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
@@ -123,16 +125,18 @@ public class SettingsFrame extends JFrame {
 	private Segmented vistaPorDefecto;
 	private JPanel bloqueCopiaDeSeguridad;
 	private JLabel etiquetaCopiaDeSeguridad;
-	private JLabel descripcionCopiaDeSeguridad;
+	private WrappingText descripcionCopiaDeSeguridad;
 	private JButton exportarCopiaDeSeguridad;
 	private JLabel errorCopiaDeSeguridad;
 
 	// Codigo de recuperacion para otro usuario (Fase 8.6), solo ADMIN
 	private JPanel bloqueCodigo;
 	private JLabel etiquetaCodigo;
-	private JLabel descripcionCodigo;
+	private WrappingText descripcionCodigo;
 	private Field usuarioDelCodigo;
 	private JButton generarCodigo;
+	private JLabel entregaCodigo;
+	private CodigoCopiable codigoGenerado;
 	private JLabel resultadoCodigo;
 	private JButton guardar;
 	private JButton cancelar;
@@ -326,23 +330,53 @@ public class SettingsFrame extends JFrame {
 		bloqueCodigo.setOpaque(false);
 
 		etiquetaCodigo = Labels.caps(" ");
-		descripcionCodigo = Labels.muted(" ");
+		descripcionCodigo = WrappingText.muted(" ");
 		usuarioDelCodigo = Field.text(" ");
 		generarCodigo = Buttons.secondary(" ", e -> generarCodigoDeRecuperacion());
+		codigoGenerado = new CodigoCopiable();
+		entregaCodigo = Labels.muted(" ");
 		resultadoCodigo = Labels.body(" ");
 
 		bloqueCodigo.add(etiquetaCodigo, "gapbottom " + Space.XXS);
 		bloqueCodigo.add(descripcionCodigo, "gapbottom " + Space.SM);
 		bloqueCodigo.add(usuarioDelCodigo, "gapbottom " + Space.SM);
-		bloqueCodigo.add(generarCodigo, "gapbottom " + Space.XS);
+		bloqueCodigo.add(generarCodigo, "gapbottom " + Space.SM);
+
+		// El código y la instrucción de qué hacer con él van juntos y por encima de
+		// resultadoCodigo, que a partir de ahora solo lleva errores. Antes el mismo
+		// hueco servía para las dos cosas, así que el dato más importante de la
+		// pantalla compartía sitio y tamaño con "no hay ningún usuario con ese nombre".
+		bloqueCodigo.add(codigoGenerado, "gapbottom " + Space.XXS);
+		bloqueCodigo.add(entregaCodigo, "gapbottom " + Space.XS);
 		bloqueCodigo.add(resultadoCodigo);
 
 		return bloqueCodigo;
 	}
 
+	/**
+	 * Rellena el usuario y genera, como si se hubiera tecleado y pulsado el botón.
+	 *
+	 * <p>
+	 * Existe para {@code ScreenSnapshots} por la misma razón que
+	 * {@code TradeHousingsFrame.buscarPorCodigo}: el estado que hay que revisar —el
+	 * código ya en pantalla— no se alcanza abriendo la ventana, y una captura del
+	 * estado inicial no enseñaría precisamente la parte nueva.
+	 */
+	public void generarCodigoPara(String username) {
+
+		usuarioDelCodigo.setText(username);
+		generarCodigoDeRecuperacion();
+	}
+
 	private void generarCodigoDeRecuperacion() {
 
 		String nombre = usuarioDelCodigo.getText().trim();
+
+		// Cada intento parte de cero: dejar en pantalla el código de la consulta
+		// anterior mientras se enseña un error de la nueva es la forma más directa de
+		// que alguien dicte un código que ya no corresponde al usuario que pidió.
+		codigoGenerado.limpiar();
+		entregaCodigo.setVisible(false);
 
 		if (nombre.isEmpty()) {
 			resultadoCodigo.setText(Textos.t("recuperar.error.usuarioVacio"));
@@ -353,7 +387,11 @@ public class SettingsFrame extends JFrame {
 			String codigo = passwordResetService.generarCodigoParaEntregar(nombre,
 					sessionManager.getLoggedInUser().getId());
 
-			resultadoCodigo.setText(Textos.t("admin.codigo.resultado", nombre, codigo));
+			resultadoCodigo.setText(" ");
+			codigoGenerado.mostrar(codigo);
+
+			entregaCodigo.setText(Textos.t("admin.codigo.entrega", nombre));
+			entregaCodigo.setVisible(true);
 
 		} catch (InstanceNotFoundException ex) {
 			// Aquí SÍ se dice que el usuario no existe, al revés que en la pantalla de
@@ -491,7 +529,7 @@ public class SettingsFrame extends JFrame {
 		bloqueCopiaDeSeguridad.setOpaque(false);
 
 		etiquetaCopiaDeSeguridad = Labels.caps(" ");
-		descripcionCopiaDeSeguridad = Labels.muted(" ");
+		descripcionCopiaDeSeguridad = WrappingText.muted(" ");
 
 		exportarCopiaDeSeguridad = Buttons.secondary(" ", e -> exportarCopiaDeSeguridad());
 		errorCopiaDeSeguridad = Labels.error(" ");
@@ -681,6 +719,13 @@ public class SettingsFrame extends JFrame {
 		bloqueCodigo.setVisible(actual.getRole() == RoleType.ADMIN);
 		resultadoCodigo.setText(" ");
 		usuarioDelCodigo.setText("");
+
+		// Un código de un solo uso no debe seguir en pantalla al volver a Ajustes. No
+		// es una limpieza cosmética: sigue siendo válido durante quince minutos, y
+		// dejarlo visible lo expone a quien pase por delante mucho después de que el
+		// administrador se olvidara de que lo generó.
+		codigoGenerado.limpiar();
+		entregaCodigo.setVisible(false);
 		errorCopiaDeSeguridad.setVisible(false);
 
 		usuario.setText(actual.getUsername());

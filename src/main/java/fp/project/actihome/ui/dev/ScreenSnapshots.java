@@ -147,6 +147,9 @@ public final class ScreenSnapshots {
 			} else if ("fase6".equals(prefijo)) {
 				capturarFase6(context);
 
+			} else if ("ajustes".equals(prefijo)) {
+				capturarAjustes(context);
+
 			} else {
 
 				abrirSesion(context, "alex", rol);
@@ -305,6 +308,28 @@ public final class ScreenSnapshots {
 	 * derecho vacío: el paso de buscar es justamente lo que esta pantalla añade
 	 * frente a la anterior, y una captura del estado inicial no lo enseñaría.
 	 */
+	/**
+	 * Ajustes como administrador, con un código de recuperación ya generado.
+	 *
+	 * <p>
+	 * Es el estado que no se puede revisar de otra forma: el código solo aparece
+	 * tras pulsar el botón, y {@code MedirResponsive} no sirve para juzgarlo —
+	 * comprueba que nada caiga fuera del área visible, no que un dato se lea bien.
+	 * Es justo la distinción que dejó veintinueve altos escritos a mano sin
+	 * detectar hasta la Fase 8.1.
+	 */
+	private static void capturarAjustes(ConfigurableApplicationContext context) throws IOException {
+
+		Theme.cambiarA(Season.OTONO);
+
+		iniciarSesionComo(context, "Admin");
+
+		SettingsFrame ajustes = context.getBean(SettingsFrame.class);
+
+		guardar(ajustes, "ajustes-admin");
+		guardar(ajustes, "ajustes-codigo", () -> ajustes.generarCodigoPara("Lucia"));
+	}
+
 	private static void capturarFase6(ConfigurableApplicationContext context) throws IOException {
 
 		Theme.cambiarA(Season.VERANO);

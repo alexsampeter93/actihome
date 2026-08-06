@@ -33,9 +33,18 @@ public class WrappingText extends JTextArea {
 
 	private static final long serialVersionUID = 1L;
 
+	/** Si este párrafo es texto principal o una aclaración secundaria. */
+	private final boolean secundario;
+
 	public WrappingText(String texto) {
+		this(texto, false);
+	}
+
+	private WrappingText(String texto, boolean secundario) {
 
 		super(texto);
+
+		this.secundario = secundario;
 
 		setEditable(false);
 		setFocusable(false);
@@ -43,11 +52,39 @@ public class WrappingText extends JTextArea {
 		setLineWrap(true);
 		setWrapStyleWord(true);
 		setBorder(null);
-		setFont(Typography.sans(Typography.BODY));
+		setFont(Typography.sans(secundario ? Typography.BODY_SM : Typography.BODY));
+	}
+
+	/**
+	 * Párrafo secundario: el equivalente de {@code Labels.muted} para texto que
+	 * ocupa más de una línea.
+	 *
+	 * <p>
+	 * <b>Existe porque faltaba, y su ausencia era un fallo latente.</b> Las
+	 * descripciones de ayuda bajo un control —"exporta una copia completa de la base
+	 * de datos a un fichero…"— se venían escribiendo con {@code Labels.muted}, que
+	 * devuelve un {@code JLabel} y <b>no parte el texto en líneas</b>. Un JLabel de
+	 * cien caracteres declara un ancho preferido de cien caracteres, y MigLayout no
+	 * lo encoge: desborda el contenedor. En una ventana ancha no se nota; en una de
+	 * 1024 puntos empuja la tarjeta entera fuera de la pantalla.
+	 *
+	 * <p>
+	 * Es la misma familia de fallo que {@code FilaFluida} resuelve para una fila de
+	 * elementos, aplicada a un párrafo: el problema nunca es que el texto se vea
+	 * apretado, es que algo acaba dibujado donde no se puede alcanzar.
+	 */
+	public static WrappingText muted(String texto) {
+		return new WrappingText(texto, true);
 	}
 
 	@Override
 	public Color getForeground() {
-		return Theme.txt();
+
+		// Guarda contra el null implícito del arranque: getForeground() se llama desde
+		// el constructor de JTextArea, antes de que 'secundario' tenga valor. Un
+		// boolean no puede ser null, pero sí es false en ese momento, así que el color
+		// inicial sería el principal aunque el párrafo fuera secundario. Da igual: el
+		// primer pintado real ocurre mucho después, con el campo ya asignado.
+		return secundario ? Theme.mut() : Theme.txt();
 	}
 }
