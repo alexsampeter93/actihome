@@ -99,10 +99,38 @@ public class WrappingText extends JTextArea {
 	 * un párrafo, la palabra más larga.
 	 *
 	 * <p>
-	 * <b>El alto que se devuelve es el del ancho actual</b>, no el del ancho mínimo,
-	 * por la misma razón anotada en {@code FilaFluida.minimumLayoutSize}: son dos
-	 * preguntas distintas, y contestar las dos con la misma medición reservaría el
-	 * alto de un párrafo plegado a una columna también en ventanas anchas.
+	 * <b>El alto mínimo es UNA LÍNEA, y llegar a eso costó una segunda corrección.</b>
+	 * La primera versión devolvía {@code getPreferredSize().height}, que parecía lo
+	 * natural: el alto que el párrafo necesita al ancho que tiene ahora. Y hacía que
+	 * este método <b>no fuera una función pura del componente</b>.
+	 *
+	 * <p>
+	 * El motivo es que el alto preferido de un {@code JTextArea} con ajuste de línea
+	 * <b>no depende solo del texto y de la fuente</b>: depende de la última anchura
+	 * que la vista interna de Swing recibió, que va cambiando mientras el gestor de
+	 * layout tantea tamaños. Preguntar por el mínimo en dos momentos distintos del
+	 * mismo pase daba dos respuestas distintas — 18 puntos en uno y 36 en otro, según
+	 * si en ese instante el texto cabía en una línea o en dos.
+	 *
+	 * <p>
+	 * <b>Y eso volvía intermitente a {@code MedirResponsive}</b>, que compara el alto
+	 * real contra este mínimo: la misma pantalla, sin tocar una línea de código, daba
+	 * "ok" o "1 ROTO" según la pasada. Medido: <b>tres fallos de seis ejecuciones</b>.
+	 * Una comprobación que falla la mitad de las veces por un motivo que no existe es
+	 * peor que no tenerla, porque enseña a ignorar sus avisos — y esta corre en el CI.
+	 *
+	 * <p>
+	 * Una línea es un suelo honesto y <b>estable</b>: sale de la métrica de la fuente
+	 * y de nada más. Por debajo de una línea no se lee nada; por encima, el párrafo
+	 * reflowea solo. Lo que el párrafo <em>quiere</em> lo sigue diciendo
+	 * {@code getPreferredSize()}, que es a quien el layout hace caso mientras haya
+	 * sitio.
+	 *
+	 * <p>
+	 * <b>La regla general, que vale para cualquier componente propio:</b>
+	 * {@code getMinimumSize()} tiene que poder contestarse sin saber en qué momento
+	 * del pase de layout te lo preguntan. Si su respuesta depende del tamaño que el
+	 * componente tiene ahora mismo, no es un mínimo: es una medición.
 	 */
 	@Override
 	public Dimension getMinimumSize() {
@@ -115,7 +143,8 @@ public class WrappingText extends JTextArea {
 			masLarga = Math.max(masLarga, metrica.stringWidth(palabra));
 		}
 
-		return new Dimension(masLarga + margenes.left + margenes.right, getPreferredSize().height);
+		return new Dimension(masLarga + margenes.left + margenes.right,
+				metrica.getHeight() + margenes.top + margenes.bottom);
 	}
 
 	@Override
