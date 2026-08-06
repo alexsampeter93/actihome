@@ -31,7 +31,23 @@ Olaz, el logotipo de CocoBrain, el icono de la aplicación y el fondo decorativo
 
 | Familia | Diseño | Licencia |
 |---|---|---|
-| **Spectral** | Production Type | SIL Open Font License 1.1 |
-| **Manrope** | Mikhail Sharanda | SIL Open Font License 1.1 |
+| **Fraunces** | Undercase Type (Phaedra Charles, Flavia Zimbardi) | SIL Open Font License 1.1 |
+| **Archivo** | Omnibus-Type | SIL Open Font License 1.1 |
 
 La OFL permite empaquetarlas dentro de la aplicación, que es lo que se hace en `src/main/resources/fonts/`.
+
+> Esta tabla decía **Spectral y Manrope** hasta el 07-08-2026, aunque el cambio de familias fue en la Fase 8.2. Es la trampa de siempre: **un documento que describe un estado caduca en silencio**, porque nadie lo compila.
+
+## Servicios externos
+
+Todo lo que la aplicación consulta por internet, y bajo qué condiciones. **Ninguno pide clave de API**, que es exactamente el motivo por el que se eligieron: un secreto dentro del ejecutable se extrae descompilándolo.
+
+| Servicio | Para qué | Condiciones |
+|---|---|---|
+| **OpenStreetMap** | Teselas del mapa de ubicación (F19) | Datos © colaboradores de OpenStreetMap, bajo [ODbL](https://www.openstreetmap.org/copyright). **La atribución es obligatoria** y se muestra bajo el mapa. Se respeta su [política de teselas](https://operations.osmfoundation.org/policies/tiles/): identificación por `User-Agent`, sin descarga por lotes y con caché local |
+| **Open-Meteo** | Previsión meteorológica de la ficha (F18) | Uso libre no comercial, sin registro |
+| **Open-Meteo Geocoding** | Convertir el nombre de un sitio en coordenadas (F17) | Igual que el anterior |
+| **MyMemory** | Traducción de descripciones y reseñas (Fases 8.5 y 8.7) | Punto de acceso anónimo, 5.000 palabras al día |
+| **Brevo** | Envío del correo de recuperación de contraseña (Fase 8.6) | **Opcional.** Solo se usa si hay credenciales en variables de entorno; sin ellas la aplicación va por el código de administrador |
+
+> **Si esto llegara a tener uso real, lo primero a revisar es OpenStreetMap.** Sus servidores van con donaciones, y crecer sobre infraestructura donada no está bien: a partir de cierto volumen lo correcto es autoalojar las teselas o pagar a un proveedor.

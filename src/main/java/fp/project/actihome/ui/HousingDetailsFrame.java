@@ -27,6 +27,7 @@ import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.ReservationService;
 import fp.project.actihome.model.services.ReviewService;
+import fp.project.actihome.model.services.TileClient;
 import fp.project.actihome.model.services.WeatherService;
 import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Buttons;
@@ -40,6 +41,7 @@ import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.housings.Galeria;
+import fp.project.actihome.ui.housings.MapaDeUbicacion;
 import fp.project.actihome.ui.housings.PrevisionPanel;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
@@ -115,6 +117,9 @@ public class HousingDetailsFrame extends JFrame {
 
 	/** De dónde sale la previsión del {@code PrevisionPanel} (F18). */
 	private final transient WeatherService weatherService;
+
+	/** De dónde salen las teselas del {@code MapaDeUbicacion} (F19). */
+	private final transient TileClient tileClient;
 	private final transient ReviewService reviewService;
 
 	/** Solo para pintar la ocupación del calendario: aquí no se reserva nada. */
@@ -131,7 +136,7 @@ public class HousingDetailsFrame extends JFrame {
 
 	public HousingDetailsFrame(HousingService housingService, ReviewService reviewService,
 			ReservationService reservationService, SessionManager sessionManager, Navigator navigator,
-			HeaderPanel headerPanel, WeatherService weatherService) {
+			HeaderPanel headerPanel, WeatherService weatherService, TileClient tileClient) {
 
 		this.housingService = housingService;
 		this.reviewService = reviewService;
@@ -140,6 +145,7 @@ public class HousingDetailsFrame extends JFrame {
 		this.navigator = navigator;
 		this.headerPanel = headerPanel;
 		this.weatherService = weatherService;
+		this.tileClient = tileClient;
 
 		initUI();
 	}
@@ -302,6 +308,7 @@ public class HousingDetailsFrame extends JFrame {
 
 		izquierda.add(galeria(), "grow");
 		izquierda.add(new PrevisionPanel(housing, weatherService), "growx");
+		izquierda.add(new MapaDeUbicacion(housing, tileClient), "growx");
 
 		panel.add(izquierda, "grow");
 		panel.add(informacion(), "aligny top");

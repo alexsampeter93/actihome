@@ -138,7 +138,7 @@ public final class ScreenSnapshots {
 		// según lo rápida que fuese. El de ejemplo devuelve además los cinco estados
 		// del cielo, así que una sola captura enseña los cinco iconos.
 		try (ConfigurableApplicationContext context = app.run("--spring.datasource.url=" + BASE_EN_MEMORIA,
-				"--spring.datasource.username=sa", "--actihome.meteorologia.habilitada=false")) {
+				"--spring.datasource.username=sa", "--actihome.meteorologia.habilitada=false", "--actihome.mapa.habilitado=false")) {
 
 			comprobarQueLaBaseEsDesechable(context);
 

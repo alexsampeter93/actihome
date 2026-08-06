@@ -43,7 +43,8 @@ public class MedirPantallas {
 				"--spring.datasource.url=jdbc:h2:mem:medir;DB_CLOSE_DELAY=-1;MODE=MySQL",
 				"--spring.datasource.username=sa",
 				// Sin red: ver la nota de WeatherClientDeEjemplo.
-				"--actihome.meteorologia.habilitada=false")) {
+				"--actihome.meteorologia.habilitada=false",
+				"--actihome.mapa.habilitado=false")) {
 
 			var sm = c.getBean(SessionManager.class);
 			var us = c.getBean(UserService.class);

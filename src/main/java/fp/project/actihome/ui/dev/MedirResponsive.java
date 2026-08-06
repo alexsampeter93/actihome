@@ -115,7 +115,7 @@ public class MedirResponsive {
 		// medición indeterminista —el panel aparecería a mitad del recorrido del árbol
 		// según lo rápida que fuera la red—. Ver WeatherClientDeEjemplo.
 		try (ConfigurableApplicationContext c = app.run("--spring.datasource.url=jdbc:h2:mem:responsive;DB_CLOSE_DELAY=-1;MODE=MySQL",
-				"--spring.datasource.username=sa", "--actihome.meteorologia.habilitada=false")) {
+				"--spring.datasource.username=sa", "--actihome.meteorologia.habilitada=false", "--actihome.mapa.habilitado=false")) {
 
 			SessionManager sesion = c.getBean(SessionManager.class);
 			UserService usuarios = c.getBean(UserService.class);
