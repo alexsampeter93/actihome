@@ -17,13 +17,27 @@ La interfaz se repinta entera según la estación del año, que el usuario elige
 
 ---
 
+## De dónde viene
+
+Esto no empezó así. La aplicación existía, con toda su lógica de negocio, y su interfaz era la que Swing trae de serie: tablas, pares de etiqueta y valor, y ventanas de 500×500 escritas a mano.
+
+| Antes | Después |
+|---|---|
+| <img src="docs/progreso/antes-catalogo.png" width="420"> | <img src="docs/progreso/fase3-catalogo-otono.png" width="420"> |
+
+**→ [Galería completa antes / después](docs/ANTES-DESPUES.md)** — cuatro pantallas emparejadas, y lo que las capturas no enseñan.
+
+Las de la izquierda no son una reconstrucción: salen de ejecutar el commit inicial recuperado del historial de Git.
+
+---
+
 ## Arrancar
 
 **Sin instalar nada.** La base de datos es H2 embebida en un fichero (`~/.actihome/`), así que no hay que montar ningún servidor.
 
 ```powershell
 .\mvnw.cmd spring-boot:run     # arrancar
-.\mvnw.cmd test                # 139 tests
+.\mvnw.cmd test                # 156 tests
 .\empaquetar.ps1               # generar dist\ActiHome\ActiHome.exe
 ```
 
@@ -44,6 +58,7 @@ Dos roles (ADMIN / CUSTOMER) sobre 23 pantallas:
 | **Reseñas** | Cinco sub-notas por categoría, foto adjunta, respuesta pública del propietario y recálculo de la media del alojamiento |
 | **Intercambio** | Permuta de alojamientos entre propietarios |
 | **Mensajería** | Conversaciones huésped ↔ propietario por alojamiento |
+| **Ubicación** | Previsión meteorológica de los próximos días y mapa del alojamiento, con las coordenadas resueltas desde el nombre del sitio. **Ningún servicio pide clave de API**, que es lo que permite que funcionen dentro del ejecutable repartido |
 | **Paneles** | Ingresos y ocupación para el propietario; agregados globales para el administrador |
 | **Sistema** | Español/inglés, cuatro estaciones, recordatorios en la bandeja del sistema y copia de seguridad de la base en caliente |
 
@@ -102,7 +117,7 @@ Solo las dos primeras entran en el CI, y es deliberado: **un paso que nunca se p
 
 ### Integración continua
 
-Cada `push` a `main` y cada *pull request* ejecuta los **139 tests**, los recortes de layout en los seis tamaños y el contraste WCAG en las cuatro estaciones ([`comprobaciones.yml`](.github/workflows/comprobaciones.yml)).
+Cada `push` a `main` y cada *pull request* ejecuta los **156 tests**, los recortes de layout en los seis tamaños y el contraste WCAG en las cuatro estaciones ([`comprobaciones.yml`](.github/workflows/comprobaciones.yml)).
 
 Las dos herramientas de medición construyen ventanas de Swing de verdad, así que corren bajo `xvfb` — una pantalla virtual, porque un servidor no tiene escritorio donde dibujarlas.
 
@@ -135,7 +150,7 @@ Sustituyeron a Spectral y Manrope por una razón concreta: Manrope pertenece a l
 | Swing + FlatLaf | 3.7.2 | Interfaz y Look & Feel base |
 | MigLayout | 11.4.2 | Gestor de layout de todas las pantallas |
 | H2 / MySQL 8 | | H2 embebida por defecto; MySQL disponible por perfil, con credenciales desde variables de entorno |
-| JUnit 5 | | 139 tests, casi todos sobre la capa de servicio, en H2 en memoria |
+| JUnit 5 | | 156 tests, casi todos sobre la capa de servicio, en H2 en memoria |
 
 ---
 
