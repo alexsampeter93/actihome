@@ -2,13 +2,13 @@ package fp.project.actihome.model.services;
 
 import java.util.Properties;
 
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -97,7 +97,7 @@ public class BrevoEmailSender implements EmailSender {
 		propiedades.put("mail.smtp.connectiontimeout", "10000");
 		propiedades.put("mail.smtp.timeout", "10000");
 
-		Session sesion = Session.getInstance(propiedades, new javax.mail.Authenticator() {
+		Session sesion = Session.getInstance(propiedades, new jakarta.mail.Authenticator() {
 
 			@Override
 			protected PasswordAuthentication getPasswordAuthentication() {

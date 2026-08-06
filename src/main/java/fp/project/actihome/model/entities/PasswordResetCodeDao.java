@@ -2,9 +2,9 @@ package fp.project.actihome.model.entities;
 
 import java.util.ArrayList;
 
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface PasswordResetCodeDao extends PagingAndSortingRepository<PasswordResetCode, Long> {
+public interface PasswordResetCodeDao extends JpaRepository<PasswordResetCode, Long> {
 
 	/**
 	 * Los códigos vivos de un usuario, el más reciente primero.

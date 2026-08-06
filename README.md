@@ -2,7 +2,7 @@
 
 [![Comprobaciones](https://github.com/alexsampeter93/actihome/actions/workflows/comprobaciones.yml/badge.svg)](https://github.com/alexsampeter93/actihome/actions/workflows/comprobaciones.yml)
 
-Aplicación de escritorio para gestión, reserva e intercambio de alojamientos turísticos. **Java 11 · Spring Boot · Swing · H2.**
+Aplicación de escritorio para gestión, reserva e intercambio de alojamientos turísticos. **Java 17 · Spring Boot 3 · Swing · H2.**
 
 ![Catálogo de ActiHome en otoño](docs/progreso/fase82-otono.png)
 
@@ -23,7 +23,7 @@ La interfaz se repinta entera según la estación del año, que el usuario elige
 
 ```powershell
 .\mvnw.cmd spring-boot:run     # arrancar
-.\mvnw.cmd test                # 137 tests
+.\mvnw.cmd test                # 139 tests
 .\empaquetar.ps1               # generar dist\ActiHome\ActiHome.exe
 ```
 
@@ -102,7 +102,7 @@ Solo las dos primeras entran en el CI, y es deliberado: **un paso que nunca se p
 
 ### Integración continua
 
-Cada `push` a `main` y cada *pull request* ejecuta los **137 tests**, los recortes de layout en los seis tamaños y el contraste WCAG en las cuatro estaciones ([`comprobaciones.yml`](.github/workflows/comprobaciones.yml)).
+Cada `push` a `main` y cada *pull request* ejecuta los **139 tests**, los recortes de layout en los seis tamaños y el contraste WCAG en las cuatro estaciones ([`comprobaciones.yml`](.github/workflows/comprobaciones.yml)).
 
 Las dos herramientas de medición construyen ventanas de Swing de verdad, así que corren bajo `xvfb` — una pantalla virtual, porque un servidor no tiene escritorio donde dibujarlas.
 
@@ -131,11 +131,11 @@ Sustituyeron a Spectral y Manrope por una razón concreta: Manrope pertenece a l
 | Pieza | Versión | Papel |
 |---|---|---|
 | Java | 11 | |
-| Spring Boot | 2.2.2 | Inyección de dependencias y Spring Data JPA. **No levanta servidor web** (`WebApplicationType.NONE`) |
+| Spring Boot | 3.5.3 | Inyección de dependencias y Spring Data JPA. **No levanta servidor web** (`WebApplicationType.NONE`) |
 | Swing + FlatLaf | 3.7.2 | Interfaz y Look & Feel base |
 | MigLayout | 11.4.2 | Gestor de layout de todas las pantallas |
 | H2 / MySQL 8 | | H2 embebida por defecto; MySQL disponible por perfil, con credenciales desde variables de entorno |
-| JUnit 5 | | 137 tests, casi todos sobre la capa de servicio, en H2 en memoria |
+| JUnit 5 | | 139 tests, casi todos sobre la capa de servicio, en H2 en memoria |
 
 ---
 

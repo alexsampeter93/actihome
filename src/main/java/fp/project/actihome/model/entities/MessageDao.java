@@ -3,9 +3,9 @@ package fp.project.actihome.model.entities;
 import java.util.ArrayList;
 import java.util.Optional;
 
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface MessageDao extends PagingAndSortingRepository<Message, Long> {
+public interface MessageDao extends JpaRepository<Message, Long> {
 
 	Optional<Message> findById(Long messageId);
 

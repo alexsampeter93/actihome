@@ -3,9 +3,9 @@ package fp.project.actihome.model.entities;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface TranslationDao extends PagingAndSortingRepository<Translation, Long> {
+public interface TranslationDao extends JpaRepository<Translation, Long> {
 
 	Optional<Translation> findBySourceHashAndTargetLanguage(String sourceHash, String targetLanguage);
 

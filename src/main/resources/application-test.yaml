@@ -20,14 +20,20 @@ spring:
     username: sa
     password: ""
     driverClassName: org.h2.Driver
-    schema: classpath:schema.sql
-    data:
-      - classpath:data.sql
-      # Precarga de la cache de traducciones (Fase 8.7), generada por
-      # ui/dev/SembrarTraducciones. Va DESPUES de data.sql porque no depende de
-      # ninguna fila suya: traduce textos, no campos de entidades.
-      - classpath:traducciones.sql
-    initialization-mode: always
+
+  # Movido de spring.datasource a spring.sql.init en la migracion a Spring Boot 3:
+  # las propiedades viejas ya no existen en la 3.x y se ignoran EN SILENCIO.
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations:
+        - classpath:data.sql
+        # Precarga de la cache de traducciones (Fase 8.7), generada por
+        # ui/dev/SembrarTraducciones. Va DESPUES de data.sql porque no depende de
+        # ninguna fila suya: traduce textos, no campos de entidades.
+        - classpath:traducciones.sql
+      encoding: UTF-8
 
   jpa:
     hibernate:

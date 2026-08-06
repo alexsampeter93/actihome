@@ -12,6 +12,11 @@
 #>
 
 $ErrorActionPreference = "Stop"
+
+# Para leer el manifiesto de dentro del jar (un jar es un zip). En Windows
+# PowerShell 5.1 este ensamblado no viene cargado de serie.
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
 $raiz = $PSScriptRoot
 $nombre = "ActiHome"
 $version = "1.0.0"
@@ -121,17 +126,38 @@ $destino = "$raiz\dist"
 if (Test-Path "$destino\$nombre") { Remove-Item "$destino\$nombre" -Recurse -Force }
 if (-not (Test-Path $destino)) { New-Item -ItemType Directory -Path $destino | Out-Null }
 
-# --main-class explícito: el jar de Spring Boot arranca a través de JarLauncher,
+# --main-class: el jar de Spring Boot arranca a través de un lanzador propio,
 # que es quien sabe leer las dependencias empaquetadas dentro del propio jar.
 # Sin indicarlo, jpackage intentaría llamar directamente a la clase de la
 # aplicación y no encontraría ninguna de sus librerías.
+#
+# SE LEE DEL MANIFIESTO, no se escribe a mano, y hay un motivo concreto: aquí
+# estaba puesto "org.springframework.boot.loader.JarLauncher" y Spring Boot 3.2
+# movió esa clase a "org.springframework.boot.loader.launch.JarLauncher". Con el
+# nombre viejo, jpackage genera el ejecutable sin quejarse y el .exe resultante
+# muere al arrancar con un ClassNotFoundException —que nadie ve, porque va sin
+# consola—. Preguntándoselo al jar, el script sobrevive al siguiente cambio.
+$manifiesto = [System.IO.Compression.ZipFile]::OpenRead($jar.FullName)
+try {
+    $entrada = $manifiesto.GetEntry("META-INF/MANIFEST.MF")
+    $lector = New-Object System.IO.StreamReader($entrada.Open())
+    $texto = $lector.ReadToEnd()
+    $lector.Dispose()
+} finally {
+    $manifiesto.Dispose()
+}
+
+if ($texto -notmatch "Main-Class:\s*(\S+)") { throw "El jar no declara Main-Class" }
+$lanzador = $Matches[1]
+Write-Host "    lanzador: $lanzador"
+
 & $jpackage `
     --type app-image `
     --name $nombre `
     --app-version $version `
     --input $preparacion `
     --main-jar $jar.Name `
-    --main-class org.springframework.boot.loader.JarLauncher `
+    --main-class $lanzador `
     --icon $ico `
     --dest $destino `
     --vendor "CocoBrain" `

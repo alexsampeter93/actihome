@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface HousingDao extends PagingAndSortingRepository<Housing, Long> {
+public interface HousingDao extends JpaRepository<Housing, Long> {
 
 	Optional<Housing> findById(Long housingId);
 

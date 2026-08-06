@@ -2,9 +2,9 @@ package fp.project.actihome.model.entities;
 
 import java.util.ArrayList;
 
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface HousingPhotoDao extends PagingAndSortingRepository<HousingPhoto, Long> {
+public interface HousingPhotoDao extends JpaRepository<HousingPhoto, Long> {
 
 	/**
 	 * Las fotos de galería de un alojamiento, en el orden en que se enseñan.

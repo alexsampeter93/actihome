@@ -3,9 +3,9 @@ package fp.project.actihome.model.entities;
 
 import java.util.Optional;
 
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface UserDao extends PagingAndSortingRepository<User, Long> {
+public interface UserDao extends JpaRepository<User, Long> {
 	
 	 //Comprobará si el nombre de usuario "username" existe
 	boolean existsByUsername(String username);

@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ReservationDao extends PagingAndSortingRepository<Reservation, Long> {
+public interface ReservationDao extends JpaRepository<Reservation, Long> {
 
 	ArrayList<Reservation> findByCustomerIdOrderByReservationDateDesc(Long customerId);
 
