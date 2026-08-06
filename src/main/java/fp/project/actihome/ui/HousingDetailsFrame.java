@@ -106,6 +106,9 @@ public class HousingDetailsFrame extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 
+	/** Ver la nota extensa en {@code ShowHousingsFrame.AIRE_LATERAL}. */
+	private static final String AIRE_LATERAL = Space.MD + ":" + Space.HUGE + ":" + Space.HUGE;
+
 	private final transient HousingService housingService;
 	private final transient ReviewService reviewService;
 
@@ -218,8 +221,13 @@ public class HousingDetailsFrame extends JFrame {
 	private void reconstruir() {
 
 		contenido.removeAll();
-		contenido.setLayout(new MigLayout("wrap 1, fill, " + Space.insets(Space.XL, Space.HUGE, Space.XL, Space.HUGE),
-				"[grow,fill]", "[]" + Space.LG + "[grow,fill]"));
+		// El aire lateral va como RANGO en la especificacion de columnas, no como
+		// insets fijos. Con 44 puntos fijos a cada lado, las dos columnas de la ficha
+		// no cabian en una ventana de 1024 y la de la derecha se salia por el borde,
+		// donde no hay barra horizontal que la rescate. Ver la nota de AIRE_LATERAL en
+		// ShowHousingsFrame: MigLayout no admite rangos en insets, si en gaps.
+		contenido.setLayout(new MigLayout("wrap 1, fill, " + Space.insets(Space.XL, 0, Space.XL, 0),
+				AIRE_LATERAL + "[grow,fill]" + AIRE_LATERAL, "[]" + Space.LG + "[grow,fill]"));
 
 		contenido.add(migaDePan(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
 		contenido.add(cuerpo(), "grow, " + Layout.anchoCentrado(Layout.CONTENIDO));
@@ -268,7 +276,8 @@ public class HousingDetailsFrame extends JFrame {
 	private JPanel cuerpo() {
 
 		JPanel panel = new JPanel(
-				new MigLayout(Space.insets(0), "[grow,fill]" + Space.XXXL + "[grow,fill]", "[grow,fill]"));
+				new MigLayout(Space.insets(0),
+						"[grow,fill]" + Space.MD + ":" + Space.XXXL + ":" + Space.XXXL + "[grow,fill]", "[grow,fill]"));
 		panel.setOpaque(false);
 
 		// Columna izquierda: la foto y, debajo, el calendario de ocupación. Los dos

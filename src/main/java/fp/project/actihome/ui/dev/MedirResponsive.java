@@ -328,9 +328,25 @@ public class MedirResponsive {
 	 * </ol>
 	 *
 	 * <p>
-	 * Dentro de un {@code JScrollPane} no se busca: quedarse fuera ahí es el
-	 * comportamiento previsto, y para eso está la barra de desplazamiento. Lo que
-	 * interesa es el marco de la pantalla, que no tiene rescate.
+	 * <b>Dentro de un {@code JScrollPane} sí se busca, pero solo a lo ancho</b>, y
+	 * corregirlo fue la ampliación más importante que ha tenido esta herramienta.
+	 * Antes se saltaba el contenido de cualquier scroll con el argumento de que
+	 * «quedarse fuera ahí es el comportamiento previsto, para eso está la barra».
+	 * Eso es cierto <b>en vertical</b> y falso en horizontal:
+	 * {@link fp.project.actihome.ui.components.Rescate} desactiva a propósito la
+	 * barra horizontal, así que lo que se salga por la derecha <b>no se puede
+	 * alcanzar nunca</b>, por mucho que se agrande la ventana.
+	 *
+	 * <p>
+	 * Y como <em>todas</em> las pantallas envuelven su cuerpo en {@code Rescate},
+	 * la regla vieja significaba que esta herramienta <b>no miraba dentro de
+	 * ninguna</b>: solo comprobaba el marco. Decía «sin recortes» mientras la
+	 * tarjeta de preferencias de Ajustes salía cortada a 1024 puntos de ancho.
+	 *
+	 * <p>
+	 * Es, otra vez, la misma lección: <b>una comprobación automática solo protege
+	 * de la clase de fallo que sabe buscar</b>, y aquí el propio comentario que
+	 * justificaba la excepción era lo que la hacía ciega.
 	 *
 	 * @param x        desplazamiento acumulado hasta este contenedor, en coordenadas
 	 *                 del panel de contenido
@@ -338,6 +354,17 @@ public class MedirResponsive {
 	 */
 	private static void buscarAplastados(Container contenedor, int x, int y, Rectangle visible,
 			List<String> encontrados) {
+
+		buscarAplastados(contenedor, x, y, visible, encontrados, false);
+	}
+
+	/**
+	 * @param dentroDeScroll si venimos de dentro de un scroll, en cuyo caso solo se
+	 *                       mira el desbordamiento horizontal: el vertical ahi es
+	 *                       legitimo y lo resuelve la barra.
+	 */
+	private static void buscarAplastados(Container contenedor, int x, int y, Rectangle visible,
+			List<String> encontrados, boolean dentroDeScroll) {
 
 		for (Component hijo : contenedor.getComponents()) {
 
@@ -358,9 +385,12 @@ public class MedirResponsive {
 
 				// Se tolera 1 punto por el mismo motivo. Un componente cuyo borde derecho o
 				// inferior cae fuera del área visible está, literalmente, sin poderse ver.
-				boolean fuera = enVentana.x < -1 || enVentana.y < -1
-						|| enVentana.x + enVentana.width > visible.width + 1
-						|| enVentana.y + enVentana.height > visible.height + 1;
+				boolean seSaleALoAncho = enVentana.x < -1 || enVentana.x + enVentana.width > visible.width + 1;
+				boolean seSaleALoAlto = enVentana.y < -1 || enVentana.y + enVentana.height > visible.height + 1;
+
+				// Dentro de un scroll, salirse por abajo es para lo que esta la barra. Por la
+				// derecha no: Rescate desactiva la barra horizontal a proposito.
+				boolean fuera = dentroDeScroll ? seSaleALoAncho : (seSaleALoAncho || seSaleALoAlto);
 
 				if (aplastado || fuera) {
 
@@ -371,12 +401,9 @@ public class MedirResponsive {
 				}
 			}
 
-			if (hijo instanceof JScrollPane) {
-				continue;
-			}
-
 			if (hijo instanceof Container) {
-				buscarAplastados((Container) hijo, x + real.x, y + real.y, visible, encontrados);
+				buscarAplastados((Container) hijo, x + real.x, y + real.y, visible, encontrados,
+						dentroDeScroll || hijo instanceof JScrollPane);
 			}
 		}
 	}

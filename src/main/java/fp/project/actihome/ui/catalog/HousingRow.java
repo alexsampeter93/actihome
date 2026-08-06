@@ -26,6 +26,7 @@ import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
+import fp.project.actihome.ui.components.FilaFluida;
 
 /**
  * Una fila del catálogo en vista de lista.
@@ -149,11 +150,14 @@ public class HousingRow extends JPanel {
 	}
 
 	/** "Nº 10001 —— Sierra Nevada, Granada", con el chip de comparar al otro extremo. */
-	private JPanel referencia() {
+	private FilaFluida referencia() {
 
-		JPanel fila = new JPanel(
-				new MigLayout(Space.insets(0), "[]" + Space.SM + "[]" + Space.SM + "[]push[]", ""));
-		fila.setOpaque(false);
+		// FilaFluida y no una fila rigida: cuatro elementos de ancho variable -y uno de
+		// ellos la ubicacion, que puede ser "Marbella, Malaga"- exigian la SUMA de todos
+		// sus anchos, y esa suma no cabia en una ventana de 1024. Ahora exige solo el
+		// mas ancho y dobla en dos lineas cuando hace falta. Es la regla numero 1 de la
+		// adaptabilidad del proyecto, que a esta fila no se le habia aplicado.
+		FilaFluida fila = new FilaFluida(Space.SM, Space.XS);
 
 		JLabel numero = Labels.capsAccent(Textos.t("catalogo.numero") + " " + housing.getHousingCode());
 		fila.add(numero);
@@ -179,11 +183,9 @@ public class HousingRow extends JPanel {
 	}
 
 	/** Nota, barra fina, número de reseñas, habitaciones y propietario. */
-	private JPanel valoracion(int resenas) {
+	private FilaFluida valoracion(int resenas) {
 
-		JPanel fila = new JPanel(new MigLayout(Space.insets(0),
-				"[]" + Space.MD + "[]" + Space.MD + "[]" + Space.MD + "[]", ""));
-		fila.setOpaque(false);
+		FilaFluida fila = new FilaFluida(Space.MD, Space.XS);
 
 		fila.add(new InlineScore(housing.getScore(), 19f, 64));
 
@@ -227,11 +229,9 @@ public class HousingRow extends JPanel {
 	 * existen o si nadie las ha rellenado. Con las tres siempre a la vista y dos
 	 * tachadas, la ausencia es información y no un hueco.
 	 */
-	private JPanel pension() {
+	private FilaFluida pension() {
 
-		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]" + Space.SM + "[]" + Space.SM + "[]",
-				""));
-		fila.setOpaque(false);
+		FilaFluida fila = new FilaFluida(Space.SM, Space.XS);
 
 		fila.add(Labels.caps(Textos.t("catalogo.row.pension")));
 		fila.add(comida(Textos.t("catalogo.row.desayuno"), housing.isBreakfast()));

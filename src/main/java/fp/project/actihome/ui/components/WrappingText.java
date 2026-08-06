@@ -1,6 +1,9 @@
 package fp.project.actihome.ui.components;
 
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FontMetrics;
+import java.awt.Insets;
 
 import javax.swing.JTextArea;
 
@@ -75,6 +78,44 @@ public class WrappingText extends JTextArea {
 	 */
 	public static WrappingText muted(String texto) {
 		return new WrappingText(texto, true);
+	}
+
+	/**
+	 * El mínimo de un párrafo es <b>la palabra más larga</b>, no el párrafo entero.
+	 *
+	 * <p>
+	 * <b>Sin esto, un texto que sí sabe partirse en líneas se comportaba como si no
+	 * supiera.</b> Un {@code JTextArea} con ajuste de línea calcula su tamaño a
+	 * partir del ancho que ya tiene; cuando todavía no tiene ninguno —que es el caso
+	 * cuando el layout le pregunta— responde con el ancho de <em>todo el texto en
+	 * una sola línea</em>. MigLayout toma esa cifra como el mínimo por debajo del
+	 * cual no puede bajar, y en una ventana estrecha desborda el contenedor en vez
+	 * de repartir el párrafo en más líneas.
+	 *
+	 * <p>
+	 * Es exactamente el mismo razonamiento que {@link FilaFluida}: por debajo del
+	 * elemento indivisible más ancho no hay reflujo posible, pero por encima
+	 * siempre se puede repartir. En una fila, ese elemento es el hijo más ancho; en
+	 * un párrafo, la palabra más larga.
+	 *
+	 * <p>
+	 * <b>El alto que se devuelve es el del ancho actual</b>, no el del ancho mínimo,
+	 * por la misma razón anotada en {@code FilaFluida.minimumLayoutSize}: son dos
+	 * preguntas distintas, y contestar las dos con la misma medición reservaría el
+	 * alto de un párrafo plegado a una columna también en ventanas anchas.
+	 */
+	@Override
+	public Dimension getMinimumSize() {
+
+		FontMetrics metrica = getFontMetrics(getFont());
+		Insets margenes = getInsets();
+		int masLarga = 0;
+
+		for (String palabra : getText().split("\\s+")) {
+			masLarga = Math.max(masLarga, metrica.stringWidth(palabra));
+		}
+
+		return new Dimension(masLarga + margenes.left + margenes.right, getPreferredSize().height);
 	}
 
 	@Override

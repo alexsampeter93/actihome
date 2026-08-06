@@ -128,6 +128,24 @@ public class ShowHousingsFrame extends JFrame {
 	/** Por debajo de esto el titular deja de encogerse: mejor dos lineas que ilegible. */
 	private static final float TITULAR_MINIMO = 26f;
 
+	/**
+	 * El aire a izquierda y derecha de la lista, <b>declarado como rango</b>.
+	 *
+	 * <p>
+	 * Antes eran 44 puntos fijos a cada lado, metidos en los {@code insets} del
+	 * panel. Ochenta y ocho puntos que la lista no podía recuperar jamás, y en una
+	 * ventana de 1024 eso era exactamente la diferencia entre que una fila cupiera o
+	 * se saliera por la derecha — donde no hay barra de desplazamiento que valga.
+	 *
+	 * <p>
+	 * <b>Va en la especificación de columnas y no en los insets, y no es
+	 * indiferente:</b> MigLayout <b>no admite</b> {@code min:pref:max} dentro de
+	 * {@code insets} —revienta con "Malformed UnitValue"— pero sí en los gaps de
+	 * las columnas. Es la regla número 2 de la adaptabilidad del proyecto aplicada
+	 * donde el gestor de layout deja aplicarla: el aire se negocia, un botón no.
+	 */
+	private static final String AIRE_LATERAL = Space.MD + ":" + Space.HUGE + ":" + Space.HUGE;
+
 	/** Columnas de la vista de cuadrícula, según el handoff. */
 	private static final int COLUMNAS_CUADRICULA = 3;
 
@@ -598,8 +616,8 @@ public class ShowHousingsFrame extends JFrame {
 	private JScrollPane zonaDeLista() {
 
 
-		lista = new JPanel(new MigLayout("wrap 1, " + Space.insets(0, Space.HUGE, Space.XXL, Space.HUGE),
-				"[grow,fill]", "[]"));
+		lista = new JPanel(new MigLayout("wrap 1, " + Space.insets(0, 0, Space.XXL, 0),
+				AIRE_LATERAL + "[grow,fill]" + AIRE_LATERAL, "[]"));
 		lista.setOpaque(false);
 
 		// Rescate y no un JScrollPane crudo. La diferencia esta en el Scrollable que
@@ -703,7 +721,7 @@ public class ShowHousingsFrame extends JFrame {
 		// el layout anterior.
 		lista.setLayout(new MigLayout(
 				"wrap " + (filtros.esCuadricula() ? COLUMNAS_CUADRICULA : 1) + ", "
-						+ Space.insets(0, Space.HUGE, Space.XXL, Space.HUGE),
+						+ Space.insets(0, 0, Space.XXL, 0),
 				columnasDe(filtros.esCuadricula()), "[]"));
 
 		if (resultado.isEmpty()) {
@@ -724,16 +742,16 @@ public class ShowHousingsFrame extends JFrame {
 	private String columnasDe(boolean cuadricula) {
 
 		if (!cuadricula) {
-			return "[grow,fill]";
+			return AIRE_LATERAL + "[grow,fill]" + AIRE_LATERAL;
 		}
 
-		StringBuilder columnas = new StringBuilder();
+		StringBuilder columnas = new StringBuilder(AIRE_LATERAL);
 
 		for (int i = 0; i < COLUMNAS_CUADRICULA; i++) {
 			columnas.append(i == 0 ? "" : String.valueOf(Space.XXL)).append("[grow,fill]");
 		}
 
-		return columnas.toString();
+		return columnas.append(AIRE_LATERAL).toString();
 	}
 
 	private void pintarLista(List<Housing> alojamientos) {
