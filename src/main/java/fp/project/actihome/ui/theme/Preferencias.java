@@ -9,6 +9,9 @@ import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Properties;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Las preferencias visuales de la última sesión, guardadas en el disco.
  *
@@ -48,6 +51,8 @@ import java.util.Properties;
  * exactamente como antes de que esta clase existiera.
  */
 public final class Preferencias {
+
+	private static final Logger log = LoggerFactory.getLogger(Preferencias.class);
 
 	private static final Path CARPETA = Paths.get(System.getProperty("user.home"), ".actihome");
 	private static final Path FICHERO = CARPETA.resolve("preferencias.properties");
@@ -129,7 +134,7 @@ public final class Preferencias {
 			// Disco lleno, carpeta sin permisos, perfil de red caído... Nada de esto
 			// justifica interrumpir al usuario: lo único que se pierde es que la próxima
 			// pantalla de login salga con la estación del calendario.
-			System.err.println("[Preferencias] No se pudieron guardar: " + ex.getMessage());
+			log.warn("No se pudieron guardar las preferencias", ex);
 		}
 	}
 
@@ -145,7 +150,7 @@ public final class Preferencias {
 			valores.load(entrada);
 
 		} catch (IOException ex) {
-			System.err.println("[Preferencias] No se pudieron leer: " + ex.getMessage());
+			log.warn("No se pudieron leer las preferencias", ex);
 		}
 
 		return valores;

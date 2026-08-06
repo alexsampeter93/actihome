@@ -18,6 +18,9 @@ import fp.project.actihome.ui.theme.BrandAssets;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Pantalla de bienvenida animada: el lockup "CocoBrain presenta" mientras
  * arranca la aplicación.
@@ -56,6 +59,8 @@ import fp.project.actihome.ui.theme.Typography;
  * el splash todavía no existe.
  */
 public final class SplashScreen {
+
+	private static final Logger log = LoggerFactory.getLogger(SplashScreen.class);
 
 	private static final int ANCHO = 620;
 	private static final int ALTO = 420;
@@ -301,7 +306,7 @@ public final class SplashScreen {
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		} catch (InvocationTargetException e) {
-			System.err.println("[SplashScreen] No se pudo mostrar: " + e.getCause());
+			log.warn("No se pudo mostrar el splash", e);
 		}
 	}
 

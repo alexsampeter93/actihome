@@ -13,6 +13,7 @@ import fp.project.actihome.model.services.ContentTranslationService;
 import fp.project.actihome.ui.LoginFrame;
 import fp.project.actihome.ui.brand.SplashScreen;
 import fp.project.actihome.ui.nav.Navigator;
+import fp.project.actihome.ui.soporte.Incidencias;
 import fp.project.actihome.ui.reminders.TrayReminders;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
 import fp.project.actihome.ui.theme.Contenido;
@@ -23,6 +24,12 @@ public class ActihomeApplication {
 	public static void main(String[] args) {
 
 		System.setProperty("java.awt.headless", "false");
+
+		// Lo primero de todo, antes incluso del tema: a partir de esta línea, cualquier
+		// fallo no previsto queda registrado en un fichero y se le dice al usuario.
+		// Instalarlo más abajo dejaría sin cubrir justo el arranque, que es donde se
+		// cargan fuentes e imágenes y donde más cosas pueden faltar.
+		Incidencias.instalar();
 
 		// El Look and Feel se instala antes de arrancar Spring: varias ventanas son
 		// beans no-@Lazy y se construyen durante el refresco del contexto, así que si

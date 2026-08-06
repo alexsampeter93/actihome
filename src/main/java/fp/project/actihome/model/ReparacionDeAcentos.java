@@ -14,6 +14,9 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Repara los acentos que quedaron corrompidos en bases de datos creadas antes de
  * que se fijara la codificación de los scripts de arranque.
@@ -53,6 +56,8 @@ import org.springframework.stereotype.Component;
 @Order(0)
 public class ReparacionDeAcentos implements ApplicationRunner {
 
+	private static final Logger log = LoggerFactory.getLogger(ReparacionDeAcentos.class);
+
 	/** Tabla, clave primaria y columnas de texto que hay que revisar. */
 	private static final String[][] OBJETIVOS = {
 			{ "USERS", "id", "name", "surname", "locality", "email" },
@@ -81,7 +86,7 @@ public class ReparacionDeAcentos implements ApplicationRunner {
 			// Esto es una reparación de datos heredados, no una función de la
 			// aplicación: si falla, la aplicación tiene que abrir igual. Se avisa por
 			// consola y se sigue.
-			System.err.println("[ReparacionDeAcentos] No se pudo revisar la base de datos: " + ex.getMessage());
+			log.error("No se pudo revisar la base de datos en busca de acentos corrompidos", ex);
 			return;
 		}
 

@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Tipografía del sistema de diseño de ActiHome.
  *
@@ -66,6 +69,8 @@ import java.util.Collections;
  * romperá.
  */
 public final class Typography {
+
+	private static final Logger log = LoggerFactory.getLogger(Typography.class);
 
 	private static final String FONT_PATH = "/fonts/";
 
@@ -154,7 +159,7 @@ public final class Typography {
 		try (InputStream in = Typography.class.getResourceAsStream(FONT_PATH + fileName)) {
 
 			if (in == null) {
-				System.err.println("[Typography] No se encontró la fuente " + fileName + ", se usa la fuente del sistema.");
+				log.warn("No se encontro la fuente {}, se usa la del sistema", fileName);
 				return new Font(logicalFallback, Font.PLAIN, 12);
 			}
 
@@ -168,7 +173,7 @@ public final class Typography {
 			return font;
 
 		} catch (FontFormatException | IOException e) {
-			System.err.println("[Typography] No se pudo cargar " + fileName + ": " + e.getMessage());
+			log.warn("No se pudo cargar la fuente {}", fileName, e);
 			return new Font(logicalFallback, Font.PLAIN, 12);
 		}
 	}

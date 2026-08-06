@@ -11,6 +11,9 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Carga las imágenes de marca empaquetadas en el jar.
  *
@@ -29,6 +32,8 @@ import javax.imageio.ImageIO;
  * memoria y tiempo.
  */
 public final class BrandAssets {
+
+	private static final Logger log = LoggerFactory.getLogger(BrandAssets.class);
 
 	/** Tamaños del icono de aplicación. Windows elige el que mejor le encaja en cada sitio. */
 	private static final int[] TAMANOS_ICONO = { 16, 24, 32, 48, 64, 128, 256 };
@@ -159,13 +164,13 @@ public final class BrandAssets {
 			CACHE.put(ruta, imagen);
 
 			if (imagen == null) {
-				System.err.println("[BrandAssets] No se encontró " + ruta);
+				log.warn("No se encontro el recurso {}", ruta);
 			}
 
 			return imagen;
 
 		} catch (IOException e) {
-			System.err.println("[BrandAssets] No se pudo leer " + ruta + ": " + e.getMessage());
+			log.warn("No se pudo leer el recurso {}", ruta, e);
 			CACHE.put(ruta, null);
 			return null;
 		}
