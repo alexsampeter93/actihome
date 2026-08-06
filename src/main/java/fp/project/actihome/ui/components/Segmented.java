@@ -148,10 +148,39 @@ public class Segmented extends JPanel {
 		Graphics2D g2 = (Graphics2D) g.create();
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-		g2.setColor(Theme.FIELD_BORDER);
-		g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 4, 4);
+		// **El borde se dibuja alrededor de los SEGMENTOS, no del componente.**
+		//
+		// Quitar el ancho preferido de cero no bastó, y el motivo es la trampa que el
+		// propio manual del proyecto documenta: `fill` aparece en tres sitios
+		// —restricciones del layout, de la columna y del componente— y cualquiera de
+		// ellos anula los tamaños declarados más abajo. En Ajustes la columna es
+		// `[grow,fill]`, así que este control se sigue estirando a lo ancho por mucho
+		// que él pida otra cosa, y el recuadro quedaba con un trozo vacío a la derecha
+		// del último botón.
+		//
+		// Se puede pelear con el layout de cada pantalla que lo use, o se puede pintar
+		// lo que de verdad hay. Esto último es correcto en todas: si mañana alguien lo
+		// mete en una celda que estira, el borde seguirá encajando con los botones.
+		int ancho = anchoDeLosSegmentos();
+
+		if (ancho > 0) {
+			g2.setColor(Theme.FIELD_BORDER);
+			g2.drawRoundRect(0, 0, ancho - 1, getHeight() - 1, 4, 4);
+		}
 
 		g2.dispose();
+	}
+
+	/** Hasta dónde llega el último segmento. */
+	private int anchoDeLosSegmentos() {
+
+		int derecha = 0;
+
+		for (Segmento segmento : segmentos) {
+			derecha = Math.max(derecha, segmento.getX() + segmento.getWidth());
+		}
+
+		return derecha;
 	}
 
 	/** Una de las opciones. */

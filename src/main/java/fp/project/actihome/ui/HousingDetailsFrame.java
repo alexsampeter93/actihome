@@ -292,7 +292,6 @@ public class HousingDetailsFrame extends JFrame {
 		izquierda.setOpaque(false);
 
 		izquierda.add(galeria(), "grow");
-		izquierda.add(calendarioDeOcupacion());
 
 		panel.add(izquierda, "grow");
 		panel.add(informacion(), "aligny top");
@@ -469,26 +468,27 @@ public class HousingDetailsFrame extends JFrame {
 		return panel;
 	}
 
-	/**
-	 * Mini-calendario informativo con los días ya cogidos.
-	 *
-	 * <p>
-	 * Es el mismo {@link CalendarioRango} de la pantalla de reservar, en modo solo
-	 * lectura. Reutilizarlo en vez de escribir un calendario más pequeño evita que
-	 * dos componentes puedan discrepar sobre qué día está ocupado, que es
-	 * exactamente la clase de incoherencia que el usuario detecta y no perdona.
-	 */
-	private CalendarioRango calendarioDeOcupacion() {
-
-		CalendarioRango calendario = new CalendarioRango(() -> {
-			// Sin acción: en esta pantalla el calendario informa, no selecciona.
-		});
-
-		calendario.setOcupacion(reservationService.showHousingReservations(housing.getId()));
-		calendario.soloLectura();
-
-		return calendario;
-	}
+	// Aquí vivía calendarioDeOcupacion(): un CalendarioRango en modo solo lectura
+	// con los días ya cogidos. Retirado el 06-08-2026 a petición del usuario, y la
+	// justificación merece quedarse escrita porque el fallo era de diseño y no de
+	// código.
+	//
+	// **Prometía una interacción que no daba.** Es el mismo componente que la
+	// pantalla de reservar, así que se ve exactamente igual que un calendario en el
+	// que se elige — pero aquí no se elegía nada. El usuario lo reportó como "no
+	// funciona", y tenía razón: un control que parece pulsable y no lo es está roto
+	// aunque el código haga lo que dice su javadoc.
+	//
+	// **Y no informaba de nada la mayor parte del tiempo.** Sin reservas —el caso
+	// normal en un alojamiento recién publicado— pintaba dos meses de días todos
+	// iguales, sin leyenda ni título que explicara qué se estaba mirando.
+	//
+	// **A cambio costaba unos 280 puntos de alto**, justo lo que se estaba peleando
+	// para que la ficha entrara en una ventana de 1024.
+	//
+	// Lo que aportaba —ver la disponibilidad antes de entrar al flujo— sigue
+	// disponible a un clic, en Reservar, donde el calendario es de verdad
+	// interactivo y no hay ninguna ambigüedad sobre qué hace.
 
 	private JLabel enlaceAResenas() {
 
