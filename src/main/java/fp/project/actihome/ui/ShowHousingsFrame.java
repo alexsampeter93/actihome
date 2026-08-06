@@ -61,6 +61,7 @@ import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
+import fp.project.actihome.ui.components.Rescate;
 
 /**
  * Catálogo de alojamientos: la pantalla principal tras iniciar sesión.
@@ -601,7 +602,11 @@ public class ShowHousingsFrame extends JFrame {
 				"[grow,fill]", "[]"));
 		lista.setOpaque(false);
 
-		scroll = new JScrollPane(lista);
+		// Rescate y no un JScrollPane crudo. La diferencia esta en el Scrollable que
+		// Rescate envuelve: sin el, el contenido conserva su ancho preferido en vez de
+		// seguir el del visor, y con la barra horizontal desactivada lo que se sale por
+		// la derecha NO SE PUEDE ALCANZAR NUNCA, por mucho que se agrande la ventana.
+		scroll = Rescate.envolver(lista);
 		scroll.setOpaque(false);
 		scroll.getViewport().setOpaque(false);
 		// Los dos bordes, no solo uno: JScrollPane tiene un borde propio y otro para el

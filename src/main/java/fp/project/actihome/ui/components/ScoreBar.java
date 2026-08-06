@@ -56,9 +56,20 @@ public class ScoreBar extends JPanel {
 		private final double nota;
 
 		Barra(double nota) {
+
 			this.nota = nota;
 			setOpaque(false);
 			setPreferredSize(new Dimension(100, 6));
+
+			// **El mínimo se declara, y es la regla del proyecto que esta clase se
+			// saltaba.** Definir solo el preferido deja que el mínimo lo invente el Look
+			// and Feel —FlatLaf devolvía 10×10— y eso hace que un carril de 6 puntos de
+			// alto se considere "aplastado" siempre, porque su alto real nunca llega a
+			// los 10 que nadie pidió. Aquí no se rompía nada en pantalla: lo que se
+			// rompía era la comprobación, que informaba de un fallo inexistente en todas
+			// las medidas. Un detector que da falsos positivos deja de leerse, y
+			// entonces tampoco avisa de los verdaderos.
+			setMinimumSize(new Dimension(10, 6));
 		}
 
 		@Override

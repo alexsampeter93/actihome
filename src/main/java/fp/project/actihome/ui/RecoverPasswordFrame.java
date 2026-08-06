@@ -24,6 +24,7 @@ import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.components.Toast;
+import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
@@ -65,8 +66,8 @@ public class RecoverPasswordFrame extends JFrame {
 
 	private JLabel superTitulo;
 	private JLabel titulo;
-	private JLabel ayuda;
-	private JLabel dondeConseguirlo;
+	private WrappingText ayuda;
+	private WrappingText dondeConseguirlo;
 
 	private Field usuario;
 	private JButton pedirCodigo;
@@ -112,8 +113,13 @@ public class RecoverPasswordFrame extends JFrame {
 
 		superTitulo = Labels.capsAccent(" ");
 		titulo = Labels.title(" ");
-		ayuda = Labels.muted(" ");
-		dondeConseguirlo = Labels.muted(" ");
+		// WrappingText y no Labels.muted: los dos textos miden mas de cien
+		// caracteres, y un JLabel NO parte el texto en lineas. Declara el ancho
+		// preferido de una sola linea larguisima, MigLayout no lo encoge y el
+		// resultado es la frase cortada por el borde de la ventana. Mismo fallo que
+		// se corrigio en Ajustes; esta pantalla se quedo sin arreglar.
+		ayuda = WrappingText.muted(" ");
+		dondeConseguirlo = WrappingText.muted(" ");
 
 		formulario.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA),
 				"w 56!, h 56!, gapbottom " + Space.MD);

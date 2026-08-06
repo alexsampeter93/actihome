@@ -511,7 +511,11 @@ public class SettingsFrame extends JFrame {
 		}, " ", " ");
 
 		panel.add(etiquetaVista);
-		panel.add(vistaPorDefecto, "gaptop " + Space.XXS + ", w 220!");
+		// Sin ancho fijo: el "w 220!" que habia aqui era otro tamano dependiente del
+		// texto escrito a mano, y era la otra mitad del recuadro que sobresalia. Con
+		// 220 puntos reservados y dos etiquetas que miden menos, el borde del control
+		// se dibujaba mas ancho que sus propios botones. Ahora mide lo que mide.
+		panel.add(vistaPorDefecto, "gaptop " + Space.XXS + ", left");
 
 		return panel;
 	}

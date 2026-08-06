@@ -35,6 +35,7 @@ import fp.project.actihome.ui.reservations.ReservationRow;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
+import fp.project.actihome.ui.components.Rescate;
 
 /**
  * Mis reservas: el historial de un CUSTOMER, más reciente primero.
@@ -147,7 +148,11 @@ public class ShowMyReservationsFrame extends JFrame {
 				new MigLayout("wrap 1, " + Space.insets(0, Space.HUGE, Space.XXL, Space.HUGE), "[grow,fill]", "[]"));
 		lista.setOpaque(false);
 
-		scroll = new JScrollPane(lista);
+		// Rescate y no un JScrollPane crudo. La diferencia esta en el Scrollable que
+		// Rescate envuelve: sin el, el contenido conserva su ancho preferido en vez de
+		// seguir el del visor, y con la barra horizontal desactivada lo que se sale por
+		// la derecha NO SE PUEDE ALCANZAR NUNCA, por mucho que se agrande la ventana.
+		scroll = Rescate.envolver(lista);
 		scroll.setOpaque(false);
 		scroll.getViewport().setOpaque(false);
 		scroll.setBorder(null);

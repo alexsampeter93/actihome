@@ -37,6 +37,7 @@ import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Typography;
+import fp.project.actihome.ui.components.Rescate;
 
 /**
  * Una conversación (F10): todos los mensajes entre dos personas sobre un
@@ -159,7 +160,11 @@ public class ConversationFrame extends JFrame {
 				new MigLayout("wrap 1, " + Space.insets(Space.SM, Space.HUGE, Space.LG, Space.HUGE), "[grow,fill]", "[]"));
 		hilo.setOpaque(false);
 
-		scroll = new JScrollPane(hilo);
+		// Rescate y no un JScrollPane crudo. La diferencia esta en el Scrollable que
+		// Rescate envuelve: sin el, el contenido conserva su ancho preferido en vez de
+		// seguir el del visor, y con la barra horizontal desactivada lo que se sale por
+		// la derecha NO SE PUEDE ALCANZAR NUNCA, por mucho que se agrande la ventana.
+		scroll = Rescate.envolver(hilo);
 		scroll.setOpaque(false);
 		scroll.getViewport().setOpaque(false);
 		scroll.setBorder(null);

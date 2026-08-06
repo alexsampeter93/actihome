@@ -40,7 +40,17 @@ public class Segmented extends JPanel {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final int ALTO = 34;
+	/**
+	 * El alto, <b>medido</b> y no fijado en 34 píxeles como estaba.
+	 *
+	 * <p>
+	 * Era otro de los altos escritos a mano que la Fase 8.1 fue a cazar y a este se
+	 * le escapó. Con un número fijo, un Windows al 150 % agranda la letra pero no la
+	 * caja.
+	 */
+	private static int alto() {
+		return Typography.altoDeControlCompacto();
+	}
 
 	private final List<Segmento> segmentos = new ArrayList<>();
 	private final transient Consumer<Integer> alCambiar;
@@ -56,7 +66,17 @@ public class Segmented extends JPanel {
 		this.activo = inicial;
 		this.alCambiar = alCambiar;
 		setOpaque(false);
-		setPreferredSize(new Dimension(0, ALTO));
+
+		// **Sin setPreferredSize, y ahí estaba el fallo del recuadro con "una parte a
+		// mayores".** Antes se declaraba `new Dimension(0, ALTO)`: ancho preferido
+		// CERO. Cualquier contenedor que reparta espacio se lo lleva entonces a lo
+		// ancho que le apetezca, mientras los segmentos siguen ocupando solo lo que
+		// mide su texto — y como el borde se pinta sobre `getWidth()`, quedaba un
+		// trozo de recuadro vacío a la derecha del último botón, que además no
+		// respondía al clic porque ahí no hay ningún segmento.
+		//
+		// Dejando que MigLayout calcule el preferido a partir de los hijos, el ancho
+		// es exactamente la suma de los segmentos y el borde encaja con ellos.
 
 		for (int i = 0; i < opciones.length; i++) {
 
@@ -80,7 +100,7 @@ public class Segmented extends JPanel {
 			Foco.activable(segmento, () -> setActivo(indice));
 
 			segmentos.add(segmento);
-			add(segmento, "h " + ALTO + "!");
+			add(segmento, "h " + alto() + "!");
 		}
 	}
 
@@ -157,7 +177,7 @@ public class Segmented extends JPanel {
 
 		@Override
 		public Dimension getPreferredSize() {
-			return new Dimension(getFontMetrics(getFont()).stringWidth(texto) + Space.XL * 2, ALTO);
+			return new Dimension(getFontMetrics(getFont()).stringWidth(texto) + Space.XL * 2, alto());
 		}
 
 		/** Ver la nota de {@code SeasonSelector.Pestana}: sin mínimo, se aplasta. */

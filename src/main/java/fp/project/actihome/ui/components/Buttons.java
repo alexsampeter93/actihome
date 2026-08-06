@@ -151,10 +151,18 @@ public final class Buttons {
 
 			default:
 				// Los enlaces se subrayan con una línea a la altura de la base del texto.
+				//
+				// **La línea empieza donde empieza el texto, no en x=0**, y esa era la
+				// diferencia que se veía fea. Un JButton centra su etiqueta, así que en cuanto
+				// el layout le da más ancho del que el texto necesita —una fila con otros
+				// elementos, una columna con "grow"— el texto se va al centro y el subrayado
+				// se quedaba pegado al borde izquierdo: una raya suelta a la izquierda de la
+				// palabra, que es justo lo que se leía como un fallo de pintado.
 				int base = getBaseline(ancho, alto);
 				if (base > 0) {
+					int anchoTexto = getTextoAncho();
 					g2.setColor(getForeground());
-					g2.fillRect(0, base + 2, getTextoAncho(), 1);
+					g2.fillRect(Math.max(0, (ancho - anchoTexto) / 2), base + 2, anchoTexto, 1);
 				}
 				break;
 			}

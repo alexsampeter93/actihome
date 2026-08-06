@@ -42,6 +42,7 @@ import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Typography;
+import fp.project.actihome.ui.components.Rescate;
 
 /**
  * Las reseñas de un alojamiento.
@@ -157,7 +158,11 @@ public class ShowReviewsFrame extends JFrame {
 				new MigLayout("wrap 1, " + Space.insets(0, Space.HUGE, Space.XXL, Space.HUGE), "[grow,fill]", "[]"));
 		lista.setOpaque(false);
 
-		scroll = new JScrollPane(lista);
+		// Rescate y no un JScrollPane crudo. La diferencia esta en el Scrollable que
+		// Rescate envuelve: sin el, el contenido conserva su ancho preferido en vez de
+		// seguir el del visor, y con la barra horizontal desactivada lo que se sale por
+		// la derecha NO SE PUEDE ALCANZAR NUNCA, por mucho que se agrande la ventana.
+		scroll = Rescate.envolver(lista);
 		scroll.setOpaque(false);
 		scroll.getViewport().setOpaque(false);
 		scroll.setBorder(null);

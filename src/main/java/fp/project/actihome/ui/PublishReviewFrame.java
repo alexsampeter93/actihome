@@ -41,6 +41,7 @@ import fp.project.actihome.ui.theme.ReviewPhotos;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Typography;
+import fp.project.actihome.ui.components.Rescate;
 
 /**
  * Publicar una reseña sobre un alojamiento.
@@ -135,7 +136,11 @@ public class PublishReviewFrame extends JFrame {
 
 		// La ventana es alta y el formulario también: si la pantalla del usuario es
 		// pequeña, el scroll lo absorbe aquí en lugar de recortar los botones.
-		JScrollPane scroll = new JScrollPane(exterior);
+		// Rescate y no un JScrollPane crudo. La diferencia esta en el Scrollable que
+		// Rescate envuelve: sin el, el contenido conserva su ancho preferido en vez de
+		// seguir el del visor, y con la barra horizontal desactivada lo que se sale por
+		// la derecha NO SE PUEDE ALCANZAR NUNCA, por mucho que se agrande la ventana.
+		JScrollPane scroll = Rescate.envolver(exterior);
 		scroll.setOpaque(false);
 		scroll.getViewport().setOpaque(false);
 		scroll.setBorder(null);
