@@ -1,5 +1,7 @@
 # ActiHome
 
+[![Comprobaciones](https://github.com/alexsampeter93/actihome/actions/workflows/comprobaciones.yml/badge.svg)](https://github.com/alexsampeter93/actihome/actions/workflows/comprobaciones.yml)
+
 Aplicación de escritorio para gestión, reserva e intercambio de alojamientos turísticos. **Java 11 · Spring Boot · Swing · H2.**
 
 ![Catálogo de ActiHome en otoño](docs/progreso/fase82-otono.png)
@@ -70,16 +72,24 @@ Un catálogo de alojamientos lo tiene cualquiera. Lo que merece la pena mirar aq
 
 ### Herramientas de medición propias
 
-Cuatro programas que recorren la aplicación y **devuelven código de salida distinto de cero** si algo está mal, así que valen tal cual como comprobación automática:
+Cuatro programas que recorren la aplicación. **Dos pueden fallar y dos no, y la diferencia importa:**
 
-| Herramienta | Qué contesta |
-|---|---|
-| `MedirResponsive` | Coloca las 23 pantallas en 6 tamaños (1024×600 → 2560×1350) y recorre el árbol de componentes buscando lo que queda **fuera del área visible** |
-| `MedirContraste` | Comprueba WCAG en las 4 estaciones: cada par de colores contra su mínimo real (4,5:1 para texto, 3:1 para componentes) |
-| `MedirGlifos` | Qué símbolos sabe dibujar de verdad cada fuente empaquetada |
-| `ScreenSnapshots` | Captura pantallas reales, con sesión iniciada por código y datos de verdad, fuera de pantalla y a cualquier tamaño |
+| Herramienta | Qué contesta | ¿Puede poner el build en rojo? |
+|---|---|---|
+| `MedirResponsive` | Coloca las 23 pantallas en 6 tamaños (1024×600 → 2560×1350) y recorre el árbol de componentes buscando lo que queda **fuera del área visible** | **Sí** |
+| `MedirContraste` | Comprueba WCAG en las 4 estaciones: cada par de colores contra su mínimo real (4,5:1 para texto, 3:1 para componentes) | **Sí** |
+| `MedirGlifos` | Qué símbolos sabe dibujar de verdad cada fuente empaquetada | No: informativa. Un símbolo ausente no es un fallo, es un aviso de que hay que dibujarlo a mano |
+| `ScreenSnapshots` | Captura pantallas reales, con sesión iniciada por código y datos de verdad, fuera de pantalla y a cualquier tamaño | No: nada automático puede decir si una pantalla «se ve bien» |
+
+Solo las dos primeras entran en el CI, y es deliberado: **un paso que nunca se pone en rojo no es una comprobación, es una decoración que da tranquilidad falsa.**
 
 `MedirResponsive` encontró **107 componentes rotos que ninguna captura enseñaba**. Y trae algo que casi nadie escribe: un **autocontrol**. A un tamaño imposible (600×400) *tiene* que quejarse; si dijera «todo bien» también ahí, sabríamos que el detector no detecta y que su «sin recortes» no vale nada.
+
+### Integración continua
+
+Cada `push` a `main` y cada *pull request* ejecuta los **137 tests**, los recortes de layout en los seis tamaños y el contraste WCAG en las cuatro estaciones ([`comprobaciones.yml`](.github/workflows/comprobaciones.yml)).
+
+Las dos herramientas de medición construyen ventanas de Swing de verdad, así que corren bajo `xvfb` — una pantalla virtual, porque un servidor no tiene escritorio donde dibujarlas.
 
 ### Una regla aprendida a base de romperla
 

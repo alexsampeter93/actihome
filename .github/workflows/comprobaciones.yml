@@ -1,0 +1,103 @@
+# Comprobaciones automáticas de ActiHome.
+#
+# Por qué existe este fichero, que es lo que menos se suele explicar: el
+# proyecto YA tenía sus comprobaciones escritas —tests, recortes de layout y
+# contraste WCAG— y todas dependían de que alguien se acordara de lanzarlas a
+# mano antes de un commit. Una comprobación que no se ejecuta no protege de
+# nada, que es exactamente la lección que el propio proyecto tuvo que aprender
+# con los 29 altos escritos a pelo. Esto es lo que hace que se ejecuten siempre.
+
+name: Comprobaciones
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Permite lanzarlo a mano desde la pestaña Actions, útil para comprobar el
+  # propio workflow sin tener que inventarse un commit.
+  workflow_dispatch:
+
+jobs:
+  comprobar:
+    runs-on: ubuntu-latest
+
+    # Las herramientas de medición abren ventanas de Swing. Si alguna se quedara
+    # esperando algo que nunca llega, sin este tope el trabajo seguiría vivo
+    # hasta el límite de seis horas de GitHub.
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar Java 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+          # Guarda ~/.m2 entre ejecuciones. Sin esto, cada una vuelve a
+          # descargarse Spring entero.
+          cache: maven
+
+      # El wrapper viene versionado, pero git no siempre conserva el bit de
+      # ejecución al venir de un checkout hecho en Windows.
+      - name: Permitir ejecutar el wrapper
+        run: chmod +x ./mvnw
+
+      # --batch-mode quita las barras de progreso de descarga, que en un log sin
+      # terminal son miles de líneas de ruido.
+      #
+      # Este paso va SIN xvfb a propósito, y eso lo convierte en dos
+      # comprobaciones en una. Todas las ventanas están anotadas
+      # @Profile("!test") justamente para que levantar el contexto en un test no
+      # construya ninguna. Al correr los tests sin pantalla, esa regla deja de
+      # ser una convención que hay que recordar y pasa a estar verificada: si
+      # alguien anota mal un frame, aquí sale un HeadlessException.
+      #
+      # Envolverlo en xvfb "por si acaso" haría que los tests pasaran igual y
+      # taparía justo lo que interesa detectar.
+      - name: Tests (sin pantalla, a propósito)
+        run: ./mvnw --batch-mode test
+
+      - name: Compilar
+        run: ./mvnw --batch-mode --quiet compile
+
+      # xvfb-run levanta una pantalla virtual. Estas dos herramientas construyen
+      # ventanas reales de Swing —MedirResponsive coloca las 23 pantallas en seis
+      # tamaños— y un servidor no tiene escritorio donde dibujarlas. No es un
+      # truco: es exactamente lo que hace falta para que un entorno sin monitor
+      # pueda ejecutar código gráfico.
+      - name: Recortes de layout en seis tamaños
+        run: >
+          xvfb-run -a ./mvnw --batch-mode --quiet exec:java
+          -Dexec.mainClass=fp.project.actihome.ui.dev.MedirResponsive
+
+      - name: Contraste WCAG en las cuatro estaciones
+        run: >
+          xvfb-run -a ./mvnw --batch-mode --quiet exec:java
+          -Dexec.mainClass=fp.project.actihome.ui.dev.MedirContraste
+
+      # Si los tests fallan, los informes dicen cuál y por qué. Se suben también
+      # cuando el trabajo va en rojo -que es justo cuando hacen falta- y por eso
+      # lleva if: always() en vez del comportamiento por defecto.
+      - name: Guardar los informes de test
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informes-surefire
+          path: target/surefire-reports/
+          if-no-files-found: ignore
+
+# Qué NO está aquí, y es deliberado:
+#
+# MedirGlifos y MedirAlturas son INFORMATIVAS: las dos terminan siempre con
+# System.exit(0), incluso cuando encuentran algo. MedirGlifos que diga "NO" para
+# un símbolo no es un fallo, es un aviso de que ese símbolo hay que dibujarlo a
+# mano en lugar de escribirlo en una etiqueta.
+#
+# Meterlas aquí daría la impresión de que hay cinco comprobaciones cuando en
+# realidad habría dos que pueden fallar y tres que no pueden. Un paso que nunca
+# se pone en rojo no es una comprobación: es una decoración que da tranquilidad
+# falsa, y eso es peor que no tener nada.
+#
+# Tampoco está ScreenSnapshots. Genera imágenes para revisarlas con los ojos, y
+# nada automático puede decir si una pantalla "se ve bien".
