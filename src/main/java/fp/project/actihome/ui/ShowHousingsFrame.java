@@ -213,6 +213,12 @@ public class ShowHousingsFrame extends JFrame {
 	private JPanel controlesHero;
 
 	/**
+	 * Cuántas veces tiene que caber el hero completo en la ventana para desplegarse.
+	 * Ver {@link #elHeroCompletoSeGanaSuSitio()}.
+	 */
+	private static final int PARTE_DE_VENTANA_PARA_EL_HERO = 5;
+
+	/**
 	 * Testigo de la suscripción a los cambios de estación.
 	 *
 	 * <p>
@@ -297,7 +303,14 @@ public class ShowHousingsFrame extends JFrame {
 
 			@Override
 			public void componentResized(ComponentEvent e) {
+
 				ajustarEscalaDeDisplay();
+
+				// El hero depende del alto de la ventana desde que se despliega solo cuando
+				// se gana su sitio, así que redimensionar es tan motivo para recalcularlo
+				// como desplazar la lista. Sin esto, agrandar la ventana no devolvía el
+				// titular hasta que además se tocara la rueda.
+				ajustarHeroAlScroll();
 			}
 		});
 	}
@@ -341,7 +354,7 @@ public class ShowHousingsFrame extends JFrame {
 
 	/**
 	 * Decide si toca el hero completo o el compacto, según lo desplazada que esté la
-	 * lista.
+	 * lista <b>y según lo alta que sea la ventana</b>.
 	 *
 	 * <p>
 	 * <b>El umbral tiene histéresis a propósito</b>: se contrae al pasar de 60px y
@@ -356,7 +369,8 @@ public class ShowHousingsFrame extends JFrame {
 		}
 
 		int desplazamiento = scroll.getVerticalScrollBar().getValue();
-		boolean contraer = heroContraido ? desplazamiento > 20 : desplazamiento > 60;
+		boolean contraer = !elHeroCompletoSeGanaSuSitio()
+				|| (heroContraido ? desplazamiento > 20 : desplazamiento > 60);
 
 		if (contraer == heroContraido) {
 			return;
@@ -373,6 +387,55 @@ public class ShowHousingsFrame extends JFrame {
 
 		revalidate();
 		repaint();
+	}
+
+	/**
+	 * Si la ventana da de sí lo bastante como para que el hero completo valga lo
+	 * que cuesta.
+	 *
+	 * <p>
+	 * <b>El problema que resuelve es de primera impresión, y solo existía en
+	 * ventanas bajas.</b> El hero ya se contraía al bajar por la lista desde la Fase
+	 * 7.11, así que en cuanto el usuario mueve la rueda la lista se queda con el
+	 * 74 % de la pantalla. Pero <b>antes de mover nada</b> —que es cuando alguien se
+	 * hace una idea de qué es esta aplicación— el reparto sigue siendo el de
+	 * partida, y en un portátil de 1280×660 eso deja la lista en 313px: <b>un
+	 * alojamiento, y cortado</b>. En un catálogo, la primera pantalla debería
+	 * enseñar catálogo.
+	 *
+	 * <p>
+	 * <b>La regla, dicha entera: el titular no puede llevarse más de un quinto de la
+	 * ventana.</b> Con el hero completo midiendo unos 165 puntos, eso significa que
+	 * se despliega a partir de unos 825 de alto y arranca contraído por debajo. En
+	 * un monitor de escritorio no cambia nada; en el portátil del cliente, la lista
+	 * pasa de 313 a 423 puntos sin tocar una sola constante de diseño.
+	 *
+	 * <p>
+	 * <b>No es una excepción a la identidad editorial, es la regla del proyecto
+	 * aplicada a lo que toca.</b> "Cuando falta sitio, lo que cede es el aire, nunca
+	 * un elemento con el que se interactúa": el hero <em>es</em> aire —una frase de
+	 * estación y un titular— y la lista es el contenido. Lo que no se hace es
+	 * quitarlo en las ventanas donde sí cabe, porque ahí no le quita el sitio a
+	 * nadie.
+	 *
+	 * <p>
+	 * Se mide contra el alto <b>de la ventana</b> y no contra el que le queda a la
+	 * lista, y esa elección importa: el alto de la lista depende de si el hero está
+	 * contraído, así que decidir con él realimenta la propia decisión y el hero
+	 * oscilaría entre los dos estados. El de la ventana no depende de nada de esto.
+	 */
+	private boolean elHeroCompletoSeGanaSuSitio() {
+
+		int altoDeVentana = getContentPane().getHeight();
+
+		// Antes del primer pase de layout todavía no hay alto. Se responde que sí
+		// porque el hero completo es el estado de partida y así no hay un parpadeo de
+		// contraído a desplegado nada más abrirse la pantalla.
+		if (altoDeVentana <= 0) {
+			return true;
+		}
+
+		return heroCompleto.getPreferredSize().height * PARTE_DE_VENTANA_PARA_EL_HERO <= altoDeVentana;
 	}
 
 	private void actualizarHeroCompacto() {
