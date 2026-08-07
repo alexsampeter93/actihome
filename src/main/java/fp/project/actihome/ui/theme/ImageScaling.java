@@ -60,6 +60,43 @@ public final class ImageScaling {
 		return copiar(exacta, ancho, alto, BufferedImage.TYPE_INT_ARGB, null);
 	}
 
+	/**
+	 * Escala a un ancho y un alto <b>exactos</b>, por los mismos pasos de mitad.
+	 *
+	 * <p>
+	 * Hermana de {@link #escalarACaja(BufferedImage, int)} y no la misma: aquella
+	 * <em>encaja</em> la imagen dentro de un cuadrado y decide ella el resultado,
+	 * que es lo que quiere quien guarda un archivo. Esta obedece las dos medidas
+	 * que le den, que es lo que necesita quien va a <em>cubrir</em> un hueco: el
+	 * tamaño de destino ya viene calculado para que sobre por un lado, y encajarlo
+	 * dejaría bandas vacías justo donde no debe haberlas.
+	 *
+	 * <p>
+	 * Conservar la proporción es responsabilidad de quien llama. Aquí no se
+	 * comprueba a propósito: el recorte de cobertura pide precisamente unas medidas
+	 * que <em>no</em> caben en el hueco.
+	 */
+	public static BufferedImage escalarA(BufferedImage origen, int ancho, int alto) {
+
+		int destinoAncho = Math.max(1, ancho);
+		int destinoAlto = Math.max(1, alto);
+
+		BufferedImage actual = origen;
+
+		// Mientras quede más de un factor 2 por bajar, se baja a la mitad. Cada paso
+		// promedia de verdad todo lo que descarta; un único salto de 1200 a 380 mira
+		// solo los vecinos inmediatos y deja el detalle fino emborronado.
+		while (actual.getWidth() / 2 > destinoAncho && actual.getHeight() / 2 > destinoAlto) {
+
+			actual = copiar(actual, Math.max(destinoAncho, actual.getWidth() / 2),
+					Math.max(destinoAlto, actual.getHeight() / 2), BufferedImage.TYPE_INT_RGB,
+					RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+		}
+
+		return copiar(actual, destinoAncho, destinoAlto, BufferedImage.TYPE_INT_RGB,
+				RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+	}
+
 	/** Copia a un tamaño y un tipo de imagen concretos, con la interpolación dada (o ninguna). */
 	public static BufferedImage copiar(BufferedImage origen, int ancho, int alto, int tipo, Object interpolacion) {
 

@@ -11,6 +11,7 @@ import java.awt.image.BufferedImage;
 import javax.swing.JComponent;
 
 import fp.project.actihome.ui.theme.BrandAssets;
+import fp.project.actihome.ui.theme.ImageScaling;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
@@ -41,6 +42,10 @@ public class ImagePlaceholder extends JComponent {
 	private String estado;
 	private boolean disponible = true;
 	private transient BufferedImage foto;
+
+	/** La foto ya reducida al hueco actual. Ver {@link #reducida(int, int)}. */
+	private transient BufferedImage reducida;
+
 	private String destacado;
 
 	public ImagePlaceholder() {
@@ -90,7 +95,15 @@ public class ImagePlaceholder extends JComponent {
 
 	/** Foto real. Si es {@code null} se pinta el hueco diseñado. */
 	public void setFoto(BufferedImage foto) {
+
 		this.foto = foto;
+
+		// La reducción guardada es de la foto ANTERIOR. Sin tirarla, un componente
+		// reutilizado —y estos lo son: el catálogo recicla sus fichas al filtrar—
+		// seguiría enseñando la casa de antes, porque las medidas del hueco no han
+		// cambiado y la caché solo mira eso.
+		this.reducida = null;
+
 		repaint();
 	}
 
@@ -210,8 +223,43 @@ public class ImagePlaceholder extends JComponent {
 
 		Shape recorte = g2.getClip();
 		g2.clipRect(0, 0, ancho, alto);
-		g2.drawImage(foto, x, y, nuevoAncho, nuevoAlto, null);
+		g2.drawImage(reducida(nuevoAncho, nuevoAlto), x, y, null);
 		g2.setClip(recorte);
+	}
+
+	/**
+	 * La foto ya reducida al tamaño en el que se va a pintar, calculada una vez.
+	 *
+	 * <p>
+	 * <b>Por qué no basta con dibujar la original escalada.</b> Las fotos viajan a
+	 * 1200 puntos de lado y una ficha de catálogo mide unos 380: eso es un factor
+	 * de más de tres, y una interpolación bilineal solo mira los vecinos
+	 * inmediatos. En un solo salto consulta una fracción del original y el detalle
+	 * fino —una barandilla, el canto de una teja, la trama de un tejido— se pierde
+	 * de forma irregular. {@link ImageScaling#escalarA} baja por pasos de mitad,
+	 * así que cada paso promedia de verdad todo lo que descarta.
+	 *
+	 * <p>
+	 * <b>Y por qué se guarda.</b> Reducir así cuesta varios pases sobre la imagen,
+	 * y {@code paintComponent} se llama muchas más veces de las que parece: cada
+	 * cambio de estación, cada paso del ratón, cada vez que la lista se
+	 * desplaza. Hacerlo en cada pintado sería pagar el trabajo entero para obtener
+	 * siempre el mismo resultado.
+	 *
+	 * <p>
+	 * <b>La caché se invalida por tamaño, no por tiempo.</b> Guardar las medidas
+	 * junto a la imagen es lo que permite que al agrandar la ventana —o al pasar de
+	 * lista a cuadrícula, que cambia la forma del hueco— se vuelva a calcular en
+	 * vez de estirar una versión pequeña, que es exactamente el borrón que se
+	 * quería evitar.
+	 */
+	private BufferedImage reducida(int ancho, int alto) {
+
+		if (reducida == null || reducida.getWidth() != ancho || reducida.getHeight() != alto) {
+			reducida = ImageScaling.escalarA(foto, ancho, alto);
+		}
+
+		return reducida;
 	}
 
 	/**
