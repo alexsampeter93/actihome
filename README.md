@@ -4,9 +4,11 @@
 
 Aplicación de escritorio para gestión, reserva e intercambio de alojamientos turísticos. **Java 17 · Spring Boot 3 · Swing · H2.**
 
-![Catálogo de ActiHome en otoño](docs/progreso/fase82-otono.png)
+![El catálogo de ActiHome recorriendo las cuatro estaciones](docs/progreso/estaciones.gif)
 
 La interfaz se repinta entera según la estación del año, que el usuario elige y la aplicación recuerda. No es un cambio de color: cada estación tiene su paleta de nueve tokens, su frase editorial, sus partículas animadas y su variante de la mascota.
+
+Ninguna pantalla escribe un color. Pide un *papel* —"el acento", "el texto secundario"— y la estación activa decide cuál es, así que añadir una estación no toca ninguna de las dieciocho pantallas.
 
 <p align="center">
   <img src="docs/progreso/fase82-primavera.png" width="24%" alt="Primavera">
@@ -14,6 +16,8 @@ La interfaz se repinta entera según la estación del año, que el usuario elige
   <img src="docs/progreso/fase82-otono.png" width="24%" alt="Otoño">
   <img src="docs/progreso/fase82-invierno.png" width="24%" alt="Invierno">
 </p>
+
+<p align="center"><sub>Las cuatro, con detalle. El GIF se genera con <code>GenerarGif</code>: se pinta fuera de pantalla, no es una grabación.</sub></p>
 
 ---
 

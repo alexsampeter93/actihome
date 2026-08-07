@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -49,6 +50,7 @@ import fp.project.actihome.ui.components.Segmented;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
 import fp.project.actihome.ui.theme.Season;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 
 /**
@@ -113,6 +115,14 @@ public final class ScreenSnapshots {
 
 		System.setProperty("java.awt.headless", "false");
 		ActiHomeTheme.install();
+
+		// El idioma se fija a mano, y va DESPUÉS de install() a propósito: install()
+		// llama a Preferencias.restaurar(), que aplica lo que el dueño de la máquina
+		// tuviera guardado en ~/.actihome. Sin esta línea, las capturas de la
+		// documentación salían en español o en inglés según quién las generase. Es la
+		// misma clase de fallo que la base de datos: una herramienta de documentación
+		// no puede heredar el estado de quien la ejecuta.
+		Textos.cambiarA(new Locale("es"));
 
 		String prefijo = args.length > 0 ? args[0] : "catalogo";
 		RoleType rol = args.length > 1 ? RoleType.valueOf(args[1]) : RoleType.ADMIN;
