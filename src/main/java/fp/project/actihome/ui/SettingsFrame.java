@@ -37,7 +37,6 @@ import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Card;
 import fp.project.actihome.ui.components.Columnas;
-import fp.project.actihome.ui.components.CodigoCopiable;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Interruptor;
 import fp.project.actihome.ui.components.Foco;
@@ -116,8 +115,6 @@ public class SettingsFrame extends JFrame {
 
 	// Tarjeta de preferencias
 	private JLabel superTituloPreferencias;
-	private JLabel superTituloAdministracion;
-	private Card tarjetaAdministracion;
 
 	/**
 	 * Lo que necesita una tarjeta de ajustes para leerse bien.
@@ -127,7 +124,7 @@ public class SettingsFrame extends JFrame {
 	 * seis campos a dos columnas dentro y su relleno de tarjeta a los lados. Por
 	 * debajo de esto, "Nombre" y "Apellido" quedan en dos cajas de cien puntos.
 	 */
-	private static final int ANCHO_COMODO_DE_TARJETA = 360;
+	private static final int ANCHO_COMODO_DE_TARJETA = 420;
 	private JLabel etiquetaEstacion;
 	private JComboBox<Season> estacion;
 	private JLabel etiquetaParticulas;
@@ -136,21 +133,6 @@ public class SettingsFrame extends JFrame {
 	private JComboBox<Idioma> idioma;
 	private JLabel etiquetaVista;
 	private Segmented vistaPorDefecto;
-	private JPanel bloqueCopiaDeSeguridad;
-	private JLabel etiquetaCopiaDeSeguridad;
-	private WrappingText descripcionCopiaDeSeguridad;
-	private JButton exportarCopiaDeSeguridad;
-	private JLabel errorCopiaDeSeguridad;
-
-	// Codigo de recuperacion para otro usuario (Fase 8.6), solo ADMIN
-	private JPanel bloqueCodigo;
-	private JLabel etiquetaCodigo;
-	private WrappingText descripcionCodigo;
-	private Field usuarioDelCodigo;
-	private JButton generarCodigo;
-	private JLabel entregaCodigo;
-	private CodigoCopiable codigoGenerado;
-	private JLabel resultadoCodigo;
 	private JButton guardar;
 	private JButton cancelar;
 	private JButton enlaceContrasena;
@@ -186,7 +168,7 @@ public class SettingsFrame extends JFrame {
 	private void initUI() {
 
 		setTitle("ActiHome");
-		setSize(760, 720);
+		setSize(1100, 880);
 		setLocationRelativeTo(null);
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));
@@ -225,7 +207,7 @@ public class SettingsFrame extends JFrame {
 	private JPanel formulario() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.XL + "[]" + Space.XL + "[]" + Space.LG + "[]"));
+				"[]" + Space.aire(Space.XL) + "[]" + Space.aire(Space.XL) + "[]" + Space.aire(Space.LG) + "[]"));
 		panel.setOpaque(false);
 
 		panel.add(cabeceraDeIdentidad());
@@ -249,9 +231,6 @@ public class SettingsFrame extends JFrame {
 
 		columnas.add(tarjetaDatosPersonales());
 		columnas.add(tarjetaPreferencias());
-
-		tarjetaAdministracion = tarjetaAdministracion();
-		columnas.add(tarjetaAdministracion);
 
 		panel.add(columnas);
 
@@ -302,11 +281,17 @@ public class SettingsFrame extends JFrame {
 	/** Tarjeta izquierda: los datos de la persona. */
 	private Card tarjetaDatosPersonales() {
 
-		Card tarjeta = new Card(new MigLayout("wrap 2, " + Space.insets(Space.XL),
-				"[grow,fill]" + Space.MD + "[grow,fill]", ""));
+		// **Tres columnas dentro de la tarjeta, no dos.** Son seis campos cortos —un
+		// nombre, un teléfono, una localidad—, así que en dos eran tres filas de campo
+		// y en tres son dos. Un campo no cede alto (su caja lleva un `height !` medido
+		// de la fuente, que es lo que impide que el texto salga cortado con el escalado
+		// al 150 %), de modo que esa fila de menos son 91 puntos que no hay que
+		// quitarle a nada más.
+		Card tarjeta = new Card(new MigLayout("wrap 3, " + Space.insets(Space.LG),
+				"[grow,fill]" + Space.MD + "[grow,fill]" + Space.MD + "[grow,fill]", ""));
 
 		superTituloDatos = Labels.capsAccent(" ");
-		tarjeta.add(superTituloDatos, "span 2, gapbottom " + Space.MD);
+		tarjeta.add(superTituloDatos, "span 3, gapbottom " + Space.aire(Space.MD));
 
 		usuario = Field.text(" ");
 		nombre = Field.text(" ");
@@ -315,10 +300,10 @@ public class SettingsFrame extends JFrame {
 		telefono = Field.text(" ");
 		localidad = Field.text(" ");
 
-		tarjeta.add(usuario, "gapbottom " + Space.MD);
-		tarjeta.add(nombre, "gapbottom " + Space.MD);
-		tarjeta.add(apellido, "gapbottom " + Space.MD);
-		tarjeta.add(correo, "gapbottom " + Space.MD);
+		tarjeta.add(usuario, "gapbottom " + Space.aire(Space.MD));
+		tarjeta.add(nombre, "gapbottom " + Space.aire(Space.MD));
+		tarjeta.add(apellido, "gapbottom " + Space.aire(Space.MD));
+		tarjeta.add(correo);
 		tarjeta.add(telefono);
 		tarjeta.add(localidad);
 
@@ -328,138 +313,23 @@ public class SettingsFrame extends JFrame {
 	/** Tarjeta central: cómo se ve y se comporta la aplicación. */
 	private Card tarjetaPreferencias() {
 
-		Card tarjeta = new Card(new MigLayout("wrap 1, hidemode 3, " + Space.insets(Space.XL), "[grow,fill]", ""));
+		// Las cuatro preferencias en dos columnas, por lo mismo que los seis campos de
+		// la tarjeta de al lado: son controles cortos —dos desplegables, un selector de
+		// dos opciones y un interruptor— y ninguno gana nada con el ancho entero,
+		// mientras que apilados los cuatro esta tarjeta era la más alta de la pantalla
+		// y la que decidía si Ajustes cabía o no.
+		Card tarjeta = new Card(new MigLayout("wrap 2, hidemode 3, " + Space.insets(Space.LG),
+				"[grow,fill]" + Space.MD + "[grow,fill]", ""));
 
 		superTituloPreferencias = Labels.capsAccent(" ");
-		tarjeta.add(superTituloPreferencias, "gapbottom " + Space.aire(Space.MD));
+		tarjeta.add(superTituloPreferencias, "span 2, gapbottom " + Space.aire(Space.MD));
 
 		tarjeta.add(campoEstacion(), "gapbottom " + Space.aire(Space.MD));
 		tarjeta.add(campoIdioma(), "gapbottom " + Space.aire(Space.MD));
-		tarjeta.add(campoVistaPorDefecto(), "gapbottom " + Space.aire(Space.MD));
+		tarjeta.add(campoVistaPorDefecto());
 		tarjeta.add(campoParticulas());
 
 		return tarjeta;
-	}
-
-	/**
-	 * Tarjeta derecha: la instalación, no la cuenta.
-	 *
-	 * <p>
-	 * "hidemode 3" en la fila de columnas hace que desaparezca entera —sin dejar
-	 * hueco ni columna vacía— para quien no es ADMIN, en vez de enseñarse
-	 * desactivada. Es la misma decisión que ya tomaban sus dos bloques por separado;
-	 * lo que cambia es que ahora se ve <b>por qué</b> se ocultan juntos.
-	 */
-	private Card tarjetaAdministracion() {
-
-		Card tarjeta = new Card(new MigLayout("wrap 1, hidemode 3, " + Space.insets(Space.XL), "[grow,fill]", ""));
-
-		superTituloAdministracion = Labels.capsAccent(" ");
-		tarjeta.add(superTituloAdministracion, "gapbottom " + Space.aire(Space.MD));
-
-		tarjeta.add(campoCopiaDeSeguridad(), "gapbottom " + Space.aire(Space.MD));
-		tarjeta.add(campoCodigoDeRecuperacion());
-
-		return tarjeta;
-	}
-
-	/**
-	 * Generar un código de recuperación para otro usuario (Fase 8.6), solo ADMIN.
-	 *
-	 * <p>
-	 * Vive junto a la copia de seguridad y no en una pantalla propia porque las dos
-	 * son lo mismo: tareas de administración de la instalación, no de la cuenta de
-	 * quien las usa. Y por eso el bloque entero se oculta para CUSTOMER en lugar de
-	 * enseñarse desactivado.
-	 *
-	 * <p>
-	 * <b>El código aparece en pantalla y no se envía a ninguna parte.</b> Es el
-	 * camino para cuando no hay correo configurado —el caso del ejecutable
-	 * repartido—, así que el administrador lo lee y se lo dice a quien lo necesite
-	 * por el medio que sea. Es también el único punto de todo el sistema donde un
-	 * código se ve sin cifrar: a partir de que se guarda, ni la aplicación puede
-	 * volver a leerlo.
-	 */
-	private JPanel campoCodigoDeRecuperacion() {
-
-		bloqueCodigo = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
-		bloqueCodigo.setOpaque(false);
-
-		etiquetaCodigo = Labels.caps(" ");
-		descripcionCodigo = WrappingText.muted(" ");
-		usuarioDelCodigo = Field.text(" ");
-		generarCodigo = Buttons.secondary(" ", e -> generarCodigoDeRecuperacion());
-		codigoGenerado = new CodigoCopiable();
-		entregaCodigo = Labels.muted(" ");
-		resultadoCodigo = Labels.body(" ");
-
-		bloqueCodigo.add(etiquetaCodigo, "gapbottom " + Space.XXS);
-		bloqueCodigo.add(descripcionCodigo, "gapbottom " + Space.SM);
-		bloqueCodigo.add(usuarioDelCodigo, "gapbottom " + Space.SM);
-		bloqueCodigo.add(generarCodigo, "gapbottom " + Space.SM);
-
-		// El código y la instrucción de qué hacer con él van juntos y por encima de
-		// resultadoCodigo, que a partir de ahora solo lleva errores. Antes el mismo
-		// hueco servía para las dos cosas, así que el dato más importante de la
-		// pantalla compartía sitio y tamaño con "no hay ningún usuario con ese nombre".
-		bloqueCodigo.add(codigoGenerado, "gapbottom " + Space.XXS);
-		bloqueCodigo.add(entregaCodigo, "gapbottom " + Space.XS);
-		bloqueCodigo.add(resultadoCodigo);
-
-		return bloqueCodigo;
-	}
-
-	/**
-	 * Rellena el usuario y genera, como si se hubiera tecleado y pulsado el botón.
-	 *
-	 * <p>
-	 * Existe para {@code ScreenSnapshots} por la misma razón que
-	 * {@code TradeHousingsFrame.buscarPorCodigo}: el estado que hay que revisar —el
-	 * código ya en pantalla— no se alcanza abriendo la ventana, y una captura del
-	 * estado inicial no enseñaría precisamente la parte nueva.
-	 */
-	public void generarCodigoPara(String username) {
-
-		usuarioDelCodigo.setText(username);
-		generarCodigoDeRecuperacion();
-	}
-
-	private void generarCodigoDeRecuperacion() {
-
-		String nombre = usuarioDelCodigo.getText().trim();
-
-		// Cada intento parte de cero: dejar en pantalla el código de la consulta
-		// anterior mientras se enseña un error de la nueva es la forma más directa de
-		// que alguien dicte un código que ya no corresponde al usuario que pidió.
-		codigoGenerado.limpiar();
-		entregaCodigo.setVisible(false);
-
-		if (nombre.isEmpty()) {
-			resultadoCodigo.setText(Textos.t("recuperar.error.usuarioVacio"));
-			return;
-		}
-
-		try {
-			String codigo = passwordResetService.generarCodigoParaEntregar(nombre,
-					sessionManager.getLoggedInUser().getId());
-
-			resultadoCodigo.setText(" ");
-			codigoGenerado.mostrar(codigo);
-
-			entregaCodigo.setText(Textos.t("admin.codigo.entrega", nombre));
-			entregaCodigo.setVisible(true);
-
-		} catch (InstanceNotFoundException ex) {
-			// Aquí SÍ se dice que el usuario no existe, al revés que en la pantalla de
-			// recuperación. La diferencia es quién pregunta: allí es cualquiera y
-			// contestarlo convertiría la pantalla en un comprobador de cuentas; aquí es
-			// un administrador identificado que necesita saber si se ha equivocado al
-			// teclear el nombre.
-			resultadoCodigo.setText(Textos.t("admin.codigo.error.noExiste"));
-
-		} catch (NotAuthorizedUserException ex) {
-			resultadoCodigo.setText(Textos.t("admin.codigo.error.soloAdmin"));
-		}
 	}
 
 	private JPanel campoEstacion() {
@@ -576,82 +446,6 @@ public class SettingsFrame extends JFrame {
 		return panel;
 	}
 
-	/**
-	 * Copia de seguridad de la base de datos (F12), solo para ADMIN: es una
-	 * operación sobre toda la base, no sobre la cuenta de quien la pide, así que
-	 * se oculta por completo para CUSTOMER en vez de mostrarse deshabilitada —
-	 * igual que el botón de publicar alojamiento del catálogo.
-	 */
-	private JPanel campoCopiaDeSeguridad() {
-
-		bloqueCopiaDeSeguridad = new JPanel(
-				new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]" + Space.SM + "[]"));
-		bloqueCopiaDeSeguridad.setOpaque(false);
-
-		etiquetaCopiaDeSeguridad = Labels.caps(" ");
-		descripcionCopiaDeSeguridad = WrappingText.muted(" ");
-
-		exportarCopiaDeSeguridad = Buttons.secondary(" ", e -> exportarCopiaDeSeguridad());
-		errorCopiaDeSeguridad = Labels.error(" ");
-		errorCopiaDeSeguridad.setVisible(false);
-
-		bloqueCopiaDeSeguridad.add(etiquetaCopiaDeSeguridad);
-		bloqueCopiaDeSeguridad.add(descripcionCopiaDeSeguridad);
-		bloqueCopiaDeSeguridad.add(exportarCopiaDeSeguridad);
-		bloqueCopiaDeSeguridad.add(errorCopiaDeSeguridad, "gaptop " + Space.XXS);
-
-		return bloqueCopiaDeSeguridad;
-	}
-
-	/**
-	 * Abre el selector de fichero y delega en {@link BackupService}.
-	 *
-	 * <p>
-	 * Sin hilo aparte: igual que el resto de la pantalla, esta acción se
-	 * resuelve directamente en el hilo de Swing. Es una operación de un fichero
-	 * de base de datos de escritorio —megabytes, no gigabytes— y el resto de la
-	 * aplicación tampoco usa {@code SwingWorker} en ningún sitio; introducirlo
-	 * aquí solo para esta acción rompería la coherencia sin una necesidad real.
-	 */
-	private void exportarCopiaDeSeguridad() {
-
-		errorCopiaDeSeguridad.setVisible(false);
-
-		JFileChooser selector = new JFileChooser();
-		selector.setDialogTitle(Textos.t("ajustes.backup.dialogoTitulo"));
-		selector.setFileFilter(new FileNameExtensionFilter("ZIP", "zip"));
-		selector.setSelectedFile(new File(Textos.t("ajustes.backup.nombreSugerido") + "-" + LocalDate.now() + ".zip"));
-
-		if (selector.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
-			return;
-		}
-
-		File destino = selector.getSelectedFile();
-
-		if (!destino.getName().toLowerCase(Locale.ROOT).endsWith(".zip")) {
-			destino = new File(destino.getParentFile(), destino.getName() + ".zip");
-		}
-
-		try {
-			backupService.exportarCopiaDeSeguridad(sessionManager.getLoggedInUser().getId(), destino.getAbsolutePath());
-			Toast.mostrar(this, Textos.t("ajustes.backup.confirmacion"));
-
-		} catch (NotAuthorizedUserException ex) {
-			errorCopiaDeSeguridad.setText(Textos.t("ajustes.error.usuarioNoExiste"));
-			errorCopiaDeSeguridad.setVisible(true);
-
-		} catch (InstanceNotFoundException ex) {
-			navigator.ir(LoginFrame.class);
-
-		} catch (BackupNotAvailableException ex) {
-			errorCopiaDeSeguridad.setText(Textos.t("ajustes.backup.error.noDisponible"));
-			errorCopiaDeSeguridad.setVisible(true);
-
-		} catch (BackupFailedException ex) {
-			errorCopiaDeSeguridad.setText(Textos.t("ajustes.backup.error.fallo"));
-			errorCopiaDeSeguridad.setVisible(true);
-		}
-	}
 
 	private JPanel acciones() {
 
@@ -722,7 +516,6 @@ public class SettingsFrame extends JFrame {
 
 		superTituloDatos.setText(Textos.t("ajustes.datosPersonales"));
 		superTituloPreferencias.setText(Textos.t("ajustes.preferencias"));
-		superTituloAdministracion.setText(Textos.t("ajustes.administracion"));
 
 		usuario.setEtiqueta(Textos.t("login.usuario"));
 		nombre.setEtiqueta(Textos.t("registro.nombre"));
@@ -736,13 +529,6 @@ public class SettingsFrame extends JFrame {
 		etiquetaIdioma.setText(Textos.t("ajustes.idioma.label"));
 		etiquetaVista.setText(Textos.t("ajustes.vista.label"));
 		vistaPorDefecto.actualizarTextos(Textos.t("catalogo.vista.lista"), Textos.t("catalogo.vista.cuadricula"));
-		etiquetaCopiaDeSeguridad.setText(Textos.t("ajustes.backup.titulo"));
-		descripcionCopiaDeSeguridad.setText(Textos.t("ajustes.backup.descripcion"));
-		exportarCopiaDeSeguridad.setText(Textos.t("ajustes.backup.boton"));
-		etiquetaCodigo.setText(Textos.t("admin.codigo.titulo"));
-		descripcionCodigo.setText(Textos.t("admin.codigo.descripcion"));
-		usuarioDelCodigo.setEtiqueta(Textos.t("admin.codigo.usuario"));
-		generarCodigo.setText(Textos.t("admin.codigo.generar"));
 		guardar.setText(Textos.t("ajustes.guardar"));
 		cancelar.setText(Textos.t("ajustes.cancelar"));
 		enlaceContrasena.setText(Textos.t("header.menu.contrasena"));
@@ -776,23 +562,6 @@ public class SettingsFrame extends JFrame {
 		particulas.setEncendido(actual.isParticlesEnabled());
 		idioma.setSelectedItem(actual.getLanguage());
 		vistaPorDefecto.setActivo(actual.isDefaultGridView() ? CatalogFilters.VISTA_CUADRICULA : 0);
-		// La tarjeta entera, no sus dos bloques por separado: desde que administración
-		// es una columna propia, dejarla vacía enseñaría un marco en blanco a todo
-		// CUSTOMER. Los dos bloques siguen ocultándose porque dentro de la tarjeta
-		// puede haber más cosas algún día que sí sean para todos.
-		bloqueCopiaDeSeguridad.setVisible(actual.getRole() == RoleType.ADMIN);
-		bloqueCodigo.setVisible(actual.getRole() == RoleType.ADMIN);
-		tarjetaAdministracion.setVisible(actual.getRole() == RoleType.ADMIN);
-		resultadoCodigo.setText(" ");
-		usuarioDelCodigo.setText("");
-
-		// Un código de un solo uso no debe seguir en pantalla al volver a Ajustes. No
-		// es una limpieza cosmética: sigue siendo válido durante quince minutos, y
-		// dejarlo visible lo expone a quien pase por delante mucho después de que el
-		// administrador se olvidara de que lo generó.
-		codigoGenerado.limpiar();
-		entregaCodigo.setVisible(false);
-		errorCopiaDeSeguridad.setVisible(false);
 
 		usuario.setText(actual.getUsername());
 		nombre.setText(actual.getName());

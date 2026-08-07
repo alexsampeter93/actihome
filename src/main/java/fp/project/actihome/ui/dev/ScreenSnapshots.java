@@ -45,6 +45,7 @@ import fp.project.actihome.ui.ShowMyReservationsFrame;
 import fp.project.actihome.ui.SettingsFrame;
 import fp.project.actihome.ui.ShowReviewsFrame;
 import fp.project.actihome.ui.TradeHousingsFrame;
+import fp.project.actihome.ui.AdministrationFrame;
 import fp.project.actihome.ui.ChangePasswordFrame;
 import fp.project.actihome.ui.UpdateHousingFrame;
 import fp.project.actihome.ui.UploadHousingFrame;
@@ -355,9 +356,13 @@ public final class ScreenSnapshots {
 		iniciarSesionComo(context, "Admin");
 
 		SettingsFrame ajustes = context.getBean(SettingsFrame.class);
-
 		guardar(ajustes, "ajustes-admin");
-		guardar(ajustes, "ajustes-codigo", () -> ajustes.generarCodigoPara("Lucia"));
+
+		// La copia de seguridad y los códigos de recuperación ya no viven en Ajustes:
+		// no son preferencias de nadie, son mantenimiento de la instalación. Ver la
+		// nota de clase de AdministrationFrame.
+		AdministrationFrame administracion = context.getBean(AdministrationFrame.class);
+		guardar(administracion, "administracion-codigo", () -> administracion.generarCodigoPara("Lucia"));
 	}
 
 	/**

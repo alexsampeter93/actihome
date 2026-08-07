@@ -362,10 +362,18 @@ public class HeaderPanel extends JPanel {
 		// debajo.
 		JMenuItem panelPropietario = null;
 		JMenuItem panelPlataforma = null;
+		JMenuItem administracion = null;
 
 		if (!esCliente()) {
 			panelPropietario = new JMenuItem(Textos.t("header.menu.panelPropietario"));
 			panelPropietario.addActionListener(e -> navigator.ir(OwnerPanelFrame.class));
+
+			// Copia de seguridad y códigos de recuperación. Estaban dentro de Ajustes y
+			// ahí no eran ajustes de nadie: son operaciones sobre la instalación, no
+			// sobre la cuenta de quien las ejecuta. Ver la nota de clase de
+			// AdministrationFrame.
+			administracion = new JMenuItem(Textos.t("admin.menu"));
+			administracion.addActionListener(e -> navigator.ir(AdministrationFrame.class));
 
 			// F14: panel agregado de toda la plataforma, no solo de los alojamientos
 			// propios — ver la nota de clase de PlatformPanelFrame sobre por qué es
@@ -393,6 +401,7 @@ public class HeaderPanel extends JPanel {
 		if (panelPropietario != null) {
 			menu.add(panelPropietario);
 			menu.add(panelPlataforma);
+			menu.add(administracion);
 		}
 
 		menu.addSeparator();

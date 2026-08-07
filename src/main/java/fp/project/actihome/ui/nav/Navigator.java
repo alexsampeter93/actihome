@@ -1,5 +1,6 @@
 package fp.project.actihome.ui.nav;
 
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.GraphicsConfiguration;
@@ -11,12 +12,14 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import javax.swing.JFrame;
+import javax.swing.JScrollPane;
 import javax.swing.WindowConstants;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.theme.BrandAssets;
 import fp.project.actihome.ui.theme.Layout;
 
@@ -79,6 +82,18 @@ public class Navigator {
 
 	/** La ventana que el usuario está viendo ahora mismo. */
 	private JFrame visible;
+
+	/**
+	 * El tamaño que cada pantalla declara en su {@code setSize}, guardado la primera
+	 * vez que se muestra.
+	 *
+	 * <p>
+	 * Hay que capturarlo <b>antes</b> de tocar la ventana, porque a partir de la
+	 * primera navegación su tamaño ya es el heredado y el original se ha perdido.
+	 * Los frames son singleton, así que basta con guardarlo una vez por pantalla y
+	 * dura toda la sesión.
+	 */
+	private final java.util.Map<JFrame, Dimension> disenos = new java.util.IdentityHashMap<>();
 
 	public Navigator(ApplicationContext context) {
 		this.context = context;
@@ -146,6 +161,10 @@ public class Navigator {
 		GraphicsConfiguration configuracion = anterior != null && anterior.isDisplayable()
 				? anterior.getGraphicsConfiguration()
 				: ventana.getGraphicsConfiguration();
+
+		// Se anota el tamaño de diseño ANTES de tocar nada: en cuanto se hereda, el
+		// setSize original ya no se puede recuperar.
+		tamanoDeDiseno(ventana);
 
 		fijarMinimoSegunElContenido(ventana, configuracion);
 		heredarGeometria(anterior, ventana);
@@ -279,10 +298,30 @@ public class Navigator {
 		// después, no antes— así que su configuración es siempre la real.
 		GraphicsConfiguration configuracion = anterior.getGraphicsConfiguration();
 
-		// Sin Math.max contra "lo que necesita el destino": ese era el origen del
-		// salto de tamaño. El tamaño se hereda tal cual, solo acotado a la pantalla
-		// actual por si el usuario ha cambiado de monitor.
-		ventana.setSize(acotarAPantalla(configuracion, previa.width, previa.height));
+		// **Se hereda el tamaño, pero nunca por debajo del que la pantalla declara.**
+		//
+		// Heredar tal cual —como se hacía— tiene una consecuencia que tardó en verse:
+		// el tamaño de toda la sesión lo fija la PRIMERA ventana. El login mide
+		// 980×620, así que quien entraba y navegaba recorría las diecinueve pantallas a
+		// 980×620, con la barra de rescate puesta en casi todas. Se notaba sobre todo
+		// al restaurar una ventana maximizada, que es cuando Windows devuelve el tamaño
+		// normal.
+		//
+		// Y no vale con el mínimo de la ventana: el mínimo dice "por debajo de esto se
+		// rompe", no "con esto se ve bien". Lo que se usa aquí es el tamaño de diseño
+		// de cada pantalla —su setSize—, que es un número comprobado: MedirPantallas
+		// mide todas las pantallas a su propio tamaño de apertura precisamente para que
+		// esta línea pueda confiar en él.
+		//
+		// Esto NO reabre el salto de tamaño que se corrigió en la Fase 7. Aquel venía
+		// de un Math.max contra el tamaño **preferido del contenido**, que en el
+		// catálogo es la lista entera —2287 puntos medidos— y disparaba la ventana casi
+		// a pantalla completa. Un tamaño de diseño es un número fijo, acotado y
+		// pequeño; crecer hasta él es exactamente lo que hace falta, y una sola vez.
+		Dimension diseno = tamanoDeDiseno(ventana);
+
+		ventana.setSize(acotarAPantalla(configuracion, Math.max(previa.width, diseno.width),
+				Math.max(previa.height, diseno.height)));
 
 		// **Se conserva la esquina, no el centro.** Antes se recentraba sobre el centro
 		// de la ventana anterior, y eso producía un salto adicional: en cuanto el
@@ -331,7 +370,7 @@ public class Navigator {
 	 */
 	private void fijarMinimoSegunElContenido(JFrame ventana, GraphicsConfiguration configuracion) {
 
-		Dimension contenido = ventana.getContentPane().getMinimumSize();
+		Dimension contenido = sinQueSalgaLaBarra(ventana);
 		Insets bordes = ventana.getInsets();
 
 		int ancho = contenido.width + bordes.left + bordes.right;
@@ -339,6 +378,92 @@ public class Navigator {
 
 		ventana.setMinimumSize(acotarAPantalla(configuracion, Math.max(ancho, Layout.MINIMO_DE_VENTANA.width),
 				Math.max(alto, Layout.MINIMO_DE_VENTANA.height)));
+	}
+
+	/**
+	 * El tamaño por debajo del cual a la pantalla le sale la barra de rescate.
+	 *
+	 * <p>
+	 * <b>Aquí no vale preguntarle su mínimo al panel de contenido, y ese era el
+	 * fallo.</b> Casi todas las pantallas envuelven su cuerpo en un
+	 * {@link Rescate}, que es un {@code JScrollPane} con
+	 * {@code setMinimumSize(0, 0)} puesto <b>a propósito</b>: cuando falta sitio, el
+	 * espacio se lo tiene que quitar quien tiene barra, no la cabecera. Preguntarle
+	 * su mínimo a un componente diseñado para contestar cero da cero, así que el
+	 * mínimo de ventana acababa siendo la cabecera y poco más.
+	 *
+	 * <p>
+	 * <b>Y con eso, ninguna ventana se defendía de encogerse.</b> Como
+	 * {@code heredarGeometria} pasa el tamaño de una pantalla a la siguiente tal
+	 * cual, bastaba con que la primera de la sesión fuera pequeña —el login son
+	 * 980×620— para que las diecinueve corrieran el resto de la sesión a ese tamaño,
+	 * con la barra puesta en casi todas. Se veía al restaurar una ventana
+	 * maximizada, que es cuando Windows devuelve el tamaño normal, y por eso parecía
+	 * que "al minimizar vuelve el scroll".
+	 *
+	 * <p>
+	 * Es exactamente el mismo error que tenía {@code MedirPantallas} —medir el
+	 * mínimo de quien está hecho para no tener— y se corrige igual: el marco que
+	 * rodea al rescate no cede, así que su alto es el preferido de la pantalla menos
+	 * el preferido del rescate; sumándole lo mínimo que admite el contenido sale el
+	 * punto exacto en el que aparecería la barra.
+	 *
+	 * <p>
+	 * El resultado se acota luego al escritorio real, así que en un equipo donde ni
+	 * eso quepa la barra sigue estando disponible — que es para lo que se escribió.
+	 */
+	/** El {@code setSize} de la pantalla, recordado de la primera vez que se abrió. */
+	private Dimension tamanoDeDiseno(JFrame ventana) {
+		return disenos.computeIfAbsent(ventana, JFrame::getSize);
+	}
+
+	private Dimension sinQueSalgaLaBarra(JFrame ventana) {
+
+		Container contenido = ventana.getContentPane();
+		Dimension minimo = contenido.getMinimumSize();
+
+		JScrollPane rescate = buscarRescate(contenido);
+
+		if (rescate == null) {
+			return minimo;
+		}
+
+		java.awt.Component vista = rescate.getViewport().getView();
+
+		if (vista == null) {
+			return minimo;
+		}
+
+		Dimension preferido = contenido.getPreferredSize();
+		Dimension delRescate = rescate.getPreferredSize();
+		Dimension deLaVista = vista.getMinimumSize();
+
+		return new Dimension(Math.max(minimo.width, preferido.width - delRescate.width + deLaVista.width),
+				Math.max(minimo.height, preferido.height - delRescate.height + deLaVista.height));
+	}
+
+	/** El scroll de rescate de una pantalla, buscado por su marca. */
+	private JScrollPane buscarRescate(Container contenedor) {
+
+		for (java.awt.Component hijo : contenedor.getComponents()) {
+
+			if (hijo instanceof JScrollPane
+					&& Boolean.TRUE.equals(((JScrollPane) hijo).getClientProperty(Rescate.MARCA))) {
+
+				return (JScrollPane) hijo;
+			}
+
+			if (hijo instanceof Container) {
+
+				JScrollPane encontrado = buscarRescate((Container) hijo);
+
+				if (encontrado != null) {
+					return encontrado;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	/**
