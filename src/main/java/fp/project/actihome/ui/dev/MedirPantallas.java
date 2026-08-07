@@ -196,6 +196,22 @@ public final class MedirPantallas {
 				}
 			}
 
+			System.out.println();
+			System.out.println("=== en su propio tamano de apertura ===");
+			System.out.printf("%-22s %8s %8s %8s  %s%n", "pantalla", "ideal", "apretado", "cabe en", "");
+
+			for (Pantalla pantalla : pantallas) {
+
+				if (soloEsta != null && !pantalla.nombre.equalsIgnoreCase(soloEsta)) {
+					continue;
+				}
+
+				if (!medir(pantalla, new Objetivo(pantalla.nombre, pantalla.suTamano.width, pantalla.suTamano.height,
+						"su setSize"))) {
+					fallos++;
+				}
+			}
+
 			if (!autocontrol(pantallas.get(0))) {
 				fallos++;
 			}
@@ -517,11 +533,28 @@ public final class MedirPantallas {
 		private final transient Preparar preparar;
 		private final boolean esLista;
 
+		/**
+		 * El tamaño con el que la pantalla se abre, capturado <b>antes</b> de que esta
+		 * herramienta la redimensione.
+		 *
+		 * <p>
+		 * <b>Es el tamaño que más veces va a ver el usuario y el único que no se estaba
+		 * comprobando.</b> Los tres objetivos de arriba son portátiles reales, pero
+		 * ninguno es el {@code setSize} de la pantalla — y ese es justo el que Windows
+		 * devuelve al restaurar una ventana maximizada. Varias pantallas se
+		 * redistribuyeron en tres columnas y siguieron declarando el ancho que
+		 * necesitaban cuando eran una: a ese ancho las columnas se pliegan, el
+		 * contenido crece hacia abajo y aparece la barra. Un fallo que no se veía
+		 * midiendo a 1280 ni a 1536.
+		 */
+		private final java.awt.Dimension suTamano;
+
 		private Pantalla(String nombre, JFrame frame, Preparar preparar, boolean esLista) {
 			this.nombre = nombre;
 			this.frame = frame;
 			this.preparar = preparar;
 			this.esLista = esLista;
+			this.suTamano = frame.getSize();
 		}
 	}
 

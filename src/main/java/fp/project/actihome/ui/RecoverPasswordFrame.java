@@ -103,7 +103,7 @@ public class RecoverPasswordFrame extends JFrame {
 	private void initUI() {
 
 		setTitle("ActiHome");
-		setSize(760, 640);
+		setSize(860, 760);
 		setLocationRelativeTo(null);
 
 		// Los 48 de margen vertical van como gap de guarda y no como inset: ahí sí

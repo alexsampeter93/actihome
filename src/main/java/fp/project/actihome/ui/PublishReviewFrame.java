@@ -123,7 +123,7 @@ public class PublishReviewFrame extends JFrame {
 	private void initUI() {
 
 		setTitle("ActiHome");
-		setSize(760, 800);
+		setSize(1000, 800);
 		setLocationRelativeTo(null);
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[grow,fill]"));

@@ -105,7 +105,7 @@ public class ReviewForm extends JPanel {
 		loQueSePuntua.add(comida);
 		loQueSePuntua.add(limpieza);
 
-		Columnas columnas = new Columnas(340, Space.XXL);
+		Columnas columnas = new Columnas(320, Space.XXL);
 		columnas.add(loQueSeEscribe);
 		columnas.add(loQueSePuntua);
 

@@ -97,7 +97,7 @@ public class ChangePasswordFrame extends JFrame {
 	private void initUI() {
 
 		setTitle("ActiHome");
-		setSize(820, 700);
+		setSize(860, 740);
 		setLocationRelativeTo(null);
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));

@@ -193,7 +193,7 @@ public class ReserveHousingFrame extends JFrame {
 	private void initUI() {
 
 		setTitle("ActiHome");
-		setSize(760, 780);
+		setSize(1260, 800);
 		setLocationRelativeTo(null);
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[grow,fill]"));
@@ -250,7 +250,10 @@ public class ReserveHousingFrame extends JFrame {
 		// sistema. Columnas lo resuelve sin umbrales: los pone en paralelo donde caben
 		// y uno debajo del otro donde no, que allí es lo correcto aunque haya que
 		// desplazarse.
-		Columnas columnas = new Columnas(Layout.FORMULARIO, Space.XXL);
+		// El suelo cómodo es 380 y no Layout.FORMULARIO (440): la columna del calendario
+		// pide 608 innegociables, así que cada punto que se le exija de más a la otra es
+		// un punto más de ancho de ventana para poder verlas en paralelo.
+		Columnas columnas = new Columnas(380, Space.XXL);
 
 		columnas.add(campoFechas());
 

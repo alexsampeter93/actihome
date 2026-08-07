@@ -126,7 +126,7 @@ public class UpdateHousingFrame extends JFrame {
 	private void initUI() {
 
 		setTitle("ActiHome");
-		setSize(1120, 800);
+		setSize(1300, 840);
 		setLocationRelativeTo(null);
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));
