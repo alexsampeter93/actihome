@@ -317,8 +317,25 @@ public class HousingDetailsFrame extends JFrame {
 		izquierda.setOpaque(false);
 
 		izquierda.add(galeria(), "grow");
-		izquierda.add(new PrevisionPanel(housing, weatherService), "growx");
-		izquierda.add(new MapaDeUbicacion(housing, tileClient), "growx");
+
+		// **El tiempo y el mapa van uno al lado del otro, no apilados.** Apilados
+		// sumaban unos 150 puntos de alto que son justo lo que sacaba la ficha de la
+		// pantalla en cualquier portátil: la ficha pedía 926 puntos y un portátil de
+		// 1920x1080 al 150 % da 660 útiles. Y no compiten por el ancho, porque
+		// contestan la misma pregunta desde dos lados —dónde está y cómo está— así que
+		// verlos juntos es incluso mejor lectura que en columna.
+		//
+		// "hidemode 3" sigue siendo imprescindible: los dos desaparecen sin dejar hueco
+		// cuando el alojamiento no tiene coordenadas o la consulta falla, y entonces el
+		// que quede se lleva el ancho entero.
+		JPanel entorno = new JPanel(
+				new MigLayout("hidemode 3, " + Space.insets(0), "[grow,fill]" + Space.LG + "[grow,fill]", "[]"));
+		entorno.setOpaque(false);
+
+		entorno.add(new PrevisionPanel(housing, weatherService), "growx, aligny top");
+		entorno.add(new MapaDeUbicacion(housing, tileClient), "growx, aligny top");
+
+		izquierda.add(entorno, "growx");
 
 		panel.add(izquierda, "grow");
 		panel.add(informacion(), "aligny top");
@@ -369,24 +386,24 @@ public class HousingDetailsFrame extends JFrame {
 
 		panel.add(referencia(), "gapbottom " + Space.SM);
 		panel.add(titulo(), "gapbottom " + Space.MD);
-		panel.add(anfitrion(), "gapbottom " + Space.LG);
+		panel.add(anfitrion(), "gapbottom " + Space.MD);
 
 		// "wmin 0" es imprescindible aquí: un JTextArea sin ese freno reporta como
 		// ancho mínimo el de su texto sin partir en líneas, que para una descripción
 		// de tres frases es enorme. Sin este freno, MigLayout respeta esa demanda y dejaba
 		// la columna del texto invadir la de la foto —el mismo problema, ya documentado en
 		// Layout.ancho(), que en su día se llevó por delante el panel oscuro del login—.
-		panel.add(descripcion(), "growx, wmin 0, gapbottom " + Space.LG);
+		panel.add(descripcion(), "growx, wmin 0, gapbottom " + Space.MD);
 
 		// Solo si hay alguna reseña: un hueco con comillas vacías sería peor que la
 		// ausencia. Al no añadirse, el layout no le reserva sitio.
 		JPanel cita = citaDestacada();
 
 		if (cita != null) {
-			panel.add(cita, "growx, wmin 0, gapbottom " + Space.XL);
+			panel.add(cita, "growx, wmin 0, gapbottom " + Space.MD);
 		}
 
-		panel.add(miniGrid(), "gapbottom " + Space.XL);
+		panel.add(miniGrid(), "gapbottom " + Space.MD);
 
 		// La tarjeta se acota a Layout.FORMULARIO y NO ocupa toda la columna. Con el
 		// ancho entero, el botón principal medía casi 600 puntos: eso no es un botón de
@@ -435,13 +452,21 @@ public class HousingDetailsFrame extends JFrame {
 
 	private JComponent tarjetaDeReserva() {
 
-		Card tarjeta = new Card(new MigLayout("wrap 1, " + Space.insets(Space.LG), "[grow,fill]", ""));
+		Card tarjeta = new Card(new MigLayout("wrap 1, " + Space.insets(Space.MD), "[grow,fill]", ""));
 
-		tarjeta.add(Labels.caps(Textos.t("detalle.reserva.desde")));
-		tarjeta.add(precio(), "gaptop " + Space.XXS);
+		// **La cabecera de la tarjeta va en UNA fila, no en tres.** "DESDE" a la
+		// izquierda y el estado a la derecha comparten renglón, y el separador
+		// horizontal que había entre medias desaparece: la tarjeta ya tiene un borde
+		// propio, así que una línea más dentro solo servía para partir en dos algo que
+		// se lee de un vistazo. Entre esto y el ahorro de la columna izquierda, la
+		// ficha baja de 926 puntos a caber en un portátil.
+		JPanel cabecera = new JPanel(new MigLayout(Space.insets(0), "[]push[]", "[]"));
+		cabecera.setOpaque(false);
+		cabecera.add(Labels.caps(Textos.t("detalle.reserva.desde")), "aligny center");
+		cabecera.add(disponibilidad(), "aligny center");
 
-		tarjeta.add(Hairline.horizontal(), "growx, gaptop " + Space.MD + ", gapbottom " + Space.SM);
-		tarjeta.add(disponibilidad(), "gapbottom " + Space.MD);
+		tarjeta.add(cabecera);
+		tarjeta.add(precio(), "gaptop " + Space.XXS + ", gapbottom " + Space.MD);
 
 		tarjeta.add(acciones(), "growx, wmin 0");
 
@@ -480,10 +505,30 @@ public class HousingDetailsFrame extends JFrame {
 		return fila;
 	}
 
-	private JLabel titulo() {
+	/**
+	 * El nombre del alojamiento, y <b>parte en dos líneas si hace falta</b>.
+	 *
+	 * <p>
+	 * <b>Era un {@code JLabel} y eso lo rompía en ventanas estrechas.</b> Un JLabel
+	 * no parte el texto: declara como ancho mínimo el de la frase entera, y
+	 * "Casa Rural El Pinar" a cuerpo 46 pide 556 puntos. Al acotar la columna
+	 * derecha, esa exigencia empujaba el titular 71 puntos fuera de una ventana de
+	 * 1024 — donde no hay barra horizontal que lo rescate, así que sencillamente no
+	 * se alcanzaba. Lo detectó {@code MedirResponsive} en el mismo momento de
+	 * acotarla; a ojo, en una ventana normal, no se veía nada.
+	 *
+	 * <p>
+	 * Es la regla 5 de la adaptabilidad, aplicada donde no se había aplicado: un
+	 * texto que puede ocupar más de una línea nunca va en un {@code JLabel}. Y el
+	 * mínimo pasa a ser <b>la palabra más larga</b>, que es el único punto por
+	 * debajo del cual ya no hay reflujo posible.
+	 */
+	private JComponent titulo() {
 
-		JLabel etiqueta = Labels.cardTitle(housing.getName());
+		WrappingText etiqueta = new WrappingText(housing.getName());
 		etiqueta.setFont(Typography.serifMedium(Typography.DETAIL_TITLE));
+		etiqueta.setForeground(Theme.txt());
+
 		return etiqueta;
 	}
 
@@ -637,28 +682,36 @@ public class HousingDetailsFrame extends JFrame {
 		return new WrappingText(Contenido.de(housing.getDescription()));
 	}
 
-	/** Rejilla 2×2: habitaciones, disponibilidad, pensión y titular. */
-	private JPanel miniGrid() {
+	/**
+	 * Una sola línea con los datos clave: "3 habitaciones · Desayuno, Cena".
+	 *
+	 * <p>
+	 * <b>Era una rejilla de dos celdas con etiqueta encima, y la etiqueta no
+	 * aportaba nada.</b> "HABITACIONES / 3 habitaciones" dice dos veces lo mismo, y
+	 * "PENSIÓN / Desayuno, Cena" tampoco necesita presentación: nadie lee "Desayuno,
+	 * Cena" y se pregunta de qué le están hablando. Un rótulo solo hace falta cuando
+	 * el valor es ambiguo sin él.
+	 *
+	 * <p>
+	 * Los cuarenta puntos de alto que se ahorran no son un extra: son parte de lo que
+	 * hace que la ficha entera quepa en un portátil sin desplazar la pantalla.
+	 *
+	 * <p>
+	 * La celda "Disponible — Sí" se retiró al crear la tarjeta de reserva: la
+	 * respuesta ya estaba en la insignia sobre la foto, y ese dato solo importa
+	 * cuando estás decidiendo reservar, no mezclado con el número de habitaciones. Y
+	 * el titular salió en la Fase 8.4, porque la tarjeta de anfitrión de arriba dice
+	 * lo mismo con cara y con nota.
+	 */
+	private JComponent miniGrid() {
 
-		JPanel panel = new JPanel(
-				new MigLayout("wrap 2, gapy " + Space.LG, "[grow,fill]" + Space.XXL + "[grow,fill]", ""));
-		panel.setOpaque(false);
+		String habitaciones = Formato.plural(housing.getNumberOfRooms(),
+				Textos.t("palabra.habitacion.singular"), Textos.t("palabra.habitacion.plural"));
 
-		panel.add(celda(Textos.t("detalle.grid.habitaciones"), Formato.plural(housing.getNumberOfRooms(),
-				Textos.t("palabra.habitacion.singular"), Textos.t("palabra.habitacion.plural"))));
-		panel.add(celda(Textos.t("catalogo.row.pension"), resumenPension()));
-
-		// La celda "Disponible — Sí" se retiró al crear la tarjeta de reserva. Era
-		// relleno en dos sentidos: la respuesta ya estaba en la insignia sobre la foto,
-		// y un dato solo vale donde se usa. Que un alojamiento esté libre importa
-		// justo cuando estás decidiendo reservarlo, no tres bloques más arriba
-		// mezclado con el número de habitaciones. Ahora vive en la tarjeta.
-
-		// El titular estaba aquí como cuarta celda y salió en la Fase 8.4: la tarjeta
-		// de anfitrión de arriba dice lo mismo, con cara y con nota. Repetir un dato a
-		// dos centímetros de sí mismo no informa el doble, hace dudar de si son dos
-		// datos distintos.
-		return panel;
+		// WrappingText y no Labels.body: es una línea que puede alargarse -"Desayuno,
+		// Comida, Cena" en una columna de 480- y un JLabel no parte el texto, declara el
+		// ancho entero y desborda el contenedor. Regla 5 de la adaptabilidad.
+		return new WrappingText(habitaciones + " · " + resumenPension());
 	}
 
 	private JPanel celda(String etiqueta, String valor) {
