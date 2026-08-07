@@ -31,6 +31,9 @@ import fp.project.actihome.model.services.TileClient;
 import fp.project.actihome.model.services.WeatherService;
 import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Card;
+import fp.project.actihome.ui.components.Hairline;
+import fp.project.actihome.ui.components.Punto;
 import fp.project.actihome.ui.catalog.Destacado;
 import fp.project.actihome.ui.components.CalendarioRango;
 import fp.project.actihome.ui.components.Foco;
@@ -376,11 +379,102 @@ public class HousingDetailsFrame extends JFrame {
 			panel.add(cita, "growx, wmin 0, gapbottom " + Space.XL);
 		}
 
-		panel.add(miniGrid(), "gapbottom " + Space.XXL);
-		panel.add(precio(), "gapbottom " + Space.SM);
-		panel.add(acciones());
+		panel.add(miniGrid(), "gapbottom " + Space.XL);
+
+		// La tarjeta se acota a Layout.FORMULARIO y NO ocupa toda la columna. Con el
+		// ancho entero, el botón principal medía casi 600 puntos: eso no es un botón de
+		// ficha, es la llamada a la acción de una página de aterrizaje, y grita en una
+		// pantalla que se sostiene sobre líneas finas y espacio. Es la misma regla del
+		// sistema que ya limita los formularios — el espacio sobrante se queda como
+		// margen, no se reparte entre los controles.
+		//
+		// La segunda columna es un sumidero: se queda con lo que sobre para que la
+		// tarjeta no se estire hasta el borde derecho de la pantalla.
+		//
+		// **Y hay que decir hasta dónde llega este control, porque no llega a donde
+		// parece.** Se probaron tres formas de acotar la tarjeta a Layout.FORMULARIO
+		// (440): la restricción en el componente, el tope en la columna y esta. Las
+		// tres dan el mismo resultado, unos 550, que es el ancho **natural** de la
+		// tarjeta: nunca fue el reparto de espacio lo que mandaba, sino lo que su
+		// propio contenido pide. Un tope de 440 no la encoge porque no es ahí donde se
+		// decide, y perseguirlo más habría sido pelearse con el gestor de layout por un
+		// número que la composición no necesita. Lo que sí hace falta es que exista un
+		// dueño para el espacio sobrante, y eso es lo que aporta la columna de la
+		// derecha.
+		JPanel hueco = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XL + "[grow,fill]", "[]"));
+		hueco.setOpaque(false);
+
+		hueco.add(tarjetaDeReserva(), "wmin 0");
+		hueco.add(sumidero(), "wmin 0");
+
+		panel.add(hueco, "growx, wmin 0");
 
 		return panel;
+	}
+
+	/**
+	 * El precio, el estado y las acciones, dentro de una superficie propia.
+	 *
+	 * <p>
+	 * <b>Antes eran tres bloques sueltos al final de la columna</b>, y ese era el
+	 * problema: el precio flotaba en el aire y "Reservar" tenía exactamente el mismo
+	 * peso visual que "Ver reseñas". Nada decía cuál de las tres cosas es la que se
+	 * viene a hacer aquí.
+	 *
+	 * <p>
+	 * <b>Lo que hace el marco no es decorar, es jerarquizar.</b> Es la única
+	 * superficie contenida de esta pantalla —el resto es texto sobre el fondo— y por
+	 * eso manda sin necesidad de gritar con tamaños ni con colores. Es el patrón de
+	 * cualquier producto de viajes: el contenido se lee, la transacción se enmarca.
+	 *
+	 * <p>
+	 * <b>La disponibilidad vive aquí y no en la rejilla de datos.</b> En la rejilla
+	 * era una celda que decía "Disponible — Sí", que es relleno: la respuesta solo
+	 * importa cuando estás decidiendo si reservar, y ese momento es este. Se cuenta
+	 * con un punto de color más la palabra, nunca solo con el color.
+	 */
+	/** Panel vacío cuyo único cometido es quedarse con el espacio sobrante de la fila. */
+	private JPanel sumidero() {
+
+		JPanel vacio = new JPanel();
+		vacio.setOpaque(false);
+
+		return vacio;
+	}
+
+	private JComponent tarjetaDeReserva() {
+
+		Card tarjeta = new Card(new MigLayout("wrap 1, " + Space.insets(Space.LG), "[grow,fill]", ""));
+
+		tarjeta.add(Labels.caps(Textos.t("detalle.reserva.desde")));
+		tarjeta.add(precio(), "gaptop " + Space.XXS);
+
+		tarjeta.add(Hairline.horizontal(), "growx, gaptop " + Space.MD + ", gapbottom " + Space.SM);
+		tarjeta.add(disponibilidad(), "gapbottom " + Space.MD);
+
+		tarjeta.add(acciones(), "growx, wmin 0");
+
+		return tarjeta;
+	}
+
+	/** "● Disponible" o "● Reservada", con el punto tintado según cuál sea. */
+	private JPanel disponibilidad() {
+
+		boolean libre = housingService.isAvailableNow(housing.getId());
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XS + "[]", "[]"));
+		fila.setOpaque(false);
+
+		// El acento de la estación cuando está libre, y el color del texto secundario
+		// cuando no. No se usa un verde ni un rojo: esta aplicación no tiene colores de
+		// semáforo y meterlos aquí rompería la paleta estacional en la única pantalla
+		// donde más se mira. "Ocupado" no es un error, es un hecho, y el gris lo dice
+		// mejor que una alarma.
+		fila.add(new Punto(libre ? Theme::acc : Theme::mut), "aligny center");
+		fila.add(Labels.body(Textos.t(libre ? "catalogo.disponibilidad.disponible" : "catalogo.disponibilidad.reservada")),
+				"aligny center");
+
+		return fila;
 	}
 
 	/** "Nº 10001 —— Sierra Nevada, Granada", igual que en el catálogo. */
@@ -561,10 +655,13 @@ public class HousingDetailsFrame extends JFrame {
 
 		panel.add(celda(Textos.t("detalle.grid.habitaciones"), Formato.plural(housing.getNumberOfRooms(),
 				Textos.t("palabra.habitacion.singular"), Textos.t("palabra.habitacion.plural"))));
-		panel.add(celda(Textos.t("catalogo.disponibilidad.disponible"),
-				housingService.isAvailableNow(housing.getId()) ? Textos.t("detalle.grid.si")
-						: Textos.t("detalle.grid.noReservado")));
 		panel.add(celda(Textos.t("catalogo.row.pension"), resumenPension()));
+
+		// La celda "Disponible — Sí" se retiró al crear la tarjeta de reserva. Era
+		// relleno en dos sentidos: la respuesta ya estaba en la insignia sobre la foto,
+		// y un dato solo vale donde se usa. Que un alojamiento esté libre importa
+		// justo cuando estás decidiendo reservarlo, no tres bloques más arriba
+		// mezclado con el número de habitaciones. Ahora vive en la tarjeta.
 
 		// El titular estaba aquí como cuarta celda y salió en la Fase 8.4: la tarjeta
 		// de anfitrión de arriba dice lo mismo, con cara y con nota. Repetir un dato a
@@ -630,30 +727,36 @@ public class HousingDetailsFrame extends JFrame {
 	 */
 	private JPanel acciones() {
 
-		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]push[]", "[]"));
-		fila.setOpaque(false);
-
-		JPanel izquierda = new JPanel(new MigLayout(Space.insets(0), "", "[]"));
-		izquierda.setOpaque(false);
+		// **Una columna, no una fila.** Dentro de la tarjeta el ancho es acotado y una
+		// fila con "push" repartiría los tres botones por el borde, que es justo la
+		// composición dispersa que la tarjeta viene a corregir. En columna, la acción
+		// principal ocupa todo el ancho —que es lo que la convierte en principal, sin
+		// necesidad de hacerla más grande— y las secundarias quedan debajo, centradas y
+		// en jerarquía descendente.
+		JPanel columna = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]"));
+		columna.setOpaque(false);
 
 		User usuario = sessionManager.getLoggedInUser();
 		boolean esPropietario = usuario != null && usuario.getId().equals(housing.getOwner().getId());
 
 		if (usuario != null && usuario.getRole() == RoleType.CUSTOMER) {
-			izquierda.add(Buttons.primary(Textos.t("detalle.accion.reservar"), e -> reservar()), "height " + Typography.altoDeBoton() + "!");
-			izquierda.add(Buttons.linkAccent(Textos.t("detalle.accion.preguntar"), e -> preguntar()),
-					"gapleft " + Space.XL);
+
+			columna.add(Buttons.primary(Textos.t("detalle.accion.reservar"), e -> reservar()),
+					"height " + Typography.altoDeBoton() + "!");
+			columna.add(Buttons.linkAccent(Textos.t("detalle.accion.preguntar"), e -> preguntar()),
+					"gaptop " + Space.SM);
 
 		} else if (usuario != null && usuario.getRole() == RoleType.ADMIN && esPropietario) {
-			izquierda.add(Buttons.secondary(Textos.t("detalle.accion.actualizar"), e -> actualizar()), "height " + Typography.altoDeBoton() + "!");
-			izquierda.add(Buttons.linkAccent(Textos.t("catalogo.row.intercambiar"), e -> intercambiar()),
-					"gapleft " + Space.XL);
+
+			columna.add(Buttons.secondary(Textos.t("detalle.accion.actualizar"), e -> actualizar()),
+					"height " + Typography.altoDeBoton() + "!");
+			columna.add(Buttons.linkAccent(Textos.t("catalogo.row.intercambiar"), e -> intercambiar()),
+					"gaptop " + Space.SM);
 		}
 
-		fila.add(izquierda);
-		fila.add(Buttons.link(Textos.t("detalle.accion.verResenas"), e -> verResenas()));
+		columna.add(Buttons.link(Textos.t("detalle.accion.verResenas"), e -> verResenas()), "gaptop " + Space.XXS);
 
-		return fila;
+		return columna;
 	}
 
 	private void reservar() {
