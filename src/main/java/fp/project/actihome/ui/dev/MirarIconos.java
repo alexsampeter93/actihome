@@ -11,6 +11,7 @@ import javax.imageio.ImageIO;
 
 import fp.project.actihome.model.entities.Amenity;
 import fp.project.actihome.ui.components.IconoDeComodidad;
+import fp.project.actihome.ui.components.IconoDeTipo;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
 import fp.project.actihome.ui.theme.Animacion;
 import fp.project.actihome.ui.theme.Season;
@@ -48,6 +49,7 @@ import fp.project.actihome.ui.theme.Typography;
 public final class MirarIconos {
 
 	private static final String SALIDA = "docs/progreso/iconos-comodidad.png";
+	private static final String SALIDA_TIPOS = "docs/progreso/iconos-tipo.png";
 
 	private static final int LADO = 200;
 	private static final int AIRE = 40;
@@ -109,6 +111,104 @@ public final class MirarIconos {
 		ImageIO.write(lamina, "png", new File(SALIDA));
 		System.out.println("Lamina generada: " + SALIDA);
 
+		dibujarTipos();
+
 		System.exit(0);
+	}
+
+	/**
+	 * La otra lámina: los cuatro tipos de alojamiento.
+	 *
+	 * <p>
+	 * Van aparte y no en la misma imagen porque son otra familia y otra pregunta.
+	 * En los de comodidad lo que hay que juzgar es si el estado apagado ya se
+	 * entiende; aquí lo que hay que juzgar es si los cuatro <b>se distinguen entre
+	 * sí</b>, que es un problema distinto: cualquiera de ellos, mirado solo, se lee
+	 * como un edificio, y el fallo solo aparece al ponerlos en fila.
+	 */
+	private static void dibujarTipos() throws IOException {
+
+		String[] tipos = { "Casa", "Apartamento", "Villa", "Cabaña" };
+
+		int ancho = AIRE + tipos.length * (LADO + AIRE);
+		int alto = AIRE * 2 + LADO + AIRE;
+
+		BufferedImage lamina = new BufferedImage(ancho, alto, BufferedImage.TYPE_INT_RGB);
+
+		Graphics2D g2 = lamina.createGraphics();
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+
+		g2.setColor(Theme.bg());
+		g2.fillRect(0, 0, ancho, alto);
+
+		for (int i = 0; i < tipos.length; i++) {
+
+			// Se dibuja a mano y no con un componente porque IconoDeTipo es un Icon: se le
+			// pide que se pinte en unas coordenadas, y el color lo toma del componente que
+			// se le pasa. Aquí se le pasa un panel con el color puesto a mano.
+			javax.swing.JPanel portador = new javax.swing.JPanel();
+			portador.setForeground(Theme.accText());
+
+			IconoDeTipoGrande icono = new IconoDeTipoGrande(tipos[i], LADO);
+			icono.paintIcon(portador, g2, AIRE + i * (LADO + AIRE), AIRE);
+		}
+
+		g2.setFont(Typography.sans(Typography.BODY_SM));
+		g2.setColor(Theme.mut());
+
+		for (int i = 0; i < tipos.length; i++) {
+			g2.drawString(tipos[i], AIRE + i * (LADO + AIRE), alto - AIRE / 2);
+		}
+
+		g2.dispose();
+
+		ImageIO.write(lamina, "png", new File(SALIDA_TIPOS));
+		System.out.println("Lamina generada: " + SALIDA_TIPOS);
+	}
+
+	/**
+	 * Un {@link IconoDeTipo} al tamaño que se le pida.
+	 *
+	 * <p>
+	 * {@code IconoDeTipo} calcula su lado desde la fuente porque en la aplicación
+	 * tiene que acompañar a una etiqueta. Aquí hace falta lo contrario —un tamaño
+	 * grande y fijo— y en vez de añadirle un constructor que solo usaría esta
+	 * herramienta, se envuelve: la clase de producción no se ensucia con una
+	 * necesidad que no es suya.
+	 */
+	private static final class IconoDeTipoGrande implements javax.swing.Icon {
+
+		private final IconoDeTipo delegado;
+		private final int lado;
+
+		private IconoDeTipoGrande(String tipo, int lado) {
+			this.delegado = new IconoDeTipo(tipo);
+			this.lado = lado;
+		}
+
+		@Override
+		public int getIconWidth() {
+			return lado;
+		}
+
+		@Override
+		public int getIconHeight() {
+			return lado;
+		}
+
+		@Override
+		public void paintIcon(java.awt.Component c, java.awt.Graphics g, int x, int y) {
+
+			Graphics2D g2 = (Graphics2D) g.create();
+
+			double escala = lado / (double) delegado.getIconWidth();
+			g2.translate(x, y);
+			g2.scale(escala, escala);
+
+			delegado.paintIcon(c, g2, 0, 0);
+
+			g2.dispose();
+		}
 	}
 }

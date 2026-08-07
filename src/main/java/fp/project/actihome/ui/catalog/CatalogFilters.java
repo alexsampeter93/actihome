@@ -15,14 +15,14 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.SpinnerNumberModel;
 
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Amenity;
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.ui.components.Chip;
+import fp.project.actihome.ui.components.Contador;
+import fp.project.actihome.ui.components.IconoDeTipo;
 import fp.project.actihome.ui.components.FilaFluida;
 import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.Labels;
@@ -117,7 +117,7 @@ public class CatalogFilters extends JPanel {
 
 	private SearchField buscador;
 	private JLabel etiquetaTipo;
-	private JSpinner minimoHabitaciones;
+	private Contador minimoHabitaciones;
 	private JLabel etiquetaMinHab;
 	private JLabel etiquetaOrdenar;
 	private JLabel etiquetaComodidades;
@@ -131,8 +131,8 @@ public class CatalogFilters extends JPanel {
 	private final transient java.util.Map<String, Chip> chipsPorTipo = new java.util.LinkedHashMap<>();
 
 	private JLabel etiquetaPrecio;
-	private JSpinner precioMinimo;
-	private JSpinner precioMaximo;
+	private Contador precioMinimo;
+	private Contador precioMaximo;
 	private JLabel etiquetaCiudad;
 	private JComboBox<String> ciudad;
 	private boolean actualizandoCiudades;
@@ -235,9 +235,8 @@ public class CatalogFilters extends JPanel {
 		// Un contador numérico y no un campo de texto libre: el valor solo puede ser un
 		// entero positivo pequeño, y un control que impide escribir algo inválido
 		// ahorra tener que explicar después por qué no vale.
-		minimoHabitaciones = new JSpinner(new SpinnerNumberModel(1, 1, 20, 1));
-		minimoHabitaciones.addChangeListener(e -> notificar());
-		fila.add(minimoHabitaciones, "w 62!, h " + Typography.altoDeControlCompacto() + "!, aligny center");
+		minimoHabitaciones = new Contador(1, 1, 20, 1, this::notificar);
+		fila.add(minimoHabitaciones, "h " + Typography.altoDeControlCompacto() + "!, aligny center");
 
 		masFiltros = new Chip(Textos.t("catalogo.filtro.masFiltros"));
 		masFiltros.addActionListener(e -> alternarComodidades());
@@ -301,21 +300,19 @@ public class CatalogFilters extends JPanel {
 		// mitad de camino habría ocultado en silencio cualquier alojamiento que se
 		// añadiera por encima de ese número, exactamente el fallo de datos que este
 		// proyecto ya ha aprendido a evitar (ver CLAUDE.md §3).
-		precioMinimo = new JSpinner(new SpinnerNumberModel(0, 0, 2000, 10));
-		precioMinimo.addChangeListener(e -> {
+		precioMinimo = new Contador(0, 0, 2000, 25, () -> {
 			refrescarEtiquetaDeMasFiltros();
 			notificar();
 		});
-		fila.add(precioMinimo, "w 76!, h " + Typography.altoDeControlCompacto() + "!, aligny center");
+		fila.add(precioMinimo, "h " + Typography.altoDeControlCompacto() + "!, aligny center");
 
 		fila.add(Labels.muted("–"), "aligny center");
 
-		precioMaximo = new JSpinner(new SpinnerNumberModel(2000, 0, 2000, 10));
-		precioMaximo.addChangeListener(e -> {
+		precioMaximo = new Contador(2000, 0, 2000, 25, () -> {
 			refrescarEtiquetaDeMasFiltros();
 			notificar();
 		});
-		fila.add(precioMaximo, "w 76!, h " + Typography.altoDeControlCompacto() + "!, aligny center");
+		fila.add(precioMaximo, "h " + Typography.altoDeControlCompacto() + "!, aligny center");
 
 		etiquetaCiudad = Labels.caps(Textos.t("catalogo.filtro.ciudad"));
 		fila.add(etiquetaCiudad, "aligny center");
@@ -410,8 +407,8 @@ public class CatalogFilters extends JPanel {
 
 	private boolean precioActivo() {
 
-		int minimo = (Integer) precioMinimo.getValue();
-		int maximo = (Integer) precioMaximo.getValue();
+		int minimo = precioMinimo.getValor();
+		int maximo = precioMaximo.getValor();
 
 		return minimo > 0 || maximo < 2000;
 	}
@@ -450,6 +447,15 @@ public class CatalogFilters extends JPanel {
 		for (String valor : TIPOS) {
 
 			Chip chip = new Chip(Textos.tipoDeAlojamiento(valor), valor.equals(tipo));
+
+			// El icono solo lo llevan los cuatro tipos concretos, no el "Todos": ese no
+			// es un tipo de alojamiento, es la ausencia de filtro, y darle un dibujo lo
+			// pondría al mismo nivel que los demás. Un icono debe representar algo; la
+			// opción de no filtrar no representa nada que se pueda dibujar.
+			if (!TODOS.equals(valor)) {
+				chip.setIcon(new IconoDeTipo(valor));
+				chip.setIconTextGap(Space.XS);
+			}
 
 			chip.addActionListener(e -> {
 				tipo = valor;
@@ -609,9 +615,9 @@ public class CatalogFilters extends JPanel {
 
 		List<Housing> resultado = new ArrayList<>();
 		String texto = buscador.getTexto().toLowerCase(Locale.ROOT);
-		int minimoHab = (Integer) minimoHabitaciones.getValue();
-		BigDecimal precioMin = BigDecimal.valueOf((Integer) precioMinimo.getValue());
-		BigDecimal precioMax = BigDecimal.valueOf((Integer) precioMaximo.getValue());
+		int minimoHab = minimoHabitaciones.getValor();
+		BigDecimal precioMin = BigDecimal.valueOf(precioMinimo.getValor());
+		BigDecimal precioMax = BigDecimal.valueOf(precioMaximo.getValor());
 		String ciudadElegida = (String) ciudad.getSelectedItem();
 
 		for (Housing housing : origen) {

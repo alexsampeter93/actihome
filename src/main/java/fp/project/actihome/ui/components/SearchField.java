@@ -18,6 +18,7 @@ import javax.swing.event.DocumentListener;
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Animacion;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
@@ -47,6 +48,11 @@ public class SearchField extends JPanel {
 	private static final int ALTO = 38;
 
 	private final JTextField campo = new JTextField();
+
+	/** Cuánto está enfocado, de 0 a 1. Lo leen el borde y la lupa. */
+	private transient double enfocado;
+
+	private transient javax.swing.Timer animacion;
 
 	public SearchField(String marcador, Runnable alCambiar) {
 
@@ -84,6 +90,22 @@ public class SearchField extends JPanel {
 			}
 		});
 
+		// El foco se escucha en el CAMPO, no en el panel: el panel nunca lo recibe
+		// —no es focuseable— así que escucharlo ahí no habría disparado nunca. Es un
+		// fallo que no da error y deja la animación muerta sin que nada lo delate.
+		campo.addFocusListener(new java.awt.event.FocusAdapter() {
+
+			@Override
+			public void focusGained(java.awt.event.FocusEvent e) {
+				animarHacia(1);
+			}
+
+			@Override
+			public void focusLost(java.awt.event.FocusEvent e) {
+				animarHacia(0);
+			}
+		});
+
 		add(new Lupa(), "h 18!");
 		add(campo);
 	}
@@ -101,6 +123,32 @@ public class SearchField extends JPanel {
 		campo.setText("");
 	}
 
+	/**
+	 * Arranca la transición de enfoque, partiendo de donde esté.
+	 *
+	 * <p>
+	 * Se repinta el panel entero y no solo el borde: la lupa también cambia de
+	 * color, y son dos dibujos distintos que tienen que moverse a la vez.
+	 */
+	private void animarHacia(double destino) {
+
+		Animacion.cancelar(animacion);
+		animacion = Animacion.animar(this, enfocado, destino, Animacion.CONTROL, v -> {
+			enfocado = v;
+			repaint();
+		});
+	}
+
+	/**
+	 * Cuánto está enfocado, de 0 a 1. Lo leen el borde y la lupa.
+	 *
+	 * <p>
+	 * Lo consulta {@link Lupa}, que es una clase interna y por eso puede.
+	 */
+	double enfoque() {
+		return enfocado;
+	}
+
 	@Override
 	protected void paintComponent(Graphics g) {
 
@@ -110,14 +158,29 @@ public class SearchField extends JPanel {
 		g2.setColor(Theme.SURFACE);
 		g2.fillRoundRect(0, 0, getWidth(), getHeight(), 4, 4);
 
-		g2.setColor(Theme.FIELD_BORDER);
+		// **El borde se oscurece y engorda al enfocar, en vez de cambiar de color.**
+		// La alternativa habitual —teñirlo con el acento— es lo que hace cualquier
+		// plantilla, y aquí además chocaría: el acento de verano sobre un campo blanco
+		// es un amarillo que casi no se ve. Un borde que gana presencia funciona en las
+		// cuatro estaciones sin excepciones y es el gesto del papel, no el de la web.
+		g2.setColor(Animacion.mezclar(Theme.FIELD_BORDER, Theme.txt(), enfocado * 0.55));
 		g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 4, 4);
+
+		if (enfocado > 0) {
+
+			// Un segundo trazo por dentro, cuya opacidad sube con el enfoque. Es la forma
+			// de engordar la línea sin que el borde salte de uno a dos píxeles de golpe,
+			// que se vería como un temblor.
+			g2.setColor(new java.awt.Color(Theme.txt().getRed(), Theme.txt().getGreen(), Theme.txt().getBlue(),
+					(int) Math.round(90 * enfocado)));
+			g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 3, 3);
+		}
 
 		g2.dispose();
 	}
 
 	/** El icono: un círculo y un mango. Dos trazos bastan para que se lea "buscar". */
-	private static class Lupa extends JComponent {
+	private class Lupa extends JComponent {
 
 		private static final long serialVersionUID = 1L;
 
@@ -132,8 +195,15 @@ public class SearchField extends JPanel {
 			Graphics2D g2 = (Graphics2D) g.create();
 			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-			g2.setColor(Theme.mut());
-			g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+			// La lupa acompaña al borde: pasa del gris secundario al color del texto
+			// mientras el campo gana el foco. Es el mismo valor que mueve el borde, así
+			// que los dos gestos van sincronizados por construcción y no por casualidad.
+			g2.setColor(Animacion.mezclar(Theme.mut(), Theme.txt(), enfoque()));
+
+			// Remate recto y unión en ángulo, como los siete iconos de comodidad: es lo
+			// que separa el dibujo técnico del icono de plantilla, y hasta ahora esta
+			// lupa era el único icono del sistema que seguía la convención contraria.
+			g2.setStroke(new BasicStroke(1.4f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
 
 			double lado = Math.min(getWidth(), getHeight());
 			double escala = lado / 18.0;
