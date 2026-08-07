@@ -43,6 +43,39 @@ public final class Layout {
 	/** Ancho máximo de una pantalla de contenido denso, como el registro. */
 	public static final int CONTENIDO = 940;
 
+	/**
+	 * Ancho máximo de una ficha con imagen protagonista (el detalle de un
+	 * alojamiento).
+	 *
+	 * <p>
+	 * <b>Por qué esta es más ancha que {@link #CONTENIDO} y no incumple la regla.</b>
+	 * El tope de 940 protege la <em>lectura</em>: una línea de texto demasiado larga
+	 * hace que el ojo pierda el renglón al volver. Una fotografía no tiene ese
+	 * problema — igual que las listas y las rejillas, que el sistema ya deja crecer,
+	 * porque ahí el espacio de más significa más contenido visible y no líneas más
+	 * difíciles de leer.
+	 *
+	 * <p>
+	 * La ficha es las dos cosas a la vez, así que el tope no puede ser único: crece
+	 * hasta aquí, pero <b>solo crece la columna de la foto</b>. La del texto se queda
+	 * fija en {@link #COLUMNA_DE_TEXTO}. Con un único tope pasaba lo que el usuario
+	 * reportó el 07-08-2026: en un monitor ancho la ficha entera quedaba encerrada en
+	 * el centro con 640 puntos vacíos a cada lado, con la foto pequeña y la tarjeta de
+	 * reserva encogida.
+	 */
+	public static final int FICHA = 1440;
+
+	/**
+	 * Ancho de la columna de texto y acciones de una ficha.
+	 *
+	 * <p>
+	 * Es fijo a propósito y no un máximo: es la columna que <b>no</b> crece cuando
+	 * la ventana lo hace, y por eso puede llevar dentro la tarjeta de reserva sin que
+	 * haya que acotarla otra vez. Algo más ancho que un formulario, porque además del
+	 * texto sostiene una rejilla de dos datos.
+	 */
+	public static final int COLUMNA_DE_TEXTO = 480;
+
 	/** A partir de este ancho de ventana se considera "pantalla grande". */
 	private static final int UMBRAL_GRANDE = 1500;
 

@@ -244,8 +244,8 @@ public class HousingDetailsFrame extends JFrame {
 		contenido.setLayout(new MigLayout("wrap 1, fill, " + Space.insets(Space.XL, 0, Space.XL, 0),
 				AIRE_LATERAL + "[grow,fill]" + AIRE_LATERAL, "[]" + Space.LG + "[grow,fill]"));
 
-		contenido.add(migaDePan(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
-		contenido.add(cuerpo(), "grow, " + Layout.anchoCentrado(Layout.CONTENIDO));
+		contenido.add(migaDePan(), "growx, " + Layout.anchoCentrado(Layout.FICHA));
+		contenido.add(cuerpo(), "grow, " + Layout.anchoCentrado(Layout.FICHA));
 
 		contenido.revalidate();
 		contenido.repaint();
@@ -290,11 +290,18 @@ public class HousingDetailsFrame extends JFrame {
 
 	private JPanel cuerpo() {
 
-		JPanel panel = new JPanel(
-				new MigLayout(Space.insets(0),
-						"[260::,grow,fill]" + Space.MD + ":" + Space.XXXL + ":" + Space.XXXL
-								+ "[grow,fill]",
-						"[grow,fill]"));
+		// **Solo crece la columna de la izquierda.** La derecha es texto y acciones, y
+		// se queda fija en Layout.COLUMNA_DE_TEXTO: un párrafo más ancho no se lee
+		// mejor, se lee peor. La izquierda es la fotografía, y ahí el espacio de más sí
+		// es contenido — es la misma distinción que el sistema ya hacía entre un
+		// formulario, que se acota, y una lista, que crece.
+		//
+		// El "300::" del rango dice que puede encogerse hasta 300 antes de rendirse, y
+		// el mínimo de la derecha es 340 para que en 1024 puntos las dos quepan.
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0),
+				"[300::,grow,fill]" + Space.MD + ":" + Space.XXXL + ":" + Space.XXXL + "[340:"
+						+ Layout.COLUMNA_DE_TEXTO + ":" + Layout.COLUMNA_DE_TEXTO + ",fill]",
+				"[grow,fill]"));
 		panel.setOpaque(false);
 
 		// Columna izquierda: la foto y, debajo, el tiempo que hará allí. Las dos cosas
@@ -388,26 +395,18 @@ public class HousingDetailsFrame extends JFrame {
 		// sistema que ya limita los formularios — el espacio sobrante se queda como
 		// margen, no se reparte entre los controles.
 		//
-		// La segunda columna es un sumidero: se queda con lo que sobre para que la
-		// tarjeta no se estire hasta el borde derecho de la pantalla.
+		// La tarjeta ocupa la columna entera, y ya no hace falta acotarla aquí: la
+		// columna es la que está acotada, en Layout.COLUMNA_DE_TEXTO.
 		//
-		// **Y hay que decir hasta dónde llega este control, porque no llega a donde
-		// parece.** Se probaron tres formas de acotar la tarjeta a Layout.FORMULARIO
-		// (440): la restricción en el componente, el tope en la columna y esta. Las
-		// tres dan el mismo resultado, unos 550, que es el ancho **natural** de la
-		// tarjeta: nunca fue el reparto de espacio lo que mandaba, sino lo que su
-		// propio contenido pide. Un tope de 440 no la encoge porque no es ahí donde se
-		// decide, y perseguirlo más habría sido pelearse con el gestor de layout por un
-		// número que la composición no necesita. Lo que sí hace falta es que exista un
-		// dueño para el espacio sobrante, y eso es lo que aporta la columna de la
-		// derecha.
-		JPanel hueco = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XL + "[grow,fill]", "[]"));
-		hueco.setOpaque(false);
-
-		hueco.add(tarjetaDeReserva(), "wmin 0");
-		hueco.add(sumidero(), "wmin 0");
-
-		panel.add(hueco, "growx, wmin 0");
+		// **Esto costó tres intentos fallidos y merece quedar escrito.** Primero se
+		// intentó limitar la tarjeta —restricción en el componente, tope en la columna,
+		// columna acotada más un panel sumidero— y las tres fracasaron de formas
+		// distintas: dos la dejaron en su ancho natural y la tercera la encogió a un
+		// tercio en una ventana ancha, que es como el usuario la vio. El error no
+		// estaba en la sintaxis de ninguna, estaba en el sitio: **se estaba acotando el
+		// contenido cuando lo que había que acotar era el contenedor.** Una vez la
+		// columna tiene un ancho, la tarjeta no necesita ninguno.
+		panel.add(tarjetaDeReserva(), "growx, wmin 0");
 
 		return panel;
 	}
@@ -433,14 +432,6 @@ public class HousingDetailsFrame extends JFrame {
 	 * importa cuando estás decidiendo si reservar, y ese momento es este. Se cuenta
 	 * con un punto de color más la palabra, nunca solo con el color.
 	 */
-	/** Panel vacío cuyo único cometido es quedarse con el espacio sobrante de la fila. */
-	private JPanel sumidero() {
-
-		JPanel vacio = new JPanel();
-		vacio.setOpaque(false);
-
-		return vacio;
-	}
 
 	private JComponent tarjetaDeReserva() {
 
