@@ -143,7 +143,15 @@ public class ConversationFrame extends JFrame {
 				"[grow,fill]", "[]" + Space.XXS + "[]" + Space.XS + "[]"));
 		panel.setOpaque(false);
 
-		panel.add(Buttons.link(Textos.t("mensajes.volver"), e -> volver()));
+		// El enlace va dentro de su propio panel de columna natural, como la miga de
+		// pan de ComparisonFrame y ReviewDetailsFrame. Añadido directamente aquí se
+		// estiraba de lado a lado —la columna de este panel es "[grow,fill]"— y un
+		// JButton estirado centra su texto: el "← Mensajes" aparecía flotando en mitad
+		// de la pantalla, encima de un título alineado a la izquierda.
+		JPanel migaDePan = new JPanel(new MigLayout(Space.insets(0), "[]", "[]"));
+		migaDePan.setOpaque(false);
+		migaDePan.add(Buttons.link(Textos.t("mensajes.volver"), e -> volver()));
+		panel.add(migaDePan);
 
 		titulo = Labels.title(" ");
 		panel.add(titulo);
@@ -186,8 +194,13 @@ public class ConversationFrame extends JFrame {
 		mensaje = Field.textArea(Textos.t("mensajes.campo"), 2);
 		panel.add(mensaje, "aligny top");
 
+		// El botón se alinea ABAJO, no arriba. Un Field lleva su etiqueta encima de la
+		// caja, así que "aligny top" lo pegaba al borde superior de la etiqueta y el
+		// botón quedaba flotando por encima del recuadro de escritura. Abajo, los dos
+		// bordes inferiores coinciden — y coinciden a cualquier escalado, porque no
+		// depende de cuánto mida la etiqueta sino de dónde acaba la celda.
 		botonEnviar = Buttons.primary(Textos.t("mensajes.enviar"), e -> enviar());
-		panel.add(botonEnviar, "aligny top, height " + Typography.altoDeControl() + "!");
+		panel.add(botonEnviar, "aligny bottom, height " + Typography.altoDeControl() + "!");
 
 		error = Labels.error(" ");
 		panel.add(error, "span 2, growx");

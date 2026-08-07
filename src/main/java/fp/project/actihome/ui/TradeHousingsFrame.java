@@ -273,6 +273,14 @@ public class TradeHousingsFrame extends JFrame {
 
 		propio = resolverAlojamientoPropio();
 
+		// housingId es solo la PETICIÓN ("ábreme el intercambio de este") y puede venir
+		// vacía; propio es lo que de verdad se está ofreciendo. Al llegar desde la barra
+		// de navegación, resolverAlojamientoPropio elige el primero de los tuyos y
+		// housingId se quedaba a null: la tarjeta izquierda se pintaba con normalidad y
+		// "Confirmar" mandaba un id nulo al servicio, que reventaba con un error
+		// genérico. Se sincronizan aquí, en el único punto donde se resuelve.
+		housingId = propio != null ? propio.getId() : null;
+
 		candidato = null;
 		codigo.setText("");
 		error.setText(" ");
@@ -283,22 +291,32 @@ public class TradeHousingsFrame extends JFrame {
 	/** El alojamiento que se ofrece, o {@code null} si el usuario no tiene ninguno. */
 	private Housing resolverAlojamientoPropio() {
 
+		User usuario = sessionManager.getLoggedInUser();
+
+		if (usuario == null) {
+			return null;
+		}
+
 		if (housingId != null) {
 
 			try {
-				return housingService.findHousing(housingId);
+				Housing pedido = housingService.findHousing(housingId);
+
+				// Y se comprueba que siga siendo suyo. El frame es singleton, así que
+				// housingId sobrevive a la sesión y a las operaciones: justo después de un
+				// intercambio apunta a un alojamiento que ya es de otro. Sin esta
+				// comprobación la pantalla ofrecería como propia una casa ajena.
+				if (pedido.getOwner() != null && pedido.getOwner().getId().equals(usuario.getId())) {
+					return pedido;
+				}
+
+				housingId = null;
 
 			} catch (InstanceNotFoundException ex) {
 				// Se ha quedado sin existir entre que se pidió la pantalla y se abrió.
 				// Seguimos abajo y buscamos otro suyo en lugar de mandarlo al catálogo.
 				housingId = null;
 			}
-		}
-
-		User usuario = sessionManager.getLoggedInUser();
-
-		if (usuario == null) {
-			return null;
 		}
 
 		return housingService.showHousings().stream()

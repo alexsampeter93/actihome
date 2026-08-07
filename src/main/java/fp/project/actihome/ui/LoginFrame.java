@@ -358,10 +358,20 @@ public class LoginFrame extends JFrame {
 		//
 		// Con la fila fluida el minimo pasa a ser el enlace mas ancho y el conjunto
 		// baja a dos lineas cuando hace falta, en vez de desbordar.
-		FilaFluida fila = new FilaFluida(Typography.anchoDeEspacio(Typography.sans(Typography.BODY_SM)), Space.XS);
+		//
+		// **Y van dos filas anidadas, no una.** La separación de una fila fluida es
+		// única para todos sus hijos, y aquí hacen falta dos distintas: "¿Es tu primera
+		// vez aquí? Regístrate" es UNA frase y se separa con un espacio de palabra,
+		// mientras que "¿Has olvidado la contraseña?" es otra cosa y con ese mismo
+		// espacio se leía pegado a la anterior. La interior mantiene el espacio de
+		// palabra; la exterior separa los dos bloques. Anidarlas conserva el reflujo:
+		// las dos siguen bajando de línea cuando no caben.
+		FilaFluida fila = new FilaFluida(Space.XL, Space.XS);
+
+		FilaFluida frase = new FilaFluida(Typography.anchoDeEspacio(Typography.sans(Typography.BODY_SM)), Space.XS);
 
 		etiquetaPrimeraVez = Labels.muted(Textos.t("login.primeraVez"));
-		fila.add(etiquetaPrimeraVez);
+		frase.add(etiquetaPrimeraVez);
 
 		JLabel enlace = Labels.body(Textos.t("login.registrate"));
 		enlace.setFont(Typography.sansSemiBold(Typography.BODY_SM));
@@ -378,7 +388,8 @@ public class LoginFrame extends JFrame {
 				navigator.ir(SignUpFrame.class);
 			}
 		});
-		fila.add(enlace);
+		frase.add(enlace);
+		fila.add(frase);
 
 		enlaceRegistro = enlace;
 

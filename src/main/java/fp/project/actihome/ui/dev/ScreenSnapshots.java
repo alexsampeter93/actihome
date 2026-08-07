@@ -30,8 +30,11 @@ import fp.project.actihome.model.entities.Review;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.services.HousingService;
+import fp.project.actihome.model.services.MessageService;
 import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.model.services.UserService;
+import fp.project.actihome.ui.ConversationFrame;
+import fp.project.actihome.ui.MessagesFrame;
 import fp.project.actihome.ui.DoCheckInFrame;
 import fp.project.actihome.ui.HousingDetailsFrame;
 import fp.project.actihome.ui.PublishReviewFrame;
@@ -168,6 +171,9 @@ public final class ScreenSnapshots {
 
 			} else if ("ajustes".equals(prefijo)) {
 				capturarAjustes(context);
+
+			} else if ("mensajes".equals(prefijo)) {
+				capturarMensajes(context);
 
 			} else {
 
@@ -347,6 +353,60 @@ public final class ScreenSnapshots {
 
 		guardar(ajustes, "ajustes-admin");
 		guardar(ajustes, "ajustes-codigo", () -> ajustes.generarCodigoPara("Lucia"));
+	}
+
+	/**
+	 * La bandeja de mensajes y una conversación con hilo.
+	 *
+	 * <p>
+	 * <b>Eran las dos únicas pantallas sin forma de capturarlas</b>, y se añadió
+	 * justo al corregir un fallo visual del compositor que el usuario encontró
+	 * usando la aplicación: el botón "Enviar" quedaba alineado con la etiqueta del
+	 * campo en vez de con el recuadro. Un fallo que solo se ve mirando, en una
+	 * pantalla que no se podía mirar sin abrir la aplicación y escribirse a uno
+	 * mismo, es un fallo con muchas papeletas de quedarse.
+	 *
+	 * <p>
+	 * Los mensajes se siembran por el servicio y no con el DAO, a diferencia de las
+	 * reservas de la Fase 4: aquí no hay ninguna regla de negocio que impida crear
+	 * el caso que interesa, así que no hay motivo para saltarse la puerta.
+	 */
+	private static void capturarMensajes(ConfigurableApplicationContext context) throws IOException {
+
+		Theme.cambiarA(Season.INVIERNO);
+
+		HousingService housingService = context.getBean(HousingService.class);
+		MessageService mensajeria = context.getBean(MessageService.class);
+		UserService userService = context.getBean(UserService.class);
+
+		iniciarSesionComo(context, "Lucia");
+
+		Housing propio = housingService.showHousings().stream().filter(h -> h.getHousingCode().equals(10001L))
+				.findFirst().orElseThrow(IllegalStateException::new);
+
+		User lucia = context.getBean(SessionManager.class).getLoggedInUser();
+		User cliente;
+
+		try {
+			cliente = userService.login("Customer16", "1234");
+		} catch (Exception ex) {
+			throw new IllegalStateException("No se pudo resolver el interlocutor", ex);
+		}
+
+		try {
+			mensajeria.sendMessage(cliente.getId(), lucia.getId(), propio.getId(),
+					"Hola, ¿el alojamiento admite mascotas pequeñas?");
+			mensajeria.sendMessage(lucia.getId(), cliente.getId(), propio.getId(),
+					"¡Hola! Sí, admitimos mascotas pequeñas sin problema.");
+		} catch (Exception ex) {
+			throw new IllegalStateException("No se pudo sembrar la conversación", ex);
+		}
+
+		guardar(context.getBean(MessagesFrame.class), "mensajes-bandeja");
+
+		ConversationFrame conversacion = context.getBean(ConversationFrame.class);
+		conversacion.setConversacion(cliente, propio);
+		guardar(conversacion, "mensajes-conversacion");
 	}
 
 	private static void capturarFase6(ConfigurableApplicationContext context) throws IOException {
