@@ -19,8 +19,10 @@ import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.ImagePlaceholder;
+import fp.project.actihome.ui.components.IconoDeComodidad;
 import fp.project.actihome.ui.components.InlineScore;
 import fp.project.actihome.ui.components.Labels;
+import fp.project.actihome.ui.theme.Animacion;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
@@ -55,6 +57,17 @@ import fp.project.actihome.ui.components.FilaFluida;
 public class HousingRow extends JPanel {
 
 	private static final long serialVersionUID = 1L;
+
+	/** La foto, guardada para poder acercarla al pasar el raton por la fila. */
+	private transient ImagePlaceholder imagen;
+
+	/** Cuanto esta realzada la fila, de 0 a 1: mueve el zoom y los iconos. */
+	private transient double realce;
+
+	/** Los iconos de comodidad, para encenderlos desde el realce. */
+	private final transient java.util.List<IconoDeComodidad> iconos = new java.util.ArrayList<>();
+
+	private transient javax.swing.Timer animacion;
 
 	/**
 	 * Alto de la foto.
@@ -119,6 +132,16 @@ public class HousingRow extends JPanel {
 			public void mouseClicked(MouseEvent e) {
 				alAbrir.run();
 			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				realzar(1);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				realzar(0);
+			}
 		});
 	}
 
@@ -129,8 +152,43 @@ public class HousingRow extends JPanel {
 				disponible, housing.getImage());
 
 		imagen.setDestacado(Destacado.de(housing));
+		this.imagen = imagen;
 
 		return imagen;
+	}
+
+	/**
+	 * Acerca la foto al pasar el ratón por la fila.
+	 *
+	 * <p>
+	 * <b>Aquí la fila NO se eleva, a diferencia de la ficha de cuadrícula</b>, y la
+	 * diferencia es de forma, no de capricho. Una tarjeta es un objeto suelto y
+	 * levantarla se lee como coger una carta de una baraja; una fila ancha separada
+	 * de las de arriba y abajo por una línea fina es parte de una lista continua, y
+	 * verla despegarse de sus vecinas se lee como un fallo de pintado. Lo que sí
+	 * funciona en las dos es la foto: es la parte que se comporta como una imagen y
+	 * no como una superficie.
+	 */
+	private void realzar(double destino) {
+
+		Animacion.cancelar(animacion);
+		animacion = Animacion.animar(this, realce, destino, Animacion.CONTROL, v -> {
+
+			realce = v;
+
+			if (imagen != null) {
+				imagen.setZoom(v);
+			}
+
+			// Los iconos se encienden ESCALONADOS, cada uno con un poco de retraso sobre
+			// el anterior. Encendiéndose los tres a la vez el efecto es un parpadeo; en
+			// cascada se lee como una lectura, que es lo que el ojo está haciendo.
+			for (int i = 0; i < iconos.size(); i++) {
+
+				double propio = Math.max(0, Math.min(1, (v - i * 0.12) / 0.7));
+				iconos.get(i).setEncendido(propio);
+			}
+		});
 	}
 
 	private JPanel informacion(int resenas, Runnable alIntercambiar) {
@@ -291,7 +349,7 @@ public class HousingRow extends JPanel {
 			}
 
 			if (pintadas < MAXIMO_COMODIDADES) {
-				fila.add(Chip.informativo(Textos.etiquetaDe(amenity)), "gapright " + Space.XS);
+				fila.add(comodidad(amenity), "gapright " + Space.MD);
 				pintadas++;
 			} else {
 				restantes++;
@@ -307,6 +365,35 @@ public class HousingRow extends JPanel {
 		}
 
 		return fila;
+	}
+
+	/**
+	 * Un icono dibujado más su etiqueta.
+	 *
+	 * <p>
+	 * <b>Sustituye al chip de texto que había antes</b>, y el cambio es más que
+	 * decorativo. Tres chips seguidos —cada uno con su contorno redondeado— son tres
+	 * cajas compitiendo en una fila que ya lleva nota, pensión, precio y dos
+	 * acciones; el contorno no aportaba nada porque estas comodidades no son
+	 * pulsables ni seleccionables, solo se leen. Un icono y una palabra dicen lo
+	 * mismo con la mitad de tinta, y además se reconocen sin leer.
+	 *
+	 * <p>
+	 * El icono se guarda en una lista para poder encenderlo desde el realce de la
+	 * fila entera: ver {@link #realzar(double)}.
+	 */
+	private JPanel comodidad(Amenity amenity) {
+
+		JPanel grupo = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XXS + "[]", "[]"));
+		grupo.setOpaque(false);
+
+		IconoDeComodidad icono = new IconoDeComodidad(amenity);
+		iconos.add(icono);
+
+		grupo.add(icono, "aligny center");
+		grupo.add(Labels.muted(Textos.etiquetaDe(amenity)), "aligny center");
+
+		return grupo;
 	}
 
 	private JPanel pie(Runnable alIntercambiar) {

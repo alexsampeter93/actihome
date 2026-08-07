@@ -15,6 +15,7 @@ import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.ScoreDisc;
+import fp.project.actihome.ui.theme.Animacion;
 import fp.project.actihome.ui.theme.Formato;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
@@ -43,6 +44,17 @@ import fp.project.actihome.ui.theme.Typography;
 public class HousingCard extends JPanel {
 
 	private static final long serialVersionUID = 1L;
+
+	/** Cuánto sube la ficha al pasar el ratón, en puntos. */
+	private static final int SUBIDA = 2;
+
+	/** Cuánto está realzada, de 0 a 1. Mueve a la vez la subida y el zoom. */
+	private transient double realce;
+
+	private transient javax.swing.Timer animacion;
+
+	/** La foto, guardada para poder acercarla desde el realce. */
+	private transient ImagePlaceholder imagen;
 
 	/** Alto de la foto de tarjeta. */
 	private static final int ALTO_FOTO = 140;
@@ -87,6 +99,8 @@ public class HousingCard extends JPanel {
 				alAbrir.run();
 			}
 		});
+
+		registrarRealce();
 	}
 
 	/**
@@ -142,10 +156,88 @@ public class HousingCard extends JPanel {
 				disponible, housing.getImage());
 
 		imagen.setDestacado(Destacado.de(housing));
+		this.imagen = imagen;
 
 		capa.add(imagen, "pos 0 0 container.x2 container.y2");
 
 		return capa;
+	}
+
+	/**
+	 * Registra el realce: al pasar el ratón, la ficha entera sube y la foto se
+	 * acerca.
+	 *
+	 * <p>
+	 * <b>Un solo valor mueve las dos cosas</b>, y no dos animaciones en paralelo. Con
+	 * temporizadores separados, dos gestos que deben leerse como uno acaban
+	 * desincronizados —basta un fotograma perdido— y el ojo lo detecta antes de saber
+	 * qué está viendo.
+	 *
+	 * <p>
+	 * <b>El ratón se escucha en la ficha, no en la foto.</b> Leyendo el nombre y el
+	 * precio el cursor está sobre el texto, que es justo el momento en que alguien
+	 * está decidiendo; una foto que solo reaccionara a su propio hover se apagaría
+	 * ahí.
+	 */
+	private void registrarRealce() {
+
+		addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				animarHacia(1);
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				animarHacia(0);
+			}
+		});
+	}
+
+	private void animarHacia(double destino) {
+
+		Animacion.cancelar(animacion);
+		animacion = Animacion.animar(this, realce, destino, Animacion.CONTROL, v -> {
+
+			realce = v;
+
+			if (imagen != null) {
+				imagen.setZoom(v);
+			}
+
+			// Se repinta el padre incluyendo la franja que la ficha deja libre al subir.
+			// Sin eso queda un rastro de lo que había antes pegado al borde inferior.
+			if (getParent() != null) {
+				getParent().repaint(getX(), getY(), getWidth(), getHeight() + SUBIDA);
+			}
+		});
+	}
+
+	/**
+	 * Sube la ficha entera, contenido incluido.
+	 *
+	 * <p>
+	 * Se sobrescribe {@code paint} y no {@code paintComponent} porque hay que mover
+	 * también a los hijos, y {@code paintComponent} solo pinta el fondo del propio
+	 * panel. Trasladar el {@code Graphics} es además mucho más barato que cambiar el
+	 * borde o la posición: no dispara ningún pase de layout, y aquí se hace sesenta
+	 * veces por segundo.
+	 */
+	@Override
+	public void paint(java.awt.Graphics g) {
+
+		if (realce <= 0) {
+			super.paint(g);
+			return;
+		}
+
+		java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+		g2.translate(0, -(int) Math.round(SUBIDA * realce));
+
+		super.paint(g2);
+
+		g2.dispose();
 	}
 
 	private JLabel nombre() {

@@ -46,6 +46,21 @@ public class ImagePlaceholder extends JComponent {
 	/** La foto ya reducida al hueco actual. Ver {@link #reducida(int, int)}. */
 	private transient BufferedImage reducida;
 
+	/**
+	 * Cuánto se agranda la foto cuando el zoom está al máximo.
+	 *
+	 * <p>
+	 * <b>Un tres por ciento, y es tan poco a propósito.</b> Un zoom que se
+	 * <em>ve</em> convierte la ficha en un carrusel publicitario; uno que solo se
+	 * <em>percibe</em> hace que la imagen parezca viva bajo el cursor sin que nadie
+	 * sepa decir qué ha pasado. Ese "no sé qué tiene" es exactamente el efecto que se
+	 * busca, y es lo contrario de llamar la atención.
+	 */
+	private static final double ZOOM = 0.03;
+
+	/** Cuánto está aplicado el zoom, de 0 a 1. Lo mueve quien contiene la foto. */
+	private transient double zoom;
+
 	private String destacado;
 
 	public ImagePlaceholder() {
@@ -90,6 +105,29 @@ public class ImagePlaceholder extends JComponent {
 	public void setEstado(String estado, boolean disponible) {
 		this.estado = estado;
 		this.disponible = disponible;
+		repaint();
+	}
+
+	/**
+	 * Acerca la foto, de 0 (normal) a 1 (máximo).
+	 *
+	 * <p>
+	 * <b>Lo mueve quien contiene la foto, no ella misma</b>, y la diferencia importa:
+	 * en una ficha de catálogo el ratón pasa la mayor parte del tiempo sobre el
+	 * texto, no sobre la imagen. Una foto que solo reaccionara a su propio hover
+	 * dejaría de moverse justo cuando el usuario está leyendo el nombre y el precio,
+	 * que es cuando está decidiendo. Quien sabe dónde empieza y acaba la ficha es la
+	 * ficha.
+	 *
+	 * <p>
+	 * <b>No invalida la reducción guardada.</b> El zoom cambia la escala de pintado,
+	 * no el tamaño al que se redujo la imagen: se dibuja la misma versión reducida un
+	 * tres por ciento más grande. Recalcularla en cada paso de la animación
+	 * significaría reducir una foto de 1200 puntos sesenta veces por segundo.
+	 */
+	public void setZoom(double zoom) {
+
+		this.zoom = zoom;
 		repaint();
 	}
 
@@ -213,7 +251,7 @@ public class ImagePlaceholder extends JComponent {
 	 */
 	private void pintarCubriendo(Graphics2D g2, int ancho, int alto) {
 
-		double escala = Math.max((double) ancho / foto.getWidth(), (double) alto / foto.getHeight());
+		double escala = Math.max((double) ancho / foto.getWidth(), (double) alto / foto.getHeight()) * (1 + zoom * ZOOM);
 
 		int nuevoAncho = (int) Math.ceil(foto.getWidth() * escala);
 		int nuevoAlto = (int) Math.ceil(foto.getHeight() * escala);

@@ -9,6 +9,7 @@ import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
 
+import fp.project.actihome.ui.theme.Animacion;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Theme;
 
@@ -40,7 +41,26 @@ public class Card extends JPanel {
 
 	private static final int RADIO = 4;
 
+	/** Cuánto sube una tarjeta interactiva al pasar el ratón, en puntos. */
+	private static final int SUBIDA = 2;
+
+	/**
+	 * La hairline cuando la tarjeta está elevada.
+	 *
+	 * <p>
+	 * Es el mismo negro de {@link Theme#HAIRLINE} con más opacidad —del 12 % al
+	 * 28 %— y no un color distinto. Sustituirlo por un tono de acento habría metido
+	 * color donde el sistema no lo pide; lo que cambia al levantar una hoja de papel
+	 * no es el color de su canto, es cuánto se ve.
+	 */
+	private static final java.awt.Color HAIRLINE_ELEVADA = new java.awt.Color(0, 0, 0, 71);
+
 	private final boolean conBorde;
+
+	/** Cuánto está elevada, de 0 a 1. Ver {@link #interactiva()}. */
+	private transient double elevacion;
+
+	private transient javax.swing.Timer animacion;
 
 	/** Tarjeta con el relleno estándar y disposición en columna. */
 	public Card() {
@@ -67,18 +87,88 @@ public class Card extends JPanel {
 		setOpaque(false);
 	}
 
+	/**
+	 * Hace que la tarjeta reaccione al ratón: se eleva.
+	 *
+	 * <p>
+	 * <b>Es opcional a propósito y no el comportamiento por omisión.</b> Una tarjeta
+	 * que se mueve está diciendo "soy pulsable", y en esta aplicación muchas no lo
+	 * son —la de reserva del detalle, la del anfitrión, los bloques de ajustes—.
+	 * Animar todas convertiría la pista en ruido y, peor, prometería un clic que no
+	 * existe. Solo la piden las fichas del catálogo, que sí llevan a algún sitio.
+	 *
+	 * <p>
+	 * <b>Elevar sin sombra.</b> El recurso natural sería una sombra difusa que crece,
+	 * y está descartado: es <em>la</em> firma de la estética de plantilla que este
+	 * sistema evita, y contradice la regla que sostiene toda la tarjeta —separación
+	 * por línea fina, no por bruma—. La elevación se consigue con dos gestos que
+	 * vienen del papel y no de la pantalla: la tarjeta <b>sube dos puntos</b> y su
+	 * hairline <b>se oscurece</b>, como una hoja levantada de una pila que deja ver
+	 * su propio canto.
+	 */
+	public Card interactiva() {
+
+		setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.HAND_CURSOR));
+
+		addMouseListener(new java.awt.event.MouseAdapter() {
+
+			@Override
+			public void mouseEntered(java.awt.event.MouseEvent e) {
+				animarHacia(1);
+			}
+
+			@Override
+			public void mouseExited(java.awt.event.MouseEvent e) {
+				animarHacia(0);
+			}
+		});
+
+		return this;
+	}
+
+	/**
+	 * Arranca la elevación hacia el destino, partiendo de donde esté ahora.
+	 *
+	 * <p>
+	 * Partir del valor actual y no de cero es lo que evita el tirón cuando el ratón
+	 * entra y sale deprisa: la animación de vuelta continúa la de ida en lugar de
+	 * saltar al final para empezar de nuevo.
+	 */
+	private void animarHacia(double destino) {
+
+		Animacion.cancelar(animacion);
+		animacion = Animacion.animar(this, elevacion, destino, Animacion.CONTROL, v -> {
+
+			elevacion = v;
+
+			// Se repinta el PADRE y no solo la tarjeta. Al subir dos puntos queda al
+			// descubierto la franja que ocupaba antes por abajo, y esa franja ya no es
+			// suya: si no se repinta lo de debajo, la tarjeta deja un rastro blanco
+			// pegado al borde inferior. Es el mismo cuidado que ya obligó a repintar la
+			// fila entera en las pestañas de la cabecera.
+			if (getParent() != null) {
+				getParent().repaint(getX(), getY(), getWidth(), getHeight() + SUBIDA);
+			}
+		});
+	}
+
 	@Override
 	protected void paintComponent(Graphics g) {
 
 		Graphics2D g2 = (Graphics2D) g.create();
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+		// El desplazamiento es NEGATIVO en el eje Y: sube. El alto se recorta lo mismo
+		// para que la tarjeta no invada por arriba la que tiene encima.
+		int subida = (int) Math.round(SUBIDA * elevacion);
+		int alto = getHeight() - subida;
+
 		g2.setColor(Theme.SURFACE);
-		g2.fillRoundRect(0, 0, getWidth(), getHeight(), RADIO, RADIO);
+		g2.fillRoundRect(0, -subida, getWidth(), alto + subida, RADIO, RADIO);
 
 		if (conBorde) {
-			g2.setColor(Theme.HAIRLINE);
-			g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, RADIO, RADIO);
+			g2.setColor(Animacion.mezclar(Theme.HAIRLINE, HAIRLINE_ELEVADA, elevacion));
+			g2.drawRoundRect(0, -subida, getWidth() - 1, alto + subida - 1, RADIO, RADIO);
 		}
 
 		g2.dispose();
