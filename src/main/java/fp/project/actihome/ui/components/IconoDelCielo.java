@@ -49,10 +49,26 @@ public class IconoDelCielo extends JComponent {
 	private final transient CieloWmo cielo;
 	private final int lado;
 
+	/**
+	 * Si en ese punto del mapa es de día.
+	 *
+	 * <p>
+	 * Cuando es de noche, el disco del sol se sustituye por una luna. <b>Solo
+	 * cambia el astro</b>: la nube, la lluvia, la nieve y el rayo se dibujan igual,
+	 * porque llover de noche se parece bastante a llover de día.
+	 */
+	private final boolean esDeDia;
+
+	/** Icono de un día de previsión, donde no se sabe si será de día o de noche. */
 	public IconoDelCielo(CieloWmo cielo, int lado) {
+		this(cielo, lado, true);
+	}
+
+	public IconoDelCielo(CieloWmo cielo, int lado, boolean esDeDia) {
 
 		this.cielo = cielo;
 		this.lado = lado;
+		this.esDeDia = esDeDia;
 
 		setOpaque(false);
 	}
@@ -84,11 +100,11 @@ public class IconoDelCielo extends JComponent {
 		switch (cielo) {
 
 		case DESPEJADO:
-			sol(g2, 0.5, 0.48, 0.30);
+			astro(g2, 0.5, 0.48, 0.30);
 			break;
 
 		case NUBLADO:
-			sol(g2, 0.36, 0.38, 0.18);
+			astro(g2, 0.36, 0.38, 0.18);
 			nube(g2, 0.62);
 			break;
 
@@ -127,6 +143,44 @@ public class IconoDelCielo extends JComponent {
 	 * deforma. Es la misma idea que "ningún tamaño que dependa de texto puede ser
 	 * una constante", aplicada a un dibujo.
 	 */
+	/** El sol o la luna, según la hora que sea allí. */
+	private void astro(Graphics2D g2, double cx, double cy, double radio) {
+
+		if (esDeDia) {
+			sol(g2, cx, cy, radio);
+		} else {
+			luna(g2, cx, cy, radio);
+		}
+	}
+
+	/**
+	 * Una luna en cuarto creciente.
+	 *
+	 * <p>
+	 * <b>Se dibuja recortando un disco de otro</b>, que es como se hace una luna
+	 * sin curvas a mano: se rellena el círculo entero y encima se pinta otro
+	 * desplazado, del color del fondo. El truco es que ese segundo disco tiene que
+	 * ir del color de la página, no transparente — {@code Graphics2D} pinta encima,
+	 * no borra.
+	 *
+	 * <p>
+	 * Por eso el color de recorte sale de {@link Theme#bg()}: si el icono se
+	 * colocara algún día sobre una superficie blanca en vez de sobre el fondo de
+	 * página, este es el único punto que habría que revisar. Queda anotado.
+	 */
+	private void luna(Graphics2D g2, double cx, double cy, double radio) {
+
+		double x = cx * lado;
+		double y = cy * lado;
+		double r = radio * lado * 0.62;
+
+		g2.setColor(Theme.accText());
+		g2.fill(new Ellipse2D.Double(x - r, y - r, r * 2, r * 2));
+
+		g2.setColor(Theme.bg());
+		g2.fill(new Ellipse2D.Double(x - r * 1.45, y - r * 1.25, r * 2, r * 2));
+	}
+
 	private void sol(Graphics2D g2, double cx, double cy, double radio) {
 
 		g2.setColor(Theme.acc());

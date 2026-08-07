@@ -51,8 +51,28 @@ import fp.project.actihome.model.exceptions.WeatherUnavailableException;
 @Service
 public class WeatherServiceImpl implements WeatherService {
 
-	/** Cuánto vale una respuesta antes de volver a preguntar. */
-	private static final Duration VALIDEZ = Duration.ofHours(1);
+	/**
+	 * Cuánto vale una respuesta antes de volver a preguntar.
+	 *
+	 * <p>
+	 * <b>Quince minutos, y bajó de una hora por un motivo concreto.</b> Mientras
+	 * esto solo servía la previsión diaria, una hora era razonable: un modelo
+	 * meteorológico no cambia sus máximas y mínimas cada rato. Desde que la
+	 * respuesta incluye también <b>el tiempo de ahora mismo</b>, una hora es
+	 * absurdo — enseñaría la temperatura de hace cincuenta minutos llamándola
+	 * actual, que es exactamente el tipo de dato que miente sin equivocarse.
+	 *
+	 * <p>
+	 * El propio proveedor dice cada cuánto se refresca lo instantáneo: su campo
+	 * {@code interval} vale 900 segundos. Pedirlo más a menudo devolvería lo mismo.
+	 *
+	 * <p>
+	 * <b>La consecuencia es que la previsión diaria se pide más de lo que
+	 * cambia</b>, y sale a cuenta igual: con una caché combinada son 4 peticiones
+	 * por hora, y con dos cachés separadas —una de 15 minutos y otra de una hora—
+	 * serían 5. Menos tráfico y un solo mecanismo. Ver {@link TiempoDelSitio}.
+	 */
+	private static final Duration VALIDEZ = Duration.ofMinutes(15);
 
 	@Autowired
 	private WeatherClient weatherClient;
@@ -60,17 +80,16 @@ public class WeatherServiceImpl implements WeatherService {
 	private final Map<String, Anotacion> cache = new ConcurrentHashMap<>();
 
 	@Override
-	public List<PrevisionDiaria> previsionDe(double latitud, double longitud, int dias)
-			throws WeatherUnavailableException {
+	public TiempoDelSitio tiempoDe(double latitud, double longitud, int dias) throws WeatherUnavailableException {
 
 		String clave = claveDe(latitud, longitud, dias);
 		Anotacion guardada = cache.get(clave);
 
 		if (guardada != null && guardada.sigueValiendo()) {
-			return guardada.dias();
+			return guardada.tiempo();
 		}
 
-		List<PrevisionDiaria> recien = weatherClient.prevision(latitud, longitud, dias);
+		TiempoDelSitio recien = weatherClient.tiempo(latitud, longitud, dias);
 
 		cache.put(clave, new Anotacion(recien, Instant.now()));
 
@@ -103,7 +122,7 @@ public class WeatherServiceImpl implements WeatherService {
 	}
 
 	/** Una respuesta guardada, con la hora a la que llegó. */
-	private record Anotacion(List<PrevisionDiaria> dias, Instant cuando) {
+	private record Anotacion(TiempoDelSitio tiempo, Instant cuando) {
 
 		boolean sigueValiendo() {
 			return Duration.between(cuando, Instant.now()).compareTo(VALIDEZ) < 0;

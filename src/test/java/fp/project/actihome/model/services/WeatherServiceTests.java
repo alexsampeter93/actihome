@@ -1,6 +1,8 @@
 package fp.project.actihome.model.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -63,12 +65,12 @@ public class WeatherServiceTests {
 	@Test
 	public void testLaSegundaConsultaSaleDeLaCache() throws WeatherUnavailableException {
 
-		when(weatherClient.prevision(anyDouble(), anyDouble(), anyInt())).thenReturn(unDia());
+		when(weatherClient.tiempo(anyDouble(), anyDouble(), anyInt())).thenReturn(unDia());
 
-		weatherService.previsionDe(10.0, 10.0, 5);
-		weatherService.previsionDe(10.0, 10.0, 5);
+		weatherService.tiempoDe(10.0, 10.0, 5);
+		weatherService.tiempoDe(10.0, 10.0, 5);
 
-		verify(weatherClient, times(1)).prevision(10.0, 10.0, 5);
+		verify(weatherClient, times(1)).tiempo(10.0, 10.0, 5);
 	}
 
 	/**
@@ -82,26 +84,26 @@ public class WeatherServiceTests {
 	@Test
 	public void testElNumeroDeDiasFormaParteDeLaClave() throws WeatherUnavailableException {
 
-		when(weatherClient.prevision(anyDouble(), anyDouble(), anyInt())).thenReturn(unDia());
+		when(weatherClient.tiempo(anyDouble(), anyDouble(), anyInt())).thenReturn(unDia());
 
-		weatherService.previsionDe(20.0, 20.0, 3);
-		weatherService.previsionDe(20.0, 20.0, 7);
+		weatherService.tiempoDe(20.0, 20.0, 3);
+		weatherService.tiempoDe(20.0, 20.0, 7);
 
-		verify(weatherClient, times(1)).prevision(20.0, 20.0, 3);
-		verify(weatherClient, times(1)).prevision(20.0, 20.0, 7);
+		verify(weatherClient, times(1)).tiempo(20.0, 20.0, 3);
+		verify(weatherClient, times(1)).tiempo(20.0, 20.0, 7);
 	}
 
 	/** Dos alojamientos distintos no comparten previsión. */
 	@Test
 	public void testCadaPuntoTieneLaSuya() throws WeatherUnavailableException {
 
-		when(weatherClient.prevision(anyDouble(), anyDouble(), anyInt())).thenReturn(unDia());
+		when(weatherClient.tiempo(anyDouble(), anyDouble(), anyInt())).thenReturn(unDia());
 
-		weatherService.previsionDe(30.0, 30.0, 5);
-		weatherService.previsionDe(31.0, 30.0, 5);
+		weatherService.tiempoDe(30.0, 30.0, 5);
+		weatherService.tiempoDe(31.0, 30.0, 5);
 
-		verify(weatherClient, times(1)).prevision(30.0, 30.0, 5);
-		verify(weatherClient, times(1)).prevision(31.0, 30.0, 5);
+		verify(weatherClient, times(1)).tiempo(30.0, 30.0, 5);
+		verify(weatherClient, times(1)).tiempo(31.0, 30.0, 5);
 	}
 
 	/**
@@ -116,37 +118,69 @@ public class WeatherServiceTests {
 	@Test
 	public void testUnFalloNoSeGuardaEnLaCache() throws WeatherUnavailableException {
 
-		when(weatherClient.prevision(anyDouble(), anyDouble(), anyInt()))
+		when(weatherClient.tiempo(anyDouble(), anyDouble(), anyInt()))
 				.thenThrow(new WeatherUnavailableException());
 
-		assertThrows(WeatherUnavailableException.class, () -> weatherService.previsionDe(40.0, 40.0, 5));
-		assertThrows(WeatherUnavailableException.class, () -> weatherService.previsionDe(40.0, 40.0, 5));
+		assertThrows(WeatherUnavailableException.class, () -> weatherService.tiempoDe(40.0, 40.0, 5));
+		assertThrows(WeatherUnavailableException.class, () -> weatherService.tiempoDe(40.0, 40.0, 5));
 
-		verify(weatherClient, times(2)).prevision(40.0, 40.0, 5);
+		verify(weatherClient, times(2)).tiempo(40.0, 40.0, 5);
 	}
 
-	/** Lo que llega del proveedor llega intacto arriba. */
+	/** Lo que llega del proveedor llega intacto arriba, las dos mitades. */
 	@Test
 	public void testDevuelveLoQueDaElProveedor() throws WeatherUnavailableException {
 
-		when(weatherClient.prevision(anyDouble(), anyDouble(), anyInt())).thenReturn(unDia());
+		when(weatherClient.tiempo(anyDouble(), anyDouble(), anyInt())).thenReturn(unDia());
 
-		List<PrevisionDiaria> dias = weatherService.previsionDe(50.0, 50.0, 5);
+		TiempoDelSitio tiempo = weatherService.tiempoDe(50.0, 50.0, 5);
 
-		assertEquals(1, dias.size());
-		assertEquals(28.4, dias.get(0).maxima());
-		assertEquals(CieloWmo.DESPEJADO, dias.get(0).cielo());
+		assertEquals(1, tiempo.dias().size());
+		assertEquals(28.4, tiempo.dias().get(0).maxima());
+		assertEquals(CieloWmo.DESPEJADO, tiempo.dias().get(0).cielo());
+
+		assertEquals(24.0, tiempo.ahora().temperatura());
+		assertEquals(CieloWmo.NUBLADO, tiempo.ahora().cielo());
 	}
 
 	/**
-	 * Un día de ejemplo.
+	 * La sensación térmica solo se enseña cuando difiere de verdad.
+	 *
+	 * <p>
+	 * <b>Es una regla de producto, no de formato, y por eso está fijada aquí.</b>
+	 * Escribir "24°, sensación 24°" ocupa sitio para no decir nada y entrena al
+	 * usuario a saltarse esa línea — con lo cual tampoco la leerá el día que sí
+	 * signifique algo. El umbral son dos grados: por debajo es ruido de medición,
+	 * por encima significa viento o humedad.
+	 */
+	@Test
+	public void testLaSensacionSoloCuentaSiSeNota() {
+
+		assertFalse(new TiempoAhora(24, 24, 0, true).sensacionRelevante());
+		assertFalse(new TiempoAhora(24, 25, 0, true).sensacionRelevante());
+
+		assertTrue(new TiempoAhora(24, 26, 0, true).sensacionRelevante());
+
+		// Y en los dos sentidos: el viento resta y la humedad suma.
+		assertTrue(new TiempoAhora(24, 19, 0, true).sensacionRelevante());
+	}
+
+	/**
+	 * Un ejemplo con las dos mitades.
 	 *
 	 * <p>
 	 * La fecha se calcula desde {@code LocalDate.now()} y no se escribe a mano. Es
 	 * la regla del proyecto, aprendida cuando 19 fechas fijas caducaron y dejaron
 	 * la suite en rojo sin que nadie tocara una línea de código.
+	 *
+	 * <p>
+	 * <b>El instante lleva un código de cielo distinto del día</b> (nublado ahora,
+	 * despejado hoy) a propósito: si los dos fueran iguales, un fallo que
+	 * confundiera una mitad con la otra pasaría desapercibido.
 	 */
-	private List<PrevisionDiaria> unDia() {
-		return List.of(new PrevisionDiaria(LocalDate.now(), 28.4, 15.1, 0));
+	private TiempoDelSitio unDia() {
+
+		return new TiempoDelSitio(new TiempoAhora(24.0, 22.0, 3, true),
+				List.of(new PrevisionDiaria(LocalDate.now(), 28.4, 15.1, 0)));
 	}
 }

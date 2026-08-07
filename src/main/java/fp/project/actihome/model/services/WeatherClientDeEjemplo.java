@@ -59,7 +59,35 @@ public class WeatherClientDeEjemplo implements WeatherClient {
 	private static final int[] CODIGOS = { 0, 3, 61, 71, 95 };
 
 	@Override
-	public List<PrevisionDiaria> prevision(double latitud, double longitud, int dias) {
+	public TiempoDelSitio tiempo(double latitud, double longitud, int dias) {
+		return new TiempoDelSitio(ahoraDeEjemplo(), diasDeEjemplo(dias));
+	}
+
+	/**
+	 * Un instante inventado, pero <b>con la sensación térmica separada de la
+	 * real</b>.
+	 *
+	 * <p>
+	 * Los 21 contra 19 no son al azar: {@code TiempoAhora.sensacionRelevante()}
+	 * solo enseña la sensación cuando difiere en dos grados o más, así que con
+	 * valores iguales las capturas nunca mostrarían esa parte de la línea y un
+	 * fallo ahí no se vería. Hay que medir el caso completo.
+	 *
+	 * <p>
+	 * Y {@code esDeDia} va en {@code false} a propósito, por lo mismo: es el camino
+	 * que dibuja la luna en lugar del sol, y es el que nadie miraría si el ejemplo
+	 * dijera siempre que es de día.
+	 */
+	private TiempoAhora ahoraDeEjemplo() {
+
+		// Código 0 (despejado) y de noche: es la combinación que dibuja LA LUNA SOLA,
+		// sin nube delante. Con "nublado" la luna quedaría medio tapada y una captura
+		// no serviría para comprobar que está bien recortada — que es lo único delicado
+		// de ese dibujo. La nube ya se comprueba en la tira de días.
+		return new TiempoAhora(21, 19, 0, false);
+	}
+
+	private List<PrevisionDiaria> diasDeEjemplo(int dias) {
 
 		List<PrevisionDiaria> inventados = new ArrayList<>();
 

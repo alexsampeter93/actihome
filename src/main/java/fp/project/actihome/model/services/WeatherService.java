@@ -20,8 +20,8 @@ public interface WeatherService {
 	/**
 	 * @param latitud  grados decimales
 	 * @param longitud grados decimales
-	 * @param dias     cuántos días a partir de hoy
+	 * @param dias     cuántos días de previsión a partir de hoy
 	 * @throws WeatherUnavailableException si no hay red o el proveedor falla
 	 */
-	List<PrevisionDiaria> previsionDe(double latitud, double longitud, int dias) throws WeatherUnavailableException;
+	TiempoDelSitio tiempoDe(double latitud, double longitud, int dias) throws WeatherUnavailableException;
 }

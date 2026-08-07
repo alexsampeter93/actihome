@@ -15,6 +15,8 @@ import net.miginfocom.swing.MigLayout;
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.exceptions.WeatherUnavailableException;
 import fp.project.actihome.model.services.PrevisionDiaria;
+import fp.project.actihome.model.services.TiempoAhora;
+import fp.project.actihome.model.services.TiempoDelSitio;
 import fp.project.actihome.model.services.WeatherService;
 import fp.project.actihome.ui.components.IconoDelCielo;
 import fp.project.actihome.ui.components.Labels;
@@ -76,6 +78,7 @@ public class PrevisionPanel extends JPanel {
 	private final transient Housing housing;
 
 	private final JLabel estado;
+	private final JPanel ahora;
 	private final JPanel tira;
 
 	/**
@@ -94,6 +97,13 @@ public class PrevisionPanel extends JPanel {
 
 		estado = Labels.muted(Textos.t("detalle.tiempo.consultando"));
 		add(estado);
+
+		// La línea de "ahora mismo": el icono, la temperatura y el estado del cielo.
+		// Va ENCIMA de la tira de días porque contesta la pregunta más inmediata.
+		ahora = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XS + "[]", "[]"));
+		ahora.setOpaque(false);
+		ahora.setVisible(false);
+		add(ahora);
 
 		tira = new JPanel(new MigLayout(Space.insets(0), "", "[]"));
 		tira.setOpaque(false);
@@ -129,11 +139,11 @@ public class PrevisionPanel extends JPanel {
 	 */
 	private void consultar() {
 
-		new SwingWorker<List<PrevisionDiaria>, Void>() {
+		new SwingWorker<TiempoDelSitio, Void>() {
 
 			@Override
-			protected List<PrevisionDiaria> doInBackground() throws WeatherUnavailableException {
-				return weatherService.previsionDe(housing.getLatitude(), housing.getLongitude(), DIAS);
+			protected TiempoDelSitio doInBackground() throws WeatherUnavailableException {
+				return weatherService.tiempoDe(housing.getLatitude(), housing.getLongitude(), DIAS);
 			}
 
 			@Override
@@ -158,23 +168,65 @@ public class PrevisionPanel extends JPanel {
 		}.execute();
 	}
 
-	private void pintar(List<PrevisionDiaria> dias) {
+	private void pintar(TiempoDelSitio tiempo) {
 
-		if (dias.isEmpty()) {
+		if (tiempo.dias().isEmpty()) {
 			setVisible(false);
 			return;
 		}
 
 		estado.setText(Textos.t("detalle.tiempo.titulo"));
+
+		pintarAhora(tiempo.ahora());
+
 		tira.removeAll();
 
-		for (PrevisionDiaria dia : dias) {
+		for (PrevisionDiaria dia : tiempo.dias()) {
 			tira.add(columna(dia), "gapright " + Space.MD);
 		}
 
 		tira.setVisible(true);
 		revalidate();
 		repaint();
+	}
+
+	/**
+	 * La línea de "ahora mismo".
+	 *
+	 * <p>
+	 * <b>Existe porque la ficha estaba contestando otra pregunta.</b> El usuario
+	 * comparó el tiempo de Marbella con el de su móvil: el móvil decía 24° y aquí
+	 * ponía 27° / 23°. Los dos datos eran correctos —27 y 23 eran la máxima y la
+	 * mínima previstas para ese día— pero nadie mira una ficha preguntándose cuál
+	 * será la máxima: se pregunta qué tiempo hace. <b>Un dato correcto que responde
+	 * a otra cosa se percibe como un dato equivocado</b>, y con razón.
+	 *
+	 * <p>
+	 * Si el proveedor no manda el bloque instantáneo, esta línea sencillamente no
+	 * aparece y los días siguen ahí. Ver {@code OpenMeteoWeatherClient.leerTiempo}.
+	 */
+	private void pintarAhora(TiempoAhora actual) {
+
+		ahora.removeAll();
+
+		if (actual == null) {
+			ahora.setVisible(false);
+			return;
+		}
+
+		ahora.add(new IconoDelCielo(actual.cielo(), ICONO, actual.esDeDia()), "aligny center");
+
+		String texto = Textos.t("detalle.tiempo.ahora") + " " + grados(actual.temperatura()) + " · "
+				+ Textos.t("cielo." + actual.cielo().name().toLowerCase());
+
+		// La sensación térmica solo cuando difiere de verdad: ver
+		// TiempoAhora.sensacionRelevante(). "24°, sensación 24°" es ruido.
+		if (actual.sensacionRelevante()) {
+			texto += "   " + Textos.t("detalle.tiempo.sensacion") + " " + grados(actual.sensacion());
+		}
+
+		ahora.add(Labels.body(texto), "aligny center");
+		ahora.setVisible(true);
 	}
 
 	/** Un día: su nombre, el icono y las dos temperaturas. */

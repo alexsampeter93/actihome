@@ -72,8 +72,7 @@ public class OpenMeteoWeatherClient implements WeatherClient {
 	private final ObjectMapper json = new ObjectMapper();
 
 	@Override
-	public List<PrevisionDiaria> prevision(double latitud, double longitud, int dias)
-			throws WeatherUnavailableException {
+	public TiempoDelSitio tiempo(double latitud, double longitud, int dias) throws WeatherUnavailableException {
 
 		int pedidos = Math.max(1, Math.min(dias, MAXIMO_DE_DIAS));
 
@@ -90,7 +89,7 @@ public class OpenMeteoWeatherClient implements WeatherClient {
 				throw new WeatherUnavailableException();
 			}
 
-			return leerPrevision(respuesta.body());
+			return leerTiempo(respuesta.body());
 
 		} catch (IOException ex) {
 			// Sin red, DNS que no resuelve, conexión cortada a mitad: todos acaban aquí y
@@ -131,9 +130,58 @@ public class OpenMeteoWeatherClient implements WeatherClient {
 		return ENDPOINT
 				+ "?latitude=" + String.format(Locale.US, "%.4f", latitud)
 				+ "&longitude=" + String.format(Locale.US, "%.4f", longitud)
+				// Los dos bloques en la MISMA petición. Ver la nota de TiempoDelSitio: son
+				// dos preguntas distintas pero un solo viaje por la red.
+				+ "&current=temperature_2m,apparent_temperature,weather_code,is_day"
 				+ "&daily=weather_code,temperature_2m_max,temperature_2m_min"
 				+ "&timezone=auto"
 				+ "&forecast_days=" + dias;
+	}
+
+	/**
+	 * Lee la respuesta entera: el instante y los días.
+	 *
+	 * <p>
+	 * <b>El tiempo actual admite faltar y la previsión no.</b> Si el bloque
+	 * {@code current} no viniera —o viniera con otra forma—, la ficha puede seguir
+	 * enseñando los cinco días perfectamente; al revés no, porque una sola línea de
+	 * temperatura no justifica el bloque. Así que {@code ahora} puede ser
+	 * {@code null} y una previsión vacía sí es un fallo.
+	 */
+	private TiempoDelSitio leerTiempo(String cuerpo) throws WeatherUnavailableException {
+
+		try {
+			JsonNode raiz = json.readTree(cuerpo);
+
+			return new TiempoDelSitio(leerAhora(raiz.path("current")), leerPrevision(raiz.path("daily")));
+
+		} catch (IOException ex) {
+			throw new WeatherUnavailableException();
+		}
+	}
+
+	/**
+	 * El bloque {@code current}, o {@code null} si no se entiende.
+	 *
+	 * <p>
+	 * {@code is_day} llega como 1 o 0 y no como booleano, que es lo habitual en
+	 * APIs pensadas para transmitir poco. Se convierte aquí, en el borde del
+	 * sistema, para que nadie más tenga que saberlo.
+	 */
+	private TiempoAhora leerAhora(JsonNode actual) {
+
+		if (!actual.hasNonNull("temperature_2m")) {
+			return null;
+		}
+
+		double temperatura = actual.path("temperature_2m").asDouble();
+
+		// Si falta la sensación térmica se usa la real, que es lo mismo que decir "no
+		// hay diferencia que enseñar" — y TiempoAhora.sensacionRelevante() la ocultará.
+		double sensacion = actual.path("apparent_temperature").asDouble(temperatura);
+
+		return new TiempoAhora(temperatura, sensacion, actual.path("weather_code").asInt(-1),
+				actual.path("is_day").asInt(1) == 1);
 	}
 
 	/**
@@ -154,47 +202,40 @@ public class OpenMeteoWeatherClient implements WeatherClient {
 	 * que una respuesta con otra forma acaba en una lista vacía y no en un
 	 * {@code NullPointerException}.
 	 */
-	private List<PrevisionDiaria> leerPrevision(String cuerpo) throws WeatherUnavailableException {
+	private List<PrevisionDiaria> leerPrevision(JsonNode diario) throws WeatherUnavailableException {
 
-		try {
-			JsonNode diario = json.readTree(cuerpo).path("daily");
+		JsonNode fechas = diario.path("time");
+		JsonNode maximas = diario.path("temperature_2m_max");
+		JsonNode minimas = diario.path("temperature_2m_min");
+		JsonNode codigos = diario.path("weather_code");
 
-			JsonNode fechas = diario.path("time");
-			JsonNode maximas = diario.path("temperature_2m_max");
-			JsonNode minimas = diario.path("temperature_2m_min");
-			JsonNode codigos = diario.path("weather_code");
+		int cuantos = Math.min(Math.min(fechas.size(), maximas.size()), Math.min(minimas.size(), codigos.size()));
 
-			int cuantos = Math.min(Math.min(fechas.size(), maximas.size()), Math.min(minimas.size(), codigos.size()));
-
-			if (cuantos == 0) {
-				throw new WeatherUnavailableException();
-			}
-
-			List<PrevisionDiaria> dias = new ArrayList<>();
-
-			for (int i = 0; i < cuantos; i++) {
-
-				// Un día suelto ilegible no invalida la semana entera: se salta. Enseñar seis
-				// días de siete es mejor que no enseñar ninguno.
-				LocalDate fecha = leerFecha(fechas.get(i).asText(""));
-
-				if (fecha == null) {
-					continue;
-				}
-
-				dias.add(new PrevisionDiaria(fecha, maximas.get(i).asDouble(), minimas.get(i).asDouble(),
-						codigos.get(i).asInt(-1)));
-			}
-
-			if (dias.isEmpty()) {
-				throw new WeatherUnavailableException();
-			}
-
-			return dias;
-
-		} catch (IOException ex) {
+		if (cuantos == 0) {
 			throw new WeatherUnavailableException();
 		}
+
+		List<PrevisionDiaria> dias = new ArrayList<>();
+
+		for (int i = 0; i < cuantos; i++) {
+
+			// Un día suelto ilegible no invalida la semana entera: se salta. Enseñar seis
+			// días de siete es mejor que no enseñar ninguno.
+			LocalDate fecha = leerFecha(fechas.get(i).asText(""));
+
+			if (fecha == null) {
+				continue;
+			}
+
+			dias.add(new PrevisionDiaria(fecha, maximas.get(i).asDouble(), minimas.get(i).asDouble(),
+					codigos.get(i).asInt(-1)));
+		}
+
+		if (dias.isEmpty()) {
+			throw new WeatherUnavailableException();
+		}
+
+		return dias;
 	}
 
 	/** La fecha del proveedor, o {@code null} si no se entiende. */

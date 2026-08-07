@@ -8,6 +8,8 @@ import fp.project.actihome.model.services.Coordenadas;
 import fp.project.actihome.model.services.OpenMeteoGeocodingClient;
 import fp.project.actihome.model.services.OpenMeteoWeatherClient;
 import fp.project.actihome.model.services.PrevisionDiaria;
+import fp.project.actihome.model.services.TiempoAhora;
+import fp.project.actihome.model.services.TiempoDelSitio;
 
 /**
  * Llama a Open-Meteo de verdad, una vez, desde la línea de comandos (F17, F18).
@@ -66,7 +68,23 @@ public final class ProbarMeteorologia {
 		System.out.println();
 
 		try {
-			List<PrevisionDiaria> dias = new OpenMeteoWeatherClient().prevision(punto.latitud(), punto.longitud(), 5);
+			TiempoDelSitio tiempo = new OpenMeteoWeatherClient().tiempo(punto.latitud(), punto.longitud(), 5);
+
+			// El instante primero, que es la parte nueva y la que hay que mirar: si esta
+			// linea no coincide con lo que dice cualquier aplicacion del tiempo para ese
+			// sitio, algo va mal en el cliente.
+			TiempoAhora ahora = tiempo.ahora();
+
+			if (ahora == null) {
+				System.out.println("AVISO: el proveedor no ha mandado el bloque de tiempo actual.");
+			} else {
+				System.out.printf("AHORA: %.1f grados (sensacion %.1f)  %s  %s%n", ahora.temperatura(),
+						ahora.sensacion(), ahora.cielo(), ahora.esDeDia() ? "de dia" : "de noche");
+			}
+
+			System.out.println();
+
+			List<PrevisionDiaria> dias = tiempo.dias();
 
 			for (PrevisionDiaria dia : dias) {
 				System.out.printf("  %s   %3.0f / %3.0f    %-10s (codigo %d)%n", dia.fecha(), dia.maxima(),

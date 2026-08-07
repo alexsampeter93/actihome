@@ -1,6 +1,6 @@
 package fp.project.actihome.model.services;
 
-import java.util.List;
+
 
 import fp.project.actihome.model.exceptions.WeatherUnavailableException;
 
@@ -22,11 +22,11 @@ public interface WeatherClient {
 	/**
 	 * @param latitud  grados decimales
 	 * @param longitud grados decimales
-	 * @param dias     cuántos días se piden a partir de hoy
-	 * @return la previsión, un elemento por día, en orden cronológico; nunca
+	 * @param dias     cuántos días de previsión se piden a partir de hoy
+	 * @return el tiempo actual y la previsión, en una sola respuesta; nunca
 	 *         {@code null}
 	 * @throws WeatherUnavailableException si no hay red, el proveedor no responde,
 	 *                                     tarda demasiado o contesta con un error
 	 */
-	List<PrevisionDiaria> prevision(double latitud, double longitud, int dias) throws WeatherUnavailableException;
+	TiempoDelSitio tiempo(double latitud, double longitud, int dias) throws WeatherUnavailableException;
 }
