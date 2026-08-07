@@ -368,7 +368,17 @@ public class HousingDetailsFrame extends JFrame {
 						: Textos.t("catalogo.disponibilidad.reservada"),
 				disponible, Destacado.de(housing), archivos);
 
-		galeria.setMinimumSize(new Dimension(0, 320));
+		// **El preferido se declara aquí, y es lo que de verdad decidía si la ficha
+		// cabía.** La galería vive en una fila con "grow", así que en una ventana alta
+		// se estira igual — pero lo que MigLayout usa para calcular cuánto necesita la
+		// pantalla entera es el PREFERIDO, y el que traía de serie inflaba la columna
+		// izquierda muy por encima de lo que hace falta para ver una foto.
+		//
+		// Es la distinción que este proyecto ya ha tenido que aprender dos veces: el
+		// mínimo dice hasta dónde puede encoger y el preferido dice cuánto pide. Tocar
+		// solo el mínimo no cambia nada de lo que se mide.
+		galeria.setPreferredSize(new Dimension(0, 260));
+		galeria.setMinimumSize(new Dimension(0, 200));
 
 		return galeria;
 	}
@@ -526,10 +536,47 @@ public class HousingDetailsFrame extends JFrame {
 	private JComponent titulo() {
 
 		WrappingText etiqueta = new WrappingText(housing.getName());
-		etiqueta.setFont(Typography.serifMedium(Typography.DETAIL_TITLE));
+		etiqueta.setFont(cuerpoQueCabeEnUnaLinea(housing.getName()));
 		etiqueta.setForeground(Theme.txt());
 
 		return etiqueta;
+	}
+
+	/**
+	 * El mayor cuerpo de serif con el que el nombre cabe en <b>una sola línea</b>.
+	 *
+	 * <p>
+	 * <b>Es la misma técnica que ya usa el titular del catálogo, y aquí hizo falta
+	 * por un efecto secundario de haber acotado la columna.</b> Al pasar el título de
+	 * {@code JLabel} a {@code WrappingText} dejó de desbordar —bien— pero empezó a
+	 * partirse en dos renglones dentro de una columna de 480, y esas dos líneas
+	 * cuestan cuarenta y seis puntos de alto. Un arreglo creó el siguiente.
+	 *
+	 * <p>
+	 * <b>Un texto más pequeño es aceptable; uno cortado o una pantalla que no cabe,
+	 * no.</b> Se mide con la métrica real de la fuente cargada y no estimando por
+	 * número de caracteres: la serif tiene anchos muy distintos por letra y una
+	 * "Villa" no ocupa lo mismo que un "Apartamento".
+	 *
+	 * <p>
+	 * El suelo son 26 puntos. Por debajo dejaría de leerse como el título de la
+	 * pantalla, y entonces es mejor que parta en dos líneas — a lo que el
+	 * {@code WrappingText} vuelve solo, porque nunca dejó de saber hacerlo.
+	 */
+	private java.awt.Font cuerpoQueCabeEnUnaLinea(String nombre) {
+
+		int disponible = Layout.COLUMNA_DE_TEXTO - Space.SM;
+
+		for (float cuerpo = Typography.DETAIL_TITLE; cuerpo >= 26f; cuerpo -= 1f) {
+
+			java.awt.Font fuente = Typography.serifMedium(cuerpo);
+
+			if (getFontMetrics(fuente).stringWidth(nombre) <= disponible) {
+				return fuente;
+			}
+		}
+
+		return Typography.serifMedium(26f);
 	}
 
 	/**
