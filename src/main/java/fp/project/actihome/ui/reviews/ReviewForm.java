@@ -15,6 +15,7 @@ import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Review;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Columnas;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
@@ -61,9 +62,18 @@ public class ReviewForm extends JPanel {
 
 	public ReviewForm() {
 
-		super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.LG + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.SM + "[]" + Space.SM + "[]"
-						+ Space.SM + "[]" + Space.SM + "[]" + Space.SM + "[]"));
+		// **Dos columnas: lo que se escribe y lo que se puntúa.**
+		//
+		// Los nueve bloques iban apilados y pedían 685 puntos de alto en una ventana
+		// que da 672 contando cabecera y botones, así que el formulario de reseña
+		// nunca cupo en un portátil. Y el corte estaba servido: escribir un título,
+		// un texto y adjuntar una foto es una tarea —se hace con el teclado, seguida—
+		// y puntuar cinco aspectos es otra —se hace con el ratón, en cualquier orden—.
+		// Apiladas, las cinco valoraciones quedaban además tan abajo que había que
+		// buscarlas.
+		// Y en dos columnas solo mientras quepan: por debajo de 340 puntos cada una, se
+		// apilan como estaban. Es Columnas quien lo decide, no un umbral escrito aquí.
+		super(new java.awt.BorderLayout());
 		setOpaque(false);
 
 		titulo = Field.text(Textos.t("resenaForm.titulo"));
@@ -77,15 +87,29 @@ public class ReviewForm extends JPanel {
 
 		nota = Labels.muted(Textos.t("resenaForm.notaAutomatica"));
 
-		add(titulo);
-		add(cuerpo);
-		add(campoFoto());
-		add(nota);
-		add(ubicacion);
-		add(servicio);
-		add(wifi);
-		add(comida);
-		add(limpieza);
+		JPanel loQueSeEscribe = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
+				"[]" + Space.aire(Space.LG) + "[]" + Space.aire(Space.LG) + "[]"));
+		loQueSeEscribe.setOpaque(false);
+		loQueSeEscribe.add(titulo);
+		loQueSeEscribe.add(cuerpo);
+		loQueSeEscribe.add(campoFoto());
+
+		JPanel loQueSePuntua = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
+				"[]" + Space.aire(Space.LG) + "[]" + Space.aire(Space.SM) + "[]" + Space.aire(Space.SM) + "[]"
+						+ Space.aire(Space.SM) + "[]" + Space.aire(Space.SM) + "[]"));
+		loQueSePuntua.setOpaque(false);
+		loQueSePuntua.add(nota);
+		loQueSePuntua.add(ubicacion);
+		loQueSePuntua.add(servicio);
+		loQueSePuntua.add(wifi);
+		loQueSePuntua.add(comida);
+		loQueSePuntua.add(limpieza);
+
+		Columnas columnas = new Columnas(340, Space.XXL);
+		columnas.add(loQueSeEscribe);
+		columnas.add(loQueSePuntua);
+
+		add(columnas, java.awt.BorderLayout.CENTER);
 	}
 
 	/**
@@ -99,7 +123,9 @@ public class ReviewForm extends JPanel {
 		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.MD + "[grow,fill]", ""));
 		panel.setOpaque(false);
 
-		panel.add(previsualizacion, "w 120!, h 84!, aligny top");
+		// Alto negociable por lo mismo que en HousingForm: una miniatura cede, un campo
+		// de texto no.
+		panel.add(previsualizacion, "w 120!, h 60:84:84, aligny top");
 
 		JPanel acciones = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		acciones.setOpaque(false);

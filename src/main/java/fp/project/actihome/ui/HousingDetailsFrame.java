@@ -39,6 +39,7 @@ import fp.project.actihome.ui.components.CalendarioRango;
 import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.InlineScore;
+import fp.project.actihome.ui.components.FilaFluida;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.Rescate;
@@ -241,8 +242,9 @@ public class HousingDetailsFrame extends JFrame {
 		// no cabian en una ventana de 1024 y la de la derecha se salia por el borde,
 		// donde no hay barra horizontal que la rescate. Ver la nota de AIRE_LATERAL en
 		// ShowHousingsFrame: MigLayout no admite rangos en insets, si en gaps.
-		contenido.setLayout(new MigLayout("wrap 1, fill, " + Space.insets(Space.XL, 0, Space.XL, 0),
-				AIRE_LATERAL + "[grow,fill]" + AIRE_LATERAL, "[]" + Space.LG + "[grow,fill]"));
+		contenido.setLayout(new MigLayout("wrap 1, fill, " + Space.insets(0),
+				AIRE_LATERAL + "[grow,fill]" + AIRE_LATERAL,
+				Space.margen(Space.XL) + "[]" + Space.aire(Space.LG) + "[grow,fill]" + Space.margen(Space.XL)));
 
 		contenido.add(migaDePan(), "growx, " + Layout.anchoCentrado(Layout.FICHA));
 		contenido.add(cuerpo(), "grow, " + Layout.anchoCentrado(Layout.FICHA));
@@ -313,7 +315,7 @@ public class HousingDetailsFrame extends JFrame {
 		// promete ninguna — es información y se lee. Y desaparece sola cuando no la
 		// hay, que es justo lo que aquel no sabía hacer.
 		JPanel izquierda = new JPanel(
-				new MigLayout("wrap 1, hidemode 3, " + Space.insets(0), "[grow,fill]", "[grow,fill]" + Space.LG + "[]"));
+				new MigLayout("wrap 1, hidemode 3, " + Space.insets(0), "[grow,fill]", "[grow,fill]" + Space.aire(Space.LG) + "[]"));
 		izquierda.setOpaque(false);
 
 		izquierda.add(galeria(), "grow");
@@ -394,26 +396,26 @@ public class HousingDetailsFrame extends JFrame {
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]push[]"));
 		panel.setOpaque(false);
 
-		panel.add(referencia(), "gapbottom " + Space.SM);
-		panel.add(titulo(), "gapbottom " + Space.MD);
-		panel.add(anfitrion(), "gapbottom " + Space.MD);
+		panel.add(referencia(), "gapbottom " + Space.aire(Space.SM));
+		panel.add(titulo(), "gapbottom " + Space.aire(Space.MD));
+		panel.add(anfitrion(), "gapbottom " + Space.aire(Space.MD));
 
 		// "wmin 0" es imprescindible aquí: un JTextArea sin ese freno reporta como
 		// ancho mínimo el de su texto sin partir en líneas, que para una descripción
 		// de tres frases es enorme. Sin este freno, MigLayout respeta esa demanda y dejaba
 		// la columna del texto invadir la de la foto —el mismo problema, ya documentado en
 		// Layout.ancho(), que en su día se llevó por delante el panel oscuro del login—.
-		panel.add(descripcion(), "growx, wmin 0, gapbottom " + Space.MD);
+		panel.add(descripcion(), "growx, wmin 0, gapbottom " + Space.aire(Space.MD));
 
 		// Solo si hay alguna reseña: un hueco con comillas vacías sería peor que la
 		// ausencia. Al no añadirse, el layout no le reserva sitio.
 		JPanel cita = citaDestacada();
 
 		if (cita != null) {
-			panel.add(cita, "growx, wmin 0, gapbottom " + Space.MD);
+			panel.add(cita, "growx, wmin 0, gapbottom " + Space.aire(Space.MD));
 		}
 
-		panel.add(miniGrid(), "gapbottom " + Space.MD);
+		panel.add(miniGrid(), "gapbottom " + Space.aire(Space.MD));
 
 		// La tarjeta se acota a Layout.FORMULARIO y NO ocupa toda la columna. Con el
 		// ancho entero, el botón principal medía casi 600 puntos: eso no es un botón de
@@ -476,7 +478,7 @@ public class HousingDetailsFrame extends JFrame {
 		cabecera.add(disponibilidad(), "aligny center");
 
 		tarjeta.add(cabecera);
-		tarjeta.add(precio(), "gaptop " + Space.XXS + ", gapbottom " + Space.MD);
+		tarjeta.add(precio(), "gaptop " + Space.XXS + ", gapbottom " + Space.aire(Space.MD));
 
 		tarjeta.add(acciones(), "growx, wmin 0");
 
@@ -830,22 +832,34 @@ public class HousingDetailsFrame extends JFrame {
 		User usuario = sessionManager.getLoggedInUser();
 		boolean esPropietario = usuario != null && usuario.getId().equals(housing.getOwner().getId());
 
+		// **Los dos enlaces comparten renglón; la acción principal no.** Antes iban los
+		// tres apilados, y esa tercera fila costaba 56 puntos de alto en la pantalla que
+		// menos margen tiene. Juntos no pierden nada: son las dos acciones secundarias,
+		// del mismo peso, y leerlas en la misma línea las agrupa mejor que apiladas
+		// —donde la última parecía un tercer nivel de jerarquía que no existe—.
+		//
+		// FilaFluida y no una fila rígida, por la regla 1: son dos textos de ancho muy
+		// variable ("Preguntar al propietario" / "Ask the owner") dentro de una columna
+		// acotada, y una fila rígida exigiría la suma de ambos. Aquí, si no caben, el
+		// segundo baja de línea. Y como FilaFluida coloca cada elemento a su tamaño
+		// preferido, ninguno puede quedar aplastado.
+		FilaFluida secundarias = new FilaFluida(Space.MD, Space.XS);
+
 		if (usuario != null && usuario.getRole() == RoleType.CUSTOMER) {
 
 			columna.add(Buttons.primary(Textos.t("detalle.accion.reservar"), e -> reservar()),
 					"height " + Typography.altoDeBoton() + "!");
-			columna.add(Buttons.linkAccent(Textos.t("detalle.accion.preguntar"), e -> preguntar()),
-					"gaptop " + Space.SM);
+			secundarias.add(Buttons.linkAccent(Textos.t("detalle.accion.preguntar"), e -> preguntar()));
 
 		} else if (usuario != null && usuario.getRole() == RoleType.ADMIN && esPropietario) {
 
 			columna.add(Buttons.secondary(Textos.t("detalle.accion.actualizar"), e -> actualizar()),
 					"height " + Typography.altoDeBoton() + "!");
-			columna.add(Buttons.linkAccent(Textos.t("catalogo.row.intercambiar"), e -> intercambiar()),
-					"gaptop " + Space.SM);
+			secundarias.add(Buttons.linkAccent(Textos.t("catalogo.row.intercambiar"), e -> intercambiar()));
 		}
 
-		columna.add(Buttons.link(Textos.t("detalle.accion.verResenas"), e -> verResenas()), "gaptop " + Space.XXS);
+		secundarias.add(Buttons.link(Textos.t("detalle.accion.verResenas"), e -> verResenas()));
+		columna.add(secundarias, "gaptop " + Space.aire(Space.SM));
 
 		return columna;
 	}

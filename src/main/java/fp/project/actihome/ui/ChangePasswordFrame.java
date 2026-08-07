@@ -102,7 +102,8 @@ public class ChangePasswordFrame extends JFrame {
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));
 
-		JPanel exterior = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.GIANT), "[grow]", "[grow]"));
+		JPanel exterior = new JPanel(new MigLayout("wrap 1, " + Space.insetsLaterales(Space.GIANT, Space.GIANT),
+				"[grow]", Space.margen(Space.GIANT) + "[grow]" + Space.margen(Space.GIANT)));
 		exterior.setOpaque(false);
 		exterior.add(formulario(), Layout.ancho(Layout.FORMULARIO) + ", aligny center, alignx center");
 
@@ -117,7 +118,8 @@ public class ChangePasswordFrame extends JFrame {
 	private JPanel formulario() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.XXL + "[]" + Space.MD + "[]" + Space.MD + "[]" + Space.LG + "[]" + Space.LG + "[]"));
+				"[]" + Space.aire(Space.XXL) + "[]" + Space.aire(Space.MD) + "[]" + Space.aire(Space.MD) + "[]"
+						+ Space.aire(Space.LG) + "[]" + Space.aire(Space.LG) + "[]"));
 		panel.setOpaque(false);
 
 		panel.add(cabecera());

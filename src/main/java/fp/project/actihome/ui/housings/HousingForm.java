@@ -38,6 +38,7 @@ import fp.project.actihome.model.services.HousingData;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Chip;
+import fp.project.actihome.ui.components.Columnas;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.FilaFluida;
 import fp.project.actihome.ui.components.ImagePlaceholder;
@@ -76,6 +77,19 @@ import fp.project.actihome.ui.theme.Typography;
 public class HousingForm extends JPanel {
 
 	private static final long serialVersionUID = 1L;
+
+	/**
+	 * El ancho por debajo del cual una columna de este formulario deja de leerse
+	 * bien.
+	 *
+	 * <p>
+	 * No es un número redondo: es lo que necesita la fila de chips de comodidades
+	 * para no partirse en cuatro líneas, que es el bloque más ancho de las tres
+	 * columnas. Poner menos no ahorra nada —lo que se gana de ancho se paga de alto
+	 * en cuanto los chips doblan— y poner más deja el formulario en dos columnas en
+	 * portátiles donde caben tres.
+	 */
+	private static final int ANCHO_COMODO_DE_COLUMNA = 320;
 
 	/**
 	 * Categorías de alojamiento.
@@ -185,13 +199,23 @@ public class HousingForm extends JPanel {
 	 */
 	public HousingForm(boolean conCodigo, GeocodingClient geocoder) {
 
-		// Dos columnas y no una sola larga. Con doce controles apilados, el formulario
-		// no cabía en la ventana y los botones quedaban bajo el pliegue —lo que la
-		// regla de escritorio del proyecto no permite—, y además dejaba media pantalla
-		// vacía a los lados. Repartido en dos, cabe entero y el reparto tiene sentido
-		// propio: a la izquierda lo que identifica el alojamiento, a la derecha lo que
-		// lo describe y lo que ofrece.
-		super(new MigLayout("hidemode 3, " + Space.insets(0), "[grow,fill]" + Space.XXL + "[grow,fill]", "[]"));
+		// **Tres columnas, y antes eran dos.** El reparto en dos tenía sentido de
+		// lectura pero no de alto: medido, la izquierda pedía 1042 puntos y la derecha
+		// 391. Y en dos columnas **el alto lo pone la más alta, no la media**, así que
+		// aquello equivalía a no haber repartido nada — el formulario seguía pidiendo
+		// mil puntos en una ventana que da 672 y era, con diferencia, la pantalla más
+		// desbordada de la aplicación.
+		//
+		// El corte en tres sale de las tres preguntas que se contestan al publicar un
+		// alojamiento, y por eso no es un troceado a ojo: **qué es** (código, nombre,
+		// tipo, tamaño y precio), **dónde está y cómo se ve** (ubicación y fotos) y
+		// **qué ofrece** (descripción, intercambio, pensión y comodidades). Cada
+		// columna se puede rellenar entera sin mirar a las otras dos.
+		//
+		// Nada se esconde: no hay pasos ni pestañas. En un formulario de alta, un campo
+		// obligatorio detrás de una pestaña es un campo que alguien va a dejar vacío
+		// sin saber que existía.
+		super(new java.awt.BorderLayout());
 		setOpaque(false);
 
 		this.geocoder = geocoder;
@@ -239,23 +263,44 @@ public class HousingForm extends JPanel {
 		ubicacion = Field.text(Textos.t("alojamientoForm.ubicacion"));
 		descripcion = Field.textArea(Textos.t("alojamientoForm.descripcion"), 4);
 
-		add(columnaIzquierda(conCodigo), "aligny top");
-		add(columnaDerecha(), "aligny top");
+		// **Cuántas columnas se ven no lo decide esta clase, lo decide el ancho.** Con
+		// tres escritas a mano, el formulario cabía de alto en un portátil y se salía
+		// de ancho en una ventana de 1024: los chips de comodidades quedaban dibujados
+		// fuera. Con Columnas son tres en un monitor, dos en un portátil estrecho y una
+		// en una ventana mínima, sin ningún umbral escrito.
+		Columnas columnas = new Columnas(ANCHO_COMODO_DE_COLUMNA, Space.XL);
+
+		columnas.add(columnaQueEs(conCodigo));
+		columnas.add(columnaDondeYComoSeVe());
+		columnas.add(columnaQueOfrece());
+
+		add(columnas, java.awt.BorderLayout.CENTER);
 	}
 
-	private JPanel columnaIzquierda(boolean conCodigo) {
+	/** Lo que identifica al alojamiento: código, nombre, tipo, tamaño y precio. */
+	private JPanel columnaQueEs(boolean conCodigo) {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		panel.setOpaque(false);
 
 		if (conCodigo) {
-			panel.add(codigo, "gapbottom " + Space.MD);
+			panel.add(codigo, "gapbottom " + Space.aire(Space.MD));
 		}
 
-		panel.add(nombre, "gapbottom " + Space.MD);
-		panel.add(campoTipo(), "gapbottom " + Space.MD);
-		panel.add(dosColumnas(habitaciones, precio), "gapbottom " + Space.MD);
-		panel.add(campoUbicacion(), "gapbottom " + Space.MD);
+		panel.add(nombre, "gapbottom " + Space.aire(Space.MD));
+		panel.add(campoTipo(), "gapbottom " + Space.aire(Space.MD));
+		panel.add(dosColumnas(habitaciones, precio));
+
+		return panel;
+	}
+
+	/** Dónde está y qué se ve de él: la ubicación y las fotos. */
+	private JPanel columnaDondeYComoSeVe() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		panel.setOpaque(false);
+
+		panel.add(campoUbicacion(), "gapbottom " + Space.aire(Space.LG));
 		panel.add(campoFoto());
 
 		return panel;
@@ -432,13 +477,16 @@ public class HousingForm extends JPanel {
 		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.MD + "[grow,fill]", ""));
 		panel.setOpaque(false);
 
-		panel.add(previsualizacion, "w 150!, h 104!, aligny top");
+		// El ancho es exacto y el alto un rango: la miniatura tiene que ocupar siempre
+		// la misma columna —si no, los botones de al lado bailan de sitio según haya
+		// foto o no— pero puede perder alto sin dejar de enseñar lo que enseña.
+		panel.add(previsualizacion, "w 150!, h 72:104:104, aligny top");
 
 		JPanel acciones = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		acciones.setOpaque(false);
 
 		etiquetaFoto = Labels.caps(Textos.t("alojamientoForm.foto.label"));
-		acciones.add(etiquetaFoto, "gapbottom " + Space.XS);
+		acciones.add(etiquetaFoto, "gapbottom " + Space.aire(Space.XS));
 
 		botonElegirFoto = Buttons.secondary(Textos.t("alojamientoForm.foto.elegir"), e -> elegirFoto());
 		acciones.add(botonElegirFoto, "gapbottom " + Space.XXS);
@@ -450,7 +498,7 @@ public class HousingForm extends JPanel {
 		acciones.add(errorFoto, "gaptop " + Space.XXS);
 
 		panel.add(acciones, "aligny top");
-		panel.add(filaDeGaleria(), "newline, span 2, gaptop " + Space.MD);
+		panel.add(filaDeGaleria(), "newline, span 2, gaptop " + Space.aire(Space.MD));
 
 		return panel;
 	}
@@ -603,16 +651,25 @@ public class HousingForm extends JPanel {
 		fotosDeGaleria.clear();
 	}
 
-	private JPanel columnaDerecha() {
+	/** Lo que ofrece: la descripción, el intercambio, la pensión y las comodidades. */
+	private JPanel columnaQueOfrece() {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		// "hidemode 3" porque el "qué busco" del intercambio aparece y desaparece con
+		// su chip, y sin esto seguiría reservando su hueco vacío.
+		JPanel panel = new JPanel(new MigLayout("wrap 1, hidemode 3, " + Space.insets(0), "[grow,fill]", ""));
 		panel.setOpaque(false);
 
-		panel.add(descripcion, "gapbottom " + Space.LG);
+		panel.add(descripcion, "gapbottom " + Space.aire(Space.LG));
+
+		panel.add(intercambio);
+		panel.add(queBusca, "gaptop " + Space.XXS + ", gapbottom " + Space.aire(Space.LG));
+
+		intercambio.addActionListener(e -> queBusca.setVisible(intercambio.isSelected()));
+		queBusca.setVisible(false);
 
 		etiquetaPension = Labels.caps(Textos.t("catalogo.row.pension"));
 		panel.add(etiquetaPension, "gapbottom " + Space.XS);
-		panel.add(fila(desayuno, comida, cena), "gapbottom " + Space.LG);
+		panel.add(fila(desayuno, comida, cena), "gapbottom " + Space.aire(Space.LG));
 
 		etiquetaComodidades = Labels.caps(Textos.t("catalogo.filtro.comodidades"));
 		panel.add(etiquetaComodidades, "gapbottom " + Space.XS);
@@ -621,29 +678,45 @@ public class HousingForm extends JPanel {
 		return panel;
 	}
 
+	/**
+	 * El tipo y la estación ideal.
+	 *
+	 * <p>
+	 * <b>El intercambio ya no vive aquí.</b> Estaba pegado a estos dos desplegables
+	 * por vecindad de código, no por parentesco: el tipo y la estación dicen
+	 * <em>qué es</em> el alojamiento, mientras que ofrecerlo a intercambio dice
+	 * <em>qué se hace</em> con él, que es la pregunta de la tercera columna. Al
+	 * separarlos, este bloque bajó de 337 puntos a poco más de cien.
+	 */
 	private JPanel campoTipo() {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		// **Los dos desplegables van uno al lado del otro, no apilados.** Apilados eran
+		// 169 puntos —dos rótulos, dos cajas y el hueco entre pares— y este bloque solo
+		// era el que decidía el alto de su columna, y por tanto el de la pantalla
+		// entera. En fila son 84 y no se pierde nada: los dos son listas cerradas de
+		// una palabra ("Villa", "Otoño"), así que ninguno necesita el ancho completo.
+		//
+		// Es la misma decisión que ya estaba tomada dos bloques más abajo para
+		// habitaciones y precio, y por el mismo motivo.
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[grow,fill]" + Space.MD + "[grow,fill]", ""));
 		panel.setOpaque(false);
 
 		tipo.setFont(Typography.sans(Typography.BODY));
 
+		JPanel columnaTipo = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		columnaTipo.setOpaque(false);
 		etiquetaTipo = Labels.caps(Textos.t("catalogo.filtro.tipo"));
-		panel.add(etiquetaTipo);
-		panel.add(tipo, "gaptop " + Space.XXS + ", height " + Typography.altoDeControl() + "!");
+		columnaTipo.add(etiquetaTipo);
+		columnaTipo.add(tipo, "gaptop " + Space.XXS + ", height " + Typography.altoDeControl() + "!");
 
+		JPanel columnaEstacion = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		columnaEstacion.setOpaque(false);
 		etiquetaEstacion = Labels.caps(Textos.t("alojamientoForm.estacionIdeal"));
-		panel.add(etiquetaEstacion, "gaptop " + Space.LG);
-		panel.add(estacionIdeal, "gaptop " + Space.XXS + ", height " + Typography.altoDeControl() + "!");
+		columnaEstacion.add(etiquetaEstacion);
+		columnaEstacion.add(estacionIdeal, "gaptop " + Space.XXS + ", height " + Typography.altoDeControl() + "!");
 
-		// El campo de "qué busco" solo tiene sentido si se ofrece el intercambio, así
-		// que aparece y desaparece con el chip en vez de estar siempre ahí en gris.
-		// "hidemode 3" es lo que hace que además deje de reservar su hueco.
-		panel.add(intercambio, "gaptop " + Space.LG);
-		panel.add(queBusca, "gaptop " + Space.XXS);
-
-		intercambio.addActionListener(e -> queBusca.setVisible(intercambio.isSelected()));
-		queBusca.setVisible(false);
+		panel.add(columnaTipo, "aligny top");
+		panel.add(columnaEstacion, "aligny top");
 
 		return panel;
 	}

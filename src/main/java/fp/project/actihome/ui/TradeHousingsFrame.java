@@ -81,6 +81,24 @@ public class TradeHousingsFrame extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * La foto de cada tarjeta de la comparación: 84 puntos cuando hay sitio, 56
+	 * cuando no.
+	 *
+	 * <p>
+	 * <b>Era {@code h 84!}, y ese signo de admiración es lo que impedía que esta
+	 * pantalla cupiera en un portátil.</b> Significa "exactamente esto", así que las
+	 * dos tarjetas de la comparación —el bloque más alto de la pantalla— no cedían
+	 * ni un punto y todo el recorte tenía que salir de otro sitio.
+	 *
+	 * <p>
+	 * Y una foto sí puede ceder: encoge y se sigue viendo lo que es, que es
+	 * exactamente lo contrario de lo que le pasa a un campo de texto o a un botón.
+	 * Es la misma frontera de siempre —el aire y las imágenes se negocian, los
+	 * controles no— aplicada a lo que aquí ocupa el alto de verdad.
+	 */
+	private static final String ALTO_DE_FOTO = "56:84:84";
+
 	private final transient HousingService housingService;
 	private final transient SessionManager sessionManager;
 	private final transient Navigator navigator;
@@ -102,7 +120,7 @@ public class TradeHousingsFrame extends JFrame {
 
 	private JLabel superTitulo;
 	private JLabel tituloCabecera;
-	private JLabel subtituloCabecera;
+	private WrappingText subtituloCabecera;
 	private JButton botonBuscar;
 	private JButton botonCancelar;
 	private JLabel vacioTitulo;
@@ -150,9 +168,19 @@ public class TradeHousingsFrame extends JFrame {
 		// vacío dejaba sus filas reservadas y el mensaje de Olaz aparecía al fondo de
 		// la pantalla, muy por debajo del titular.
 		JPanel exterior = new JPanel(new MigLayout(
-				"wrap 1, hidemode 3, " + Space.insets(Space.XXL, Space.GIANT, Space.XXL, Space.GIANT), "[grow,fill]",
-				"[]" + Space.LG + "[]" + Space.LG + "[]" + Space.XS + "[]" + Space.MD + "[]"));
+				"wrap 1, hidemode 3, " + Space.insetsLaterales(Space.GIANT, Space.GIANT), "[grow,fill]",
+				// **"shrink 0" en las filas: aquí lo que cede es el aire, no los bloques.**
+				// Los huecos ya están declarados como rango y con eso basta; sin esta marca,
+				// cuando faltaban unos pocos puntos MigLayout repartía el déficit entre las
+				// filas y se llevaba por delante el subtítulo (11 puntos de alto donde su
+				// mínimo era 16) y el precio de las tarjetas (23 donde eran 28). Con ella, si
+				// el aire no da para más, se desborda hacia abajo y sale la barra de rescate
+				// — que es lo correcto: mejor desplazarse que leer un texto rebanado.
+				Space.margen(Space.XXL) + "[shrink 0]" + Space.aire(Space.LG) + "[shrink 0]" + Space.aire(Space.LG)
+						+ "[shrink 0]" + Space.aire(Space.MD) + "[shrink 0]" + Space.margen(Space.XXL)));
 		exterior.setOpaque(false);
+
+		buscador = buscador();
 
 		exterior.add(cabecera(), Layout.anchoCentrado(Layout.CONTENIDO));
 
@@ -161,9 +189,6 @@ public class TradeHousingsFrame extends JFrame {
 
 		vacio = estadoVacio();
 		exterior.add(vacio, Layout.anchoCentrado(Layout.CONTENIDO));
-
-		buscador = buscador();
-		exterior.add(buscador, Layout.anchoCentrado(Layout.TEXTO));
 
 		error = Labels.error(" ");
 		exterior.add(error, Layout.anchoCentrado(Layout.TEXTO));
@@ -179,17 +204,51 @@ public class TradeHousingsFrame extends JFrame {
 		Foco.alPulsarEscape(this, this::volverAlDetalle);
 	}
 
+	/**
+	 * Titulares a la izquierda y el buscador por código a la derecha.
+	 *
+	 * <p>
+	 * <b>El buscador estaba en su propia fila, debajo de la comparación</b>, y esa
+	 * fila costaba 83 puntos de alto que eran justo los que sacaban esta pantalla
+	 * de la ventana de un portátil. Pero moverlo aquí no es un apaño de alto: el
+	 * campo de código es <em>el punto de entrada</em> de la pantalla —hasta que no
+	 * se busca un alojamiento no hay nada que comparar— y estaba colocado después
+	 * del resultado que produce. Arriba, se lee en el orden en que se usa.
+	 *
+	 * <p>
+	 * El ancho del buscador es un rango y no un número por la regla de siempre: en
+	 * inglés "Housing code" y "Search" ocupan otra cosa, y una fila rígida con dos
+	 * textos variables acaba aplastando al que tenga menos suerte.
+	 */
 	private JPanel cabecera() {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]"));
+		// "hidemode 3" también aquí: el buscador se oculta en el estado vacío —sin
+		// alojamiento propio no hay nada que ofrecer a cambio— y sin esto seguiría
+		// reservando su ancho, dejando el titular estrechado por un hueco invisible.
+		JPanel panel = new JPanel(
+				new MigLayout("hidemode 3, " + Space.insets(0), "[grow,fill]" + Space.XL + "[]", "[]"));
 		panel.setOpaque(false);
 
+		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XXS + "[]"));
+		titulos.setOpaque(false);
+
 		superTitulo = Labels.capsAccent(Textos.t("header.nav.intercambio"));
-		panel.add(superTitulo);
+		titulos.add(superTitulo);
 		tituloCabecera = Labels.title(Textos.t("intercambio.titulo"));
-		panel.add(tituloCabecera);
-		subtituloCabecera = Labels.muted(Textos.t("intercambio.subtitulo"));
-		panel.add(subtituloCabecera, "gaptop " + Space.XS);
+		titulos.add(tituloCabecera);
+		// **WrappingText y no Labels.muted, y esto era un fallo latente que solo se
+		// destapó al mover el buscador a esta fila.** El subtítulo mide cien caracteres
+		// y un JLabel no parte el texto: declara como mínimo la frase entera, 598
+		// puntos. Mientras ocupaba una fila para él solo daba igual —había sitio de
+		// sobra—, pero compartiendo fila con el buscador ese mínimo imposible empujaba
+		// el botón "Buscar" fuera de la ventana en 1024. Es la regla 5 de la
+		// adaptabilidad, que este subtítulo llevaba incumpliendo desde siempre sin que
+		// se notara.
+		subtituloCabecera = WrappingText.muted(Textos.t("intercambio.subtitulo"));
+		titulos.add(subtituloCabecera, "gaptop " + Space.aire(Space.XS));
+
+		panel.add(titulos, "aligny top");
+		panel.add(buscador, "w 280:380:380, aligny bottom");
 
 		return panel;
 	}
@@ -552,7 +611,7 @@ public class TradeHousingsFrame extends JFrame {
 
 		card.add(new ImagePlaceholder(Textos.tipoDeAlojamiento(housing.getType()),
 				disponible ? Textos.t("catalogo.disponibilidad.disponible") : Textos.t("catalogo.disponibilidad.reservada"),
-				disponible, housing.getImage()), "h 84!, growx, gapbottom " + Space.SM);
+				disponible, housing.getImage()), "h " + ALTO_DE_FOTO + ", growx, gapbottom " + Space.aire(Space.SM));
 
 		card.add(Labels.capsAccent(Textos.t("catalogo.numero") + " " + housing.getHousingCode()));
 
@@ -564,12 +623,13 @@ public class TradeHousingsFrame extends JFrame {
 		card.add(Labels.muted(Textos.t("intercambio.titular", housing.getOwner().getUsername())),
 				"gaptop " + Space.XXS);
 		card.add(Labels.priceSmall(Textos.t("intercambio.precioPorNoche", Formato.precio(housing.getPricePerNight()))),
-				"gaptop " + Space.XS);
+				"gaptop " + Space.aire(Space.XS));
 
 		if (!disponible) {
 			// Es la causa exacta por la que el servicio rechazaría el intercambio, dicha
 			// antes de intentarlo.
-			card.add(Labels.error(Textos.t("intercambio.error.reservadoNoIntercambiable")), "gaptop " + Space.XS);
+			card.add(Labels.error(Textos.t("intercambio.error.reservadoNoIntercambiable")),
+					"gaptop " + Space.aire(Space.XS));
 		}
 
 		return card;
@@ -579,7 +639,7 @@ public class TradeHousingsFrame extends JFrame {
 
 		Card card = new Card(new MigLayout("wrap 1, " + Space.insets(Space.MD), "[grow,fill]", ""));
 
-		card.add(new ImagePlaceholder(), "h 84!, growx, gapbottom " + Space.SM);
+		card.add(new ImagePlaceholder(), "h " + ALTO_DE_FOTO + ", growx, gapbottom " + Space.aire(Space.SM));
 		card.add(Labels.muted(Textos.t("intercambio.tarjetaVacia.linea1")), "gaptop " + Space.XXS);
 		card.add(Labels.muted(Textos.t("intercambio.tarjetaVacia.linea2")));
 

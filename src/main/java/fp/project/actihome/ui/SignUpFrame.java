@@ -145,8 +145,14 @@ public class SignUpFrame extends JFrame {
 		// maquetación, y el ojo pierde la línea al recorrerlo.
 		JPanel raiz = new Page(new MigLayout("fill, " + Space.insets(0), "[grow,fill]", "[grow,fill]"));
 
-		JPanel cuerpo = new JPanel(new MigLayout("wrap 1, fill, " + Space.insets(Space.XXXL, Space.GIANT, Space.XXL,
-				Space.GIANT), "[grow,fill]", "[]" + Space.XL + "[]push[]"));
+		// **Los márgenes verticales van en el string de filas, no en los insets**, y no
+		// es una manía de estilo: los insets de MigLayout son valores sueltos y no
+		// admiten rango, así que un margen superior declarado ahí no puede cederse
+		// nunca. Puestos como gap de guarda antes de la primera fila y después de la
+		// última son el mismo espacio y sí se negocian. Ver Space.insetsLaterales.
+		JPanel cuerpo = new JPanel(new MigLayout("wrap 1, fill, " + Space.insetsLaterales(Space.GIANT, Space.GIANT),
+				"[grow,fill]",
+				Space.margen(Space.XXXL) + "[]" + Space.aire(Space.XL) + "[]push[]" + Space.margen(Space.XXL)));
 		cuerpo.setOpaque(false);
 
 		cuerpo.add(cabecera(), "growx, " + Layout.anchoCentrado(Layout.CONTENIDO));
@@ -190,8 +196,8 @@ public class SignUpFrame extends JFrame {
 		// arriba que del suyo propio, y eso invierte la agrupación: el ojo agrupa por
 		// proximidad, así que una etiqueta pegada al campo anterior parece pertenecerle
 		// a él. Es un detalle de dos píxeles que cambia cómo se lee el formulario.
-		JPanel panel = new JPanel(new MigLayout("wrap 2, gapy " + Space.XL + ", " + Space.insets(0),
-				"[grow,fill]" + Space.XXL + "[grow,fill]", ""));
+		JPanel panel = new JPanel(new MigLayout("wrap 3, gapy " + Space.aire(Space.XL) + ", " + Space.insets(0),
+				"[grow,fill]" + Space.XL + "[grow,fill]" + Space.XL + "[grow,fill]", ""));
 		panel.setOpaque(false);
 
 		usuario = Field.text(Textos.t("login.usuario"));
@@ -202,16 +208,27 @@ public class SignUpFrame extends JFrame {
 		telefono = Field.text(Textos.t("registro.telefono"));
 		correo = Field.text(Textos.t("registro.correo"));
 
+		// **Tres columnas, y el orden agrupa: credenciales, quién eres, cómo
+		// localizarte.** Con dos eran cuatro filas de campo, y un campo no cede alto
+		// —su caja tiene un `height !` medido de la fuente, que es justo lo que impide
+		// que el texto salga cortado en un Windows al 150 %—, así que esas cuatro filas
+		// eran 300 puntos innegociables. Con tres columnas son tres filas y la pantalla
+		// entra en un portátil sin recortar ni un control.
+		//
+		// El handoff pedía dos, y aquí se separa de él por el mismo motivo por el que
+		// se separó en el color de otoño: la especificación describe una página web,
+		// donde sobrar alto no cuesta nada. Los ocho campos son cortos —un nombre, un
+		// teléfono, una fecha— y a 313 puntos cada uno se escriben igual de cómodos.
 		panel.add(usuario);
 		panel.add(contrasena);
+		panel.add(correo);
 		panel.add(nombre);
 		panel.add(apellido);
+		panel.add(fechaDeNacimiento());
 		panel.add(localidad);
 		panel.add(telefono);
-		panel.add(correo);
-		panel.add(fechaDeNacimiento());
 
-		panel.add(rol(), "span 2, growx, gaptop " + Space.SM);
+		panel.add(rol(), "newline, span 3, growx, gaptop " + Space.aire(Space.SM));
 
 		return panel;
 	}
@@ -254,7 +271,8 @@ public class SignUpFrame extends JFrame {
 	 */
 	private JPanel rol() {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.XS + "[]"));
+		JPanel panel = new JPanel(
+				new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.aire(Space.XS) + "[]"));
 		panel.setOpaque(false);
 
 		etiquetaQuiero = Labels.caps(Textos.t("registro.quiero"));
@@ -315,8 +333,8 @@ public class SignUpFrame extends JFrame {
 		botonCancelar = Buttons.secondary(Textos.t("ajustes.cancelar"), e -> navigator.ir(LoginFrame.class));
 		acciones.add(botonCancelar, "height " + Typography.altoDeBoton() + "!");
 
-		panel.add(acciones, "gaptop " + Space.XS);
-		panel.add(enlaceALogin(), "gaptop " + Space.SM);
+		panel.add(acciones, "gaptop " + Space.aire(Space.XS));
+		panel.add(enlaceALogin(), "gaptop " + Space.aire(Space.SM));
 
 		return panel;
 	}

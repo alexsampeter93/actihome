@@ -106,7 +106,11 @@ public class RecoverPasswordFrame extends JFrame {
 		setSize(760, 640);
 		setLocationRelativeTo(null);
 
-		JPanel raiz = new Page(new MigLayout("fill, " + Space.insets(Space.GIANT), "[grow]", "[grow]"));
+		// Los 48 de margen vertical van como gap de guarda y no como inset: ahí sí
+		// admiten rango, y son 96 puntos que en un portátil hacen la diferencia entre
+		// que el botón se vea o haya que buscarlo con la rueda. Ver Space.aire.
+		JPanel raiz = new Page(new MigLayout("fill, " + Space.insetsLaterales(Space.GIANT, Space.GIANT), "[grow]",
+				Space.margen(Space.GIANT) + "[grow]" + Space.margen(Space.GIANT)));
 
 		JPanel formulario = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		formulario.setOpaque(false);
@@ -121,27 +125,37 @@ public class RecoverPasswordFrame extends JFrame {
 		ayuda = WrappingText.muted(" ");
 		dondeConseguirlo = WrappingText.muted(" ");
 
+		// **Todas las separaciones de esta columna son rangos, no números.** Es el
+		// formulario con más aire de la aplicación —diez bloques apilados— y por eso
+		// era el que más se pasaba: 908 puntos pedidos contra 672 disponibles, de los
+		// que 360 eran hueco. Declarados así, el hueco es el del diseño mientras hay
+		// sitio y se reparte el recorte cuando no lo hay, en vez de dejar el botón
+		// "Cambiar contraseña" por debajo del borde de la ventana.
 		formulario.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA),
-				"w 56!, h 56!, gapbottom " + Space.MD);
+				"w 56!, h 56!, gapbottom " + Space.aire(Space.MD));
 		formulario.add(superTitulo);
-		formulario.add(titulo, "gaptop " + Space.XXS + ", gapbottom " + Space.XS);
-		formulario.add(ayuda, "gapbottom " + Space.XS);
-		formulario.add(dondeConseguirlo, "gapbottom " + Space.XL);
+		formulario.add(titulo, "gaptop " + Space.XXS + ", gapbottom " + Space.aire(Space.XS));
+		formulario.add(ayuda, "gapbottom " + Space.aire(Space.XS));
+		formulario.add(dondeConseguirlo, "gapbottom " + Space.aire(Space.XL));
 
-		usuario = Field.text(" ");
-		formulario.add(usuario, "gapbottom " + Space.SM);
+		formulario.add(usuarioYPeticion(), "gapbottom " + Space.aire(Space.XXL));
 
-		pedirCodigo = Buttons.secondary(" ", e -> pedirCodigo());
-		formulario.add(pedirCodigo, "gapbottom " + Space.XXL);
+		// **El código y la contraseña nueva comparten fila**, y no solo por alto: son
+		// el segundo paso, y los dos campos que se rellenan a la vez con el correo
+		// delante. Apilados parecían dos pasos más de una lista de cinco.
+		JPanel paso2 = new JPanel(new MigLayout(Space.insets(0), "[grow,fill]" + Space.MD + "[grow,fill]", "[]"));
+		paso2.setOpaque(false);
 
 		codigo = Field.text(" ");
-		formulario.add(codigo, "gapbottom " + Space.MD);
-
 		nuevaContrasena = Field.password(" ");
-		formulario.add(nuevaContrasena, "gapbottom " + Space.MD);
+
+		paso2.add(codigo);
+		paso2.add(nuevaContrasena);
+
+		formulario.add(paso2, "gapbottom " + Space.aire(Space.MD));
 
 		error = Labels.error(" ");
-		formulario.add(error, "gapbottom " + Space.SM);
+		formulario.add(error, "gapbottom " + Space.aire(Space.SM));
 
 		formulario.add(acciones());
 
@@ -154,6 +168,39 @@ public class RecoverPasswordFrame extends JFrame {
 		setContentPane(raiz);
 
 		Foco.alPulsarEscape(this, () -> navigator.ir(LoginFrame.class));
+	}
+
+	/**
+	 * El usuario y el botón que pide su código, en la misma fila.
+	 *
+	 * <p>
+	 * <b>Estaban apilados, y eso costaba una fila entera de alto en la pantalla más
+	 * alta de la aplicación</b> — la que se pasaba de la ventana de un portátil al
+	 * 150 %. Pero el motivo para juntarlos no es solo ese: el botón <em>opera sobre
+	 * el campo</em>, no sobre el formulario. Debajo se leía como un paso más de la
+	 * secuencia; al lado se lee como lo que es, la acción de ese campo. Es la misma
+	 * disposición que ya usa el buscador por código del intercambio.
+	 *
+	 * <p>
+	 * El {@code gaptop} del botón no es un número al azar: alinea su caja con la del
+	 * campo, que lleva su etiqueta en versalita encima. Sin él, el botón se pega
+	 * arriba y queda a la altura del rótulo en vez de a la del cuadro de texto.
+	 */
+	private JPanel usuarioYPeticion() {
+
+		// "hidemode 3": sin servidor de correo el botón no existe (ver actualizarTextos)
+		// y sin esto seguiría reservando su ancho, dejando el campo de usuario corto por
+		// un botón que nadie ve.
+		JPanel panel = new JPanel(new MigLayout("hidemode 3, " + Space.insets(0), "[grow,fill]" + Space.MD + "[]", "[]"));
+		panel.setOpaque(false);
+
+		usuario = Field.text(" ");
+		panel.add(usuario);
+
+		pedirCodigo = Buttons.secondary(" ", e -> pedirCodigo());
+		panel.add(pedirCodigo, "height " + Typography.altoDeControl() + "!, gaptop 18");
+
+		return panel;
 	}
 
 	private JPanel acciones() {

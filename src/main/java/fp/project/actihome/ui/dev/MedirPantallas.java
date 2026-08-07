@@ -80,6 +80,22 @@ import fp.project.actihome.ui.theme.Animacion;
  * está la barra. Se miden igual, pero solo se informa.</li>
  * </ul>
  *
+ * <h2>Mide el mínimo, no el preferido, y esa es la tercera versión</h2>
+ *
+ * <p>
+ * La pregunta que hay que contestar no es «¿ocupa la pantalla más de lo que hay?»
+ * sino <b>«¿aparece la barra de desplazamiento?»</b>, y desde que
+ * {@link fp.project.actihome.ui.components.Rescate} aprieta el aire antes de sacar
+ * la barra, esas dos preguntas ya no tienen la misma respuesta. Una pantalla puede
+ * preferir 780 puntos, apretar hasta 640 y caber sin barra en 672.
+ *
+ * <p>
+ * Se imprimen las dos cifras a propósito. El <b>mínimo</b> es el que aprueba o
+ * suspende; el <b>ideal</b> dice cuánto aire hay que ceder para llegar hasta él, y
+ * una pantalla que sistemáticamente se ve apretada en los tres tamaños está
+ * pidiendo menos contenido, no más rangos. Quedarse solo con el mínimo escondería
+ * eso.
+ *
  * <p>
  * Devuelve código de salida distinto de cero si alguna pantalla de tarea no
  * cabe, así que sirve tal cual como comprobación automática.
@@ -166,7 +182,7 @@ public final class MedirPantallas {
 
 				System.out.println();
 				System.out.println("=== " + objetivo.nombre + "  (" + objetivo.descripcion + ") ===");
-				System.out.printf("%-22s %8s %8s  %s%n", "pantalla", "necesita", "cabe en", "");
+				System.out.printf("%-22s %8s %8s %8s  %s%n", "pantalla", "ideal", "apretado", "cabe en", "");
 
 				for (Pantalla pantalla : pantallas) {
 
@@ -178,6 +194,10 @@ public final class MedirPantallas {
 						fallos++;
 					}
 				}
+			}
+
+			if (!autocontrol(pantallas.get(0))) {
+				fallos++;
 			}
 		}
 
@@ -221,12 +241,52 @@ public final class MedirPantallas {
 		int disponible = objetivo.alto - bordes.top - bordes.bottom;
 
 		Container contenido = frame.getContentPane();
-		int necesita = contenido.getPreferredSize().height;
 
-		boolean cabe = necesita <= disponible;
+		int ideal = contenido.getPreferredSize().height;
 
-		System.out.printf("%-22s %8d %8d  %s%n", pantalla.nombre, necesita, disponible,
-				cabe ? "ok" : (pantalla.esLista ? "scroll (correcto: es una lista)" : "NO CABE, falta " + (necesita - disponible)));
+		// **El veredicto se lo da la barra, no una cuenta.** La versión anterior de
+		// esto comparaba el mínimo del panel de contenido con el alto de la ventana, y
+		// decía que las dieciocho pantallas cabían. Era falso, y de la peor manera: el
+		// JScrollPane del rescate declara mínimo cero **a propósito** —para que, cuando
+		// falta sitio, ceda él y no la cabecera— así que preguntarle su mínimo es
+		// preguntarle a quien está diseñado para contestar cero.
+		//
+		// La pregunta de verdad es «¿le sale la barra al rescate?», y eso no hay que
+		// modelarlo: la ventana ya está construida y colocada al tamaño objetivo, así
+		// que basta con mirar si la barra está visible. Un modelo puede equivocarse;
+		// la barra es el hecho.
+		JScrollPane rescate = buscarRescate(contenido);
+
+		boolean cabe = rescate == null || !rescate.getVerticalScrollBar().isVisible();
+
+		// **El alto de ventana por debajo del cual sale la barra**, medido y no
+		// estimado. Como la ventana ya está al tamaño objetivo y el contenido no cabe,
+		// todo lo que rodea al rescate está ya apretado a su mínimo; así que lo que
+		// ocupa ese marco es exactamente lo que le falta al visor para llegar al alto
+		// disponible. Sumarle el mínimo del contenido da el alto exacto.
+		//
+		// El primer intento restaba el preferido del rescate al preferido de la
+		// pantalla, y eso cargaba en la cuenta un margen que sí cede: daba "falta 114"
+		// donde faltaban 32.
+		int apretado = ideal;
+
+		if (rescate != null) {
+
+			Component vista = rescate.getViewport().getView();
+			int marco = disponible - rescate.getViewport().getHeight();
+
+			apretado = marco + vista.getMinimumSize().height;
+		}
+
+		// La columna "apretado" solo se imprime cuando el contenido está de verdad
+		// apretado. Si la pantalla cabe holgada, el marco no está en su mínimo y esa
+		// cuenta daría un número mayor que el ideal, que es un absurdo que invita a no
+		// leer la tabla.
+		System.out.printf("%-22s %8d %8s %8d  %s%n", pantalla.nombre, ideal,
+				ideal <= disponible ? "-" : String.valueOf(apretado), disponible,
+				cabe ? (ideal <= disponible ? "ok" : "ok, apretando " + (ideal - disponible))
+						: (pantalla.esLista ? "scroll (correcto: es una lista)"
+								: "NO CABE, falta " + Math.max(1, apretado - disponible)));
 
 		if (!cabe && !pantalla.esLista) {
 			desglosar(contenido, 0);
@@ -235,6 +295,76 @@ public final class MedirPantallas {
 		frame.setVisible(false);
 
 		return cabe || pantalla.esLista;
+	}
+
+	/**
+	 * Comprueba que la herramienta sabe fallar.
+	 *
+	 * <p>
+	 * <b>A 420×300 no cabe nada, así que la barra de rescate tiene que salir.</b> Si
+	 * también ahí dice que todo va bien, es que no está detectando nada y su "todas
+	 * caben" no vale como prueba. Este proyecto ya se comió esa lección tres veces
+	 * con {@code MedirResponsive} —y una cuarta hace diez minutos con esta misma
+	 * clase, que dio las dieciocho por buenas midiendo un mínimo que siempre valía
+	 * cero—, así que el autocontrol va dentro y no en un comentario.
+	 *
+	 * @return {@code true} si la herramienta se ha quejado, que es lo que se espera
+	 */
+	private static boolean autocontrol(Pantalla pantalla) throws Exception {
+
+		JFrame frame = pantalla.frame;
+
+		frame.setSize(420, 300);
+		frame.setLocation(-20000, -20000);
+		frame.setVisible(true);
+
+		Thread.sleep(120);
+		frame.validate();
+
+		JScrollPane rescate = buscarRescate(frame.getContentPane());
+		boolean seQueja = rescate != null && rescate.getVerticalScrollBar().isVisible();
+
+		frame.setVisible(false);
+
+		System.out.println();
+		System.out.println("autocontrol (" + pantalla.nombre + " a 420x300): "
+				+ (seQueja ? "la barra aparece, el detector detecta"
+						: "LA BARRA NO APARECE — el detector esta ciego y su resultado no vale"));
+
+		return seQueja;
+	}
+
+	/**
+	 * El {@link fp.project.actihome.ui.components.Rescate} de la pantalla, si lo
+	 * tiene.
+	 *
+	 * <p>
+	 * Se busca por la marca que pone {@code Rescate} y no por ser un
+	 * {@code JScrollPane}, porque hay dos clases de scroll en esta aplicación y solo
+	 * una es un fallo: el de una lista es correcto —para eso está— y el de rescate
+	 * no debería aparecer nunca en una ventana de tamaño real.
+	 */
+	private static JScrollPane buscarRescate(Container contenedor) {
+
+		for (Component hijo : contenedor.getComponents()) {
+
+			if (hijo instanceof JScrollPane
+					&& Boolean.TRUE.equals(((JScrollPane) hijo).getClientProperty(fp.project.actihome.ui.components.Rescate.MARCA))) {
+
+				return (JScrollPane) hijo;
+			}
+
+			if (hijo instanceof Container) {
+
+				JScrollPane encontrado = buscarRescate((Container) hijo);
+
+				if (encontrado != null) {
+					return encontrado;
+				}
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -267,10 +397,14 @@ public final class MedirPantallas {
 				continue;
 			}
 
-			int alto = hijo.getPreferredSize().height;
-			total += alto;
+			total += hijo.getPreferredSize().height;
 
-			if (masAlto == null || alto > masAlto.getPreferredSize().height) {
+			// **Se sigue al de mayor preferido, no al de mayor mínimo**, aunque lo que
+			// decide el veredicto sea el mínimo. Y el motivo es el mismo scroll de rescate
+			// de siempre: declara mínimo cero, así que por mínimo el bloque "más grande"
+			// de media aplicación acaba siendo la cabecera de 72 puntos y el desglose se
+			// para justo antes de entrar donde está el problema.
+			if (masAlto == null || hijo.getPreferredSize().height > masAlto.getPreferredSize().height) {
 				masAlto = hijo;
 			}
 		}
@@ -287,16 +421,21 @@ public final class MedirPantallas {
 				continue;
 			}
 
-			int alto = hijo.getPreferredSize().height;
+			int ideal = hijo.getPreferredSize().height;
+			int apretado = hijo.getMinimumSize().height;
 
 			// Los bloques de menos de 24 puntos no explican nada y llenan la salida de
 			// ruido: separadores, etiquetas sueltas, hairlines.
-			if (alto < 24) {
+			if (ideal < 24 && apretado < 24) {
 				continue;
 			}
 
-			System.out.printf("%s%-30s %5d%s%n", sangria, nombrar(hijo), alto,
-					hijo == masAlto && contenedor.getComponentCount() > 1 ? "   <-- el mas alto" : "");
+			// **Las dos cifras juntas, porque la interesante es la diferencia.** Un bloque
+			// de 140/70 no es un problema: ya sabe ceder la mitad. Uno de 140/140 es el que
+			// hay que mirar, porque cuando la ventana se queda corta ese alto se lo van a
+			// tener que quitar los demás.
+			System.out.printf("%s%-30s %5d %5d%s%n", sangria, nombrar(hijo), ideal, apretado,
+					hijo == masAlto && contenedor.getComponentCount() > 1 ? "   <-- el que menos cede" : "");
 		}
 
 		// **Al llegar a un JScrollPane se entra en su contenido, no se para.** Es lo

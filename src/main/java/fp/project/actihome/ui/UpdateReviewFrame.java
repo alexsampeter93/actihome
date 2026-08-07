@@ -63,6 +63,14 @@ public class UpdateReviewFrame extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * El tope de ancho del formulario: las dos columnas de {@code ReviewForm} más su
+	 * separación. Con Layout.FORMULARIO (440) no cabían dos y {@code Columnas} las
+	 * apilaba siempre, que es justo lo que se venía a evitar.
+	 */
+	private static final int ANCHO_DEL_FORMULARIO = 780;
+
+
 	private final transient ReviewService reviewService;
 	private final transient SessionManager sessionManager;
 	private final transient Navigator navigator;
@@ -110,14 +118,15 @@ public class UpdateReviewFrame extends JFrame {
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[grow,fill]"));
 
-		JPanel exterior = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.GIANT), "[grow,fill]",
-				"[]" + Space.XL + "[]" + Space.LG + "[]" + Space.XL + "[]"));
+		JPanel exterior = new JPanel(new MigLayout("wrap 1, " + Space.insetsLaterales(Space.GIANT, Space.GIANT),
+				"[grow,fill]", Space.margen(Space.GIANT) + "[]" + Space.aire(Space.XL) + "[]" + Space.aire(Space.LG)
+						+ "[]" + Space.aire(Space.XL) + "[]" + Space.margen(Space.GIANT)));
 		exterior.setOpaque(false);
 
 		exterior.add(cabecera(), Layout.ancho(Layout.FORMULARIO) + ", alignx center");
 
 		formulario = new ReviewForm();
-		exterior.add(formulario, Layout.ancho(Layout.FORMULARIO) + ", alignx center");
+		exterior.add(formulario, Layout.ancho(ANCHO_DEL_FORMULARIO) + ", alignx center");
 
 		error = Labels.error(" ");
 		exterior.add(error, Layout.ancho(Layout.FORMULARIO) + ", alignx center");

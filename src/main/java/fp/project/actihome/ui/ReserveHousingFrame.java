@@ -32,6 +32,7 @@ import fp.project.actihome.model.exceptions.WrongCreditCardNumberException;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.ReservationService;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Columnas;
 import fp.project.actihome.ui.components.CalendarioRango;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Foco;
@@ -197,7 +198,8 @@ public class ReserveHousingFrame extends JFrame {
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[grow,fill]"));
 
-		JPanel exterior = new JPanel(new MigLayout(Space.insets(Space.GIANT), "[grow]", "[grow]"));
+		JPanel exterior = new JPanel(new MigLayout(Space.insetsLaterales(Space.GIANT, Space.GIANT), "[grow]",
+				Space.margen(Space.GIANT) + "[grow]" + Space.margen(Space.GIANT)));
 		exterior.setOpaque(false);
 
 		// El ancho ya no es Layout.FORMULARIO (440): el calendario de dos meses
@@ -205,7 +207,11 @@ public class ReserveHousingFrame extends JFrame {
 		// excepción que el propio sistema de diseño prevé para rejillas ("las
 		// rejillas sí crecen"). El campo de tarjeta, que sí es texto, mantiene su
 		// ancho cómodo de lectura por su cuenta, en formulario().
-		exterior.add(formulario(), Layout.ancho(CalendarioRango.ANCHO_PREFERIDO) + ", aligny center, alignx center");
+		// El tope es el de las dos columnas juntas. El mínimo lo pone Columnas, que por
+		// debajo de ese ancho las apila en vez de desbordar.
+		exterior.add(formulario(),
+				Layout.anchoCentrado(CalendarioRango.ANCHO_PREFERIDO + Space.XXL + Layout.FORMULARIO)
+						+ ", aligny center");
 
 		raiz.add(Rescate.envolver(exterior), "grow");
 
@@ -214,24 +220,56 @@ public class ReserveHousingFrame extends JFrame {
 		Foco.alPulsarEscape(this, this::volver);
 	}
 
+	/**
+	 * Cabecera arriba y, debajo, las fechas a la izquierda y el pago a la derecha.
+	 *
+	 * <p>
+	 * <b>Iba todo en una columna y pedía 1104 puntos</b>, con lo que en un portátil
+	 * el botón "Confirmar" quedaba por debajo del borde: no cortado, inalcanzable.
+	 * El calendario de dos meses solo ya son 301, y sumarle debajo cuatro campos de
+	 * tarjeta era irrecuperable por mucho aire que se cediera.
+	 *
+	 * <p>
+	 * El corte es el de cualquier reserva de verdad: <b>cuándo</b> a un lado,
+	 * <b>cómo se paga</b> al otro, con el total y el botón al pie de la segunda
+	 * columna, que es donde termina de leerse. Y las dos partes son independientes
+	 * —se puede elegir las fechas antes o después de escribir la tarjeta— así que
+	 * ponerlas en paralelo no rompe ninguna secuencia.
+	 */
 	private JPanel formulario() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
-				"[]" + Space.XXL + "[]" + Space.LG + "[]" + Space.LG + "[]" + Space.SM + "[]" + Space.XL + "[]"
-						+ Space.SM + "[]" + Space.XL + "[]"));
+				"[]" + Space.aire(Space.XXL) + "[]"));
 		panel.setOpaque(false);
 
 		panel.add(cabecera());
-		panel.add(campoFechas());
-		panel.add(campoPago());
+
+		// **Las dos columnas se apilan solas cuando no caben.** El calendario pide 608
+		// puntos que no se negocian —son dos meses de celdas de 36— y el pago otros
+		// tantos: juntos no entran en una ventana de 1024, que es el mínimo del
+		// sistema. Columnas lo resuelve sin umbrales: los pone en paralelo donde caben
+		// y uno debajo del otro donde no, que allí es lo correcto aunque haya que
+		// desplazarse.
+		Columnas columnas = new Columnas(Layout.FORMULARIO, Space.XXL);
+
+		columnas.add(campoFechas());
+
+		JPanel pago = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
+				"[]" + Space.aire(Space.XL) + "[]" + Space.aire(Space.SM) + "[]" + Space.aire(Space.XL) + "[]"));
+		pago.setOpaque(false);
+
+		pago.add(campoPago());
 
 		resumen = Labels.body(" ");
-		panel.add(resumen);
+		pago.add(resumen);
 
 		error = Labels.error(" ");
-		panel.add(error);
+		pago.add(error);
 
-		panel.add(acciones());
+		pago.add(acciones());
+
+		columnas.add(pago);
+		panel.add(columnas);
 
 		return panel;
 	}

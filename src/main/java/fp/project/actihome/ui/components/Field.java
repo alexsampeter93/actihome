@@ -56,10 +56,16 @@ public class Field extends JPanel {
 	 * cortado por arriba y por abajo.
 	 */
 	private Field(String etiqueta, JTextComponent input) {
-		this(etiqueta, input, Typography.altoDeControl());
+		this(etiqueta, input, String.valueOf(Typography.altoDeControl()) + "!");
 	}
 
-	private Field(String etiqueta, JTextComponent input, int alto) {
+	/**
+	 * @param alto restricción de alto de MigLayout para la caja. Un campo de una
+	 *             línea la recibe como {@code "44!"} —exacta, porque encoger la caja
+	 *             de un {@code JTextField} corta el texto por arriba y por abajo— y
+	 *             un área de varias líneas como un rango, porque esa sí puede ceder
+	 */
+	private Field(String etiqueta, JTextComponent input, String alto) {
 
 		super(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 
@@ -76,7 +82,7 @@ public class Field extends JPanel {
 		// El resto de campos son de una línea y no las necesitan.
 		JComponent visible = input instanceof JTextArea ? new JScrollPane(input) : (JComponent) input;
 
-		add(visible, "gaptop " + Space.XXS + ", height " + alto + "!");
+		add(visible, "gaptop " + Space.XXS + ", height " + alto);
 	}
 
 	/** Campo de texto normal. */
@@ -128,6 +134,19 @@ public class Field extends JPanel {
 	 * caja mide siempre lo mismo <em>en líneas de texto</em>, que es la unidad en la
 	 * que uno piensa cuando decide cuánto debe caber.
 	 *
+	 * <p>
+	 * <b>Y ese alto es negociable, a diferencia del de un campo de una línea.</b> La
+	 * diferencia no es de criterio, es de qué pasa al encoger: una caja de una línea
+	 * más baja que su fuente corta el texto por arriba y por abajo —no hay nada que
+	 * hacer con lo que sobra—, mientras que un área ya lleva su propio
+	 * {@code JScrollPane} dentro, así que quitarle una línea de alto no esconde nada:
+	 * lo desplaza. Por eso aquí se declara un rango y allí un {@code !}.
+	 *
+	 * <p>
+	 * El suelo son dos líneas. Con una, el área deja de parecer un sitio donde
+	 * escribir un párrafo y se lee como un campo normal, que es engañar sobre lo que
+	 * se espera de quien lo rellena.
+	 *
 	 * @param lineas cuántas líneas de texto deben verse sin desplazar
 	 */
 	public static Field textArea(String etiqueta, int lineas) {
@@ -139,8 +158,12 @@ public class Field extends JPanel {
 		area.setFont(Typography.sans(Typography.BODY));
 
 		int altoDeLinea = area.getFontMetrics(area.getFont()).getHeight();
+		int relleno = Space.XS * 2 + 2;
 
-		return new Field(etiqueta, area, lineas * altoDeLinea + Space.XS * 2 + 2);
+		int alto = lineas * altoDeLinea + relleno;
+		int minimo = Math.min(alto, 2 * altoDeLinea + relleno);
+
+		return new Field(etiqueta, area, minimo + ":" + alto + ":" + alto);
 	}
 
 	public String getText() {

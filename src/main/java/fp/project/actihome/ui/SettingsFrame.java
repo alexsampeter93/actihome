@@ -36,6 +36,7 @@ import fp.project.actihome.ui.catalog.CatalogFilters;
 import fp.project.actihome.ui.components.Avatar;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Card;
+import fp.project.actihome.ui.components.Columnas;
 import fp.project.actihome.ui.components.CodigoCopiable;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Interruptor;
@@ -115,6 +116,18 @@ public class SettingsFrame extends JFrame {
 
 	// Tarjeta de preferencias
 	private JLabel superTituloPreferencias;
+	private JLabel superTituloAdministracion;
+	private Card tarjetaAdministracion;
+
+	/**
+	 * Lo que necesita una tarjeta de ajustes para leerse bien.
+	 *
+	 * <p>
+	 * Sale de la más exigente de las tres: la de datos personales, que lleva sus
+	 * seis campos a dos columnas dentro y su relleno de tarjeta a los lados. Por
+	 * debajo de esto, "Nombre" y "Apellido" quedan en dos cajas de cien puntos.
+	 */
+	private static final int ANCHO_COMODO_DE_TARJETA = 360;
 	private JLabel etiquetaEstacion;
 	private JComboBox<Season> estacion;
 	private JLabel etiquetaParticulas;
@@ -178,9 +191,18 @@ public class SettingsFrame extends JFrame {
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));
 
-		JPanel exterior = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.GIANT), "[grow]", "[grow]"));
+		JPanel exterior = new JPanel(new MigLayout("wrap 1, " + Space.insetsLaterales(Space.GIANT, Space.GIANT),
+				"[grow]", Space.margen(Space.GIANT) + "[grow]" + Space.margen(Space.GIANT)));
 		exterior.setOpaque(false);
-		exterior.add(formulario(), Layout.ancho(Layout.CONTENIDO) + ", aligny center, alignx center");
+		// **Más ancho que Layout.CONTENIDO, y es la excepción que el propio sistema
+		// prevé.** La regla dice que el espacio sobrante se queda como margen porque un
+		// campo de texto muy ancho se lee peor; pero aquí no hay un bloque que se
+		// ensanche, hay tres tarjetas que se reparten el ancho, y con 940 puntos cada
+		// una se queda en 300 — un campo de nombre de 230 puntos dentro de una tarjeta
+		// a dos columnas. Es el mismo caso que las listas y las rejillas: cuando el
+		// ancho de más se convierte en más columnas y no en columnas más largas, sí se
+		// aprovecha.
+		exterior.add(formulario(), Layout.ancho(1240) + ", aligny center, alignx center");
 
 		raiz.add(headerPanel, "growx");
 		raiz.add(Rescate.envolver(exterior), "grow");
@@ -208,11 +230,28 @@ public class SettingsFrame extends JFrame {
 
 		panel.add(cabeceraDeIdentidad());
 
-		JPanel columnas = new JPanel(
-				new MigLayout(Space.insets(0), "[grow,fill]" + Space.XL + "[grow,fill]", "[grow,fill]"));
-		columnas.setOpaque(false);
-		columnas.add(tarjetaDatosPersonales(), "aligny top");
-		columnas.add(tarjetaPreferencias(), "aligny top");
+		// **Tres tarjetas, y hasta ahora eran dos.** El corte anterior —"quién eres" a
+		// la izquierda, "cómo ves la aplicación" a la derecha— dejaba la segunda con
+		// seis bloques y 963 puntos de alto frente a los 385 de la primera, y en dos
+		// columnas manda la más alta: la pantalla pedía 1394 puntos en una ventana que
+		// da 672.
+		//
+		// La tercera columna no es un troceado para que quepa, es un grupo que ya
+		// estaba ahí sin nombre: la copia de seguridad y el código de recuperación
+		// **no son preferencias de nadie**, son tareas de administración de la
+		// instalación —lo decía el propio comentario del código— y por eso solo las ve
+		// un ADMIN. Separadas, se lee para quién es cada cosa antes de leer qué hace.
+		// Tres tarjetas donde quepan tres, dos donde quepan dos: el reparto lo decide
+		// Columnas a partir del ancho, no una rejilla escrita a mano. Con tres fijas,
+		// una ventana de 1024 dejaba cada tarjeta en 300 puntos y sus campos y botones
+		// se dibujaban fuera.
+		Columnas columnas = new Columnas(ANCHO_COMODO_DE_TARJETA, Space.LG);
+
+		columnas.add(tarjetaDatosPersonales());
+		columnas.add(tarjetaPreferencias());
+
+		tarjetaAdministracion = tarjetaAdministracion();
+		columnas.add(tarjetaAdministracion);
 
 		panel.add(columnas);
 
@@ -286,22 +325,39 @@ public class SettingsFrame extends JFrame {
 		return tarjeta;
 	}
 
-	/** Tarjeta derecha: cómo se ve y se comporta la aplicación. */
+	/** Tarjeta central: cómo se ve y se comporta la aplicación. */
 	private Card tarjetaPreferencias() {
 
-		// "hidemode 3": el bloque de copia de seguridad solo se ve para ADMIN (ver
-		// precargar()), y sin esto seguiría reservando su hueco vacío para quien no
-		// lo ve.
 		Card tarjeta = new Card(new MigLayout("wrap 1, hidemode 3, " + Space.insets(Space.XL), "[grow,fill]", ""));
 
 		superTituloPreferencias = Labels.capsAccent(" ");
-		tarjeta.add(superTituloPreferencias, "gapbottom " + Space.MD);
+		tarjeta.add(superTituloPreferencias, "gapbottom " + Space.aire(Space.MD));
 
-		tarjeta.add(campoEstacion(), "gapbottom " + Space.MD);
-		tarjeta.add(campoIdioma(), "gapbottom " + Space.MD);
-		tarjeta.add(campoVistaPorDefecto(), "gapbottom " + Space.MD);
-		tarjeta.add(campoParticulas(), "gapbottom " + Space.MD);
-		tarjeta.add(campoCopiaDeSeguridad(), "gapbottom " + Space.MD);
+		tarjeta.add(campoEstacion(), "gapbottom " + Space.aire(Space.MD));
+		tarjeta.add(campoIdioma(), "gapbottom " + Space.aire(Space.MD));
+		tarjeta.add(campoVistaPorDefecto(), "gapbottom " + Space.aire(Space.MD));
+		tarjeta.add(campoParticulas());
+
+		return tarjeta;
+	}
+
+	/**
+	 * Tarjeta derecha: la instalación, no la cuenta.
+	 *
+	 * <p>
+	 * "hidemode 3" en la fila de columnas hace que desaparezca entera —sin dejar
+	 * hueco ni columna vacía— para quien no es ADMIN, en vez de enseñarse
+	 * desactivada. Es la misma decisión que ya tomaban sus dos bloques por separado;
+	 * lo que cambia es que ahora se ve <b>por qué</b> se ocultan juntos.
+	 */
+	private Card tarjetaAdministracion() {
+
+		Card tarjeta = new Card(new MigLayout("wrap 1, hidemode 3, " + Space.insets(Space.XL), "[grow,fill]", ""));
+
+		superTituloAdministracion = Labels.capsAccent(" ");
+		tarjeta.add(superTituloAdministracion, "gapbottom " + Space.aire(Space.MD));
+
+		tarjeta.add(campoCopiaDeSeguridad(), "gapbottom " + Space.aire(Space.MD));
 		tarjeta.add(campoCodigoDeRecuperacion());
 
 		return tarjeta;
@@ -666,6 +722,7 @@ public class SettingsFrame extends JFrame {
 
 		superTituloDatos.setText(Textos.t("ajustes.datosPersonales"));
 		superTituloPreferencias.setText(Textos.t("ajustes.preferencias"));
+		superTituloAdministracion.setText(Textos.t("ajustes.administracion"));
 
 		usuario.setEtiqueta(Textos.t("login.usuario"));
 		nombre.setEtiqueta(Textos.t("registro.nombre"));
@@ -719,8 +776,13 @@ public class SettingsFrame extends JFrame {
 		particulas.setEncendido(actual.isParticlesEnabled());
 		idioma.setSelectedItem(actual.getLanguage());
 		vistaPorDefecto.setActivo(actual.isDefaultGridView() ? CatalogFilters.VISTA_CUADRICULA : 0);
+		// La tarjeta entera, no sus dos bloques por separado: desde que administración
+		// es una columna propia, dejarla vacía enseñaría un marco en blanco a todo
+		// CUSTOMER. Los dos bloques siguen ocultándose porque dentro de la tarjeta
+		// puede haber más cosas algún día que sí sean para todos.
 		bloqueCopiaDeSeguridad.setVisible(actual.getRole() == RoleType.ADMIN);
 		bloqueCodigo.setVisible(actual.getRole() == RoleType.ADMIN);
+		tarjetaAdministracion.setVisible(actual.getRole() == RoleType.ADMIN);
 		resultadoCodigo.setText(" ");
 		usuarioDelCodigo.setText("");
 

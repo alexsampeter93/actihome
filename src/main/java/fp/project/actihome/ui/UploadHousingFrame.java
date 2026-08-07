@@ -61,6 +61,19 @@ public class UploadHousingFrame extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * El tope de ancho del formulario, y no es Layout.CONTENIDO.
+	 *
+	 * <p>
+	 * Es la excepción que el propio sistema prevé: la regla de acotar existe porque
+	 * un campo de texto muy ancho se lee peor, y aquí el ancho de más no alarga
+	 * ningún campo — lo convierte en <b>otra columna</b>, que es el mismo caso que
+	 * las listas y las rejillas. Con los 940 de CONTENIDO, las tres columnas del
+	 * formulario nunca cabían y {@code Columnas} lo dejaba siempre en dos, con lo
+	 * que el alto volvía a irse de la ventana.
+	 */
+	private static final int ANCHO_DEL_FORMULARIO = 1180;
+
 	private final transient HousingService housingService;
 	private final transient SessionManager sessionManager;
 	private final transient Navigator navigator;
@@ -109,14 +122,15 @@ public class UploadHousingFrame extends JFrame {
 
 		JPanel raiz = new Page(new MigLayout("wrap 1, fill, " + Space.insets(0), "[grow,fill]", "[]0[grow,fill]"));
 
-		JPanel exterior = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.XXL, Space.GIANT, Space.XXL, Space.GIANT), "[grow,fill]",
-				"[]" + Space.LG + "[]" + Space.XS + "[]" + Space.MD + "[]"));
+		JPanel exterior = new JPanel(new MigLayout("wrap 1, " + Space.insetsLaterales(Space.GIANT, Space.GIANT),
+				"[grow,fill]", Space.margen(Space.XXL) + "[]" + Space.aire(Space.LG) + "[]" + Space.aire(Space.XS) + "[]"
+						+ Space.aire(Space.MD) + "[]" + Space.margen(Space.XXL)));
 		exterior.setOpaque(false);
 
 		exterior.add(cabecera(), Layout.ancho(Layout.CONTENIDO) + ", alignx center");
 
 		formulario = new HousingForm(true, geocodingClient);
-		exterior.add(formulario, Layout.ancho(Layout.CONTENIDO) + ", alignx center");
+		exterior.add(formulario, Layout.ancho(ANCHO_DEL_FORMULARIO) + ", alignx center");
 
 		error = Labels.error(" ");
 		exterior.add(error, Layout.ancho(Layout.CONTENIDO) + ", alignx center");
