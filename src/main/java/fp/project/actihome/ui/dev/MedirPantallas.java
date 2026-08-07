@@ -10,6 +10,7 @@ import fp.project.actihome.model.services.*;
 import fp.project.actihome.ui.*;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
+import fp.project.actihome.ui.theme.Animacion;
 
 /**
  * Mide cuánto espacio necesita cada pantalla y lo compara con el área utilizable
@@ -37,6 +38,10 @@ public class MedirPantallas {
 	public static void main(String[] a) throws Exception {
 		System.setProperty("java.awt.headless","false");
 		ActiHomeTheme.install();
+
+		// Sin animaciones: una herramienta que lea un fotograma intermedio da un
+		// resultado distinto en cada ejecucion. Ver Animacion.desactivarParaHerramientas.
+		Animacion.desactivarParaHerramientas();
 		SpringApplication app = new SpringApplication(ActihomeApplication.class);
 		app.setWebApplicationType(WebApplicationType.NONE);
 		try (ConfigurableApplicationContext c = app.run(

@@ -52,6 +52,10 @@ public final class ThemeSnapshots {
 
 		ActiHomeTheme.install();
 
+		// Sin animaciones: la guia de estilo se dibuja sobre una imagen y un color a
+		// medio camino entre dos estaciones no documenta ninguna de las dos.
+		Animacion.desactivarParaHerramientas();
+
 		String prefijo = args.length > 0 ? args[0] : "guia";
 
 		for (Season estacion : Season.values()) {

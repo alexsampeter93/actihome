@@ -48,6 +48,7 @@ import fp.project.actihome.ui.UpdateReviewFrame;
 import fp.project.actihome.ui.UploadHousingFrame;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
+import fp.project.actihome.ui.theme.Animacion;
 
 /**
  * Comprueba que <b>ninguna pantalla se rompe a ningún tamaño de ventana</b>.
@@ -103,6 +104,10 @@ public class MedirResponsive {
 
 		System.setProperty("java.awt.headless", "false");
 		ActiHomeTheme.install();
+
+		// Sin animaciones: una herramienta que lea un fotograma intermedio da un
+		// resultado distinto en cada ejecucion. Ver Animacion.desactivarParaHerramientas.
+		Animacion.desactivarParaHerramientas();
 
 		SpringApplication app = new SpringApplication(ActihomeApplication.class);
 		app.setWebApplicationType(WebApplicationType.NONE);

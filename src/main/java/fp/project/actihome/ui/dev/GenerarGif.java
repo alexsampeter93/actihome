@@ -35,6 +35,7 @@ import fp.project.actihome.model.services.UserService;
 import fp.project.actihome.ui.ShowHousingsFrame;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
+import fp.project.actihome.ui.theme.Animacion;
 import fp.project.actihome.ui.theme.Season;
 import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
@@ -124,6 +125,10 @@ public final class GenerarGif {
 
 		System.setProperty("java.awt.headless", "false");
 		ActiHomeTheme.install();
+
+		// Sin animaciones: una herramienta que lea un fotograma intermedio da un
+		// resultado distinto en cada ejecucion. Ver Animacion.desactivarParaHerramientas.
+		Animacion.desactivarParaHerramientas();
 
 		// El idioma se fija DESPUÉS de install(), y esa es toda la gracia: install()
 		// llama a Preferencias.restaurar(), que lee ~/.actihome y aplica lo que el

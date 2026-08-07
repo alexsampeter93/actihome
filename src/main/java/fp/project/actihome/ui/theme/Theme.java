@@ -91,11 +91,20 @@ public final class Theme {
 	 */
 	public static Color mutSobreOscuro() {
 
-		Color base = estacion.bg();
+		Color base = bg();
 		return new Color(base.getRed(), base.getGreen(), base.getBlue(), 155);
 	}
 
 	private static Season estacion = Season.actual();
+
+	/** La estación de la que se viene mientras dura la transición. */
+	private static Season saliente;
+
+	/** Cuánto ha avanzado la transición, de 0 (saliente) a 1 (entrante). */
+	private static double avance = 1;
+
+	/** La transición viva, para cancelarla si el usuario cambia otra vez a media animación. */
+	private static javax.swing.Timer transicion;
 
 	/**
 	 * Lista de oyentes. Se usa {@link CopyOnWriteArrayList} porque un oyente puede
@@ -122,11 +131,70 @@ public final class Theme {
 			return;
 		}
 
+		// La estación anterior se guarda para poder mezclar los colores durante la
+		// transición. La nueva pasa a ser la activa DE INMEDIATO: lo que se difumina es
+		// el color, no la lógica. Un componente que pregunta "¿qué estación es?" para
+		// elegir la pose de la mascota o la frase editorial debe recibir ya la nueva —
+		// una mascota a medio camino entre dos ilustraciones no existe.
+		saliente = estacion;
 		estacion = nueva;
+		avance = 0;
 
 		for (Consumer<Season> oyente : oyentes) {
 			oyente.accept(estacion);
 		}
+
+		Animacion.cancelar(transicion);
+		transicion = Animacion.animar(new javax.swing.JPanel(), 0, 1, Animacion.AMBIENTE, v -> {
+			avance = v;
+			repintarTodo();
+		});
+	}
+
+	/**
+	 * Repinta todas las ventanas visibles.
+	 *
+	 * <p>
+	 * <b>Hace falta porque la transición no la dispara nadie desde dentro.</b> Los
+	 * componentes de este sistema no guardan su color, lo piden al pintar — que es
+	 * justo lo que hace que la mezcla funcione sin tocar ni una de las dieciocho
+	 * pantallas—, pero eso también significa que <em>nadie sabe</em> que el color ha
+	 * cambiado y por tanto nadie se repinta solo. El aviso tiene que venir de aquí.
+	 *
+	 * <p>
+	 * Se recorren las ventanas de AWT en vez de guardar una lista propia: la lista
+	 * habría que mantenerla al día y sería una segunda fuente de fugas, exactamente
+	 * el problema que ya obliga a dar de baja los oyentes.
+	 */
+	private static void repintarTodo() {
+
+		for (java.awt.Window ventana : java.awt.Window.getWindows()) {
+
+			if (ventana.isVisible()) {
+				ventana.repaint();
+			}
+		}
+	}
+
+	/**
+	 * Mezcla el color de la estación saliente con el de la entrante según lo
+	 * avanzada que esté la transición.
+	 *
+	 * <p>
+	 * <b>Aquí está toda la animación de ambiente de la aplicación, en cinco
+	 * líneas.</b> Como ningún componente guarda su color —lo pide en cada pintado—,
+	 * basta con que estos atajos devuelvan un valor intermedio para que las
+	 * dieciocho pantallas, las partículas, la cabecera y hasta el velo sobre las
+	 * fotos se fundan a la vez. Es el rendimiento de haber seguido la regla "el
+	 * color no se guarda, se resuelve al pintar" durante ocho fases sin excepciones.
+	 */
+	private static Color enTransicion(java.util.function.Function<Season, Color> token) {
+
+		if (saliente == null || avance >= 1) {
+			return token.apply(estacion);
+		}
+
+		return Animacion.mezclar(token.apply(saliente), token.apply(estacion), avance);
 	}
 
 	/**
@@ -153,15 +221,24 @@ public final class Theme {
 	// --- Atajos de lectura, para no escribir Theme.estacion().acc() por todas partes ---
 
 	public static Color acc() {
-		return estacion.acc();
+		return enTransicion(Season::acc);
 	}
 
 	/** Acento para texto sobre fondo claro. Ver {@link Season#accText()}. */
 	public static Color accText() {
-		return estacion.accText();
+		return enTransicion(Season::accText);
 	}
 
-	/** Color de las partículas de la estación. Ver {@link Season#particula()}. */
+	/**
+	 * Color de las partículas de la estación. Ver {@link Season#particula()}.
+	 *
+	 * <p>
+	 * <b>Este NO se mezcla</b>, y es la única excepción. Las partículas se sustituyen
+	 * en el mismo momento —un copo deja de ser un copo y pasa a ser un pétalo— así que
+	 * teñir los pétalos nuevos con el lila de la nieve durante un cuarto de segundo no
+	 * suaviza nada: pinta una forma con el color de otra. Lo que se funde es el
+	 * ambiente; lo que se sustituye, se sustituye.
+	 */
 	public static Color particula() {
 		return estacion.particula();
 	}
@@ -181,30 +258,30 @@ public final class Theme {
 	 * habría actualizado.
 	 */
 	public static Color onAccent() {
-		return estacion == Season.VERANO ? estacion.txt() : Color.WHITE;
+		return enTransicion(s -> s == Season.VERANO ? s.txt() : Color.WHITE);
 	}
 
 	public static Color bg() {
-		return estacion.bg();
+		return enTransicion(Season::bg);
 	}
 
 	public static Color hdr() {
-		return estacion.hdr();
+		return enTransicion(Season::hdr);
 	}
 
 	public static Color txt() {
-		return estacion.txt();
+		return enTransicion(Season::txt);
 	}
 
 	public static Color mut() {
-		return estacion.mut();
+		return enTransicion(Season::mut);
 	}
 
 	public static Color img() {
-		return estacion.img();
+		return enTransicion(Season::img);
 	}
 
 	public static Color imgTint() {
-		return estacion.imgTint();
+		return enTransicion(Season::imgTint);
 	}
 }

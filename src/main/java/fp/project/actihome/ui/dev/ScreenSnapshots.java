@@ -52,6 +52,7 @@ import fp.project.actihome.ui.UpdateReviewFrame;
 import fp.project.actihome.ui.components.Segmented;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
+import fp.project.actihome.ui.theme.Animacion;
 import fp.project.actihome.ui.theme.Season;
 import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
@@ -118,6 +119,10 @@ public final class ScreenSnapshots {
 
 		System.setProperty("java.awt.headless", "false");
 		ActiHomeTheme.install();
+
+		// Sin animaciones: una herramienta que lea un fotograma intermedio da un
+		// resultado distinto en cada ejecucion. Ver Animacion.desactivarParaHerramientas.
+		Animacion.desactivarParaHerramientas();
 
 		// El idioma se fija a mano, y va DESPUÉS de install() a propósito: install()
 		// llama a Preferencias.restaurar(), que aplica lo que el dueño de la máquina
