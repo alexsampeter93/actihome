@@ -1,5 +1,6 @@
 package fp.project.actihome.ui.components;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Graphics;
@@ -13,6 +14,7 @@ import javax.swing.Timer;
 
 import fp.project.actihome.ui.theme.Animacion;
 import fp.project.actihome.ui.theme.Space;
+import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
@@ -61,6 +63,31 @@ import fp.project.actihome.ui.theme.Typography;
  * <b>Las esquinas rectas no son una decisión de gusto.</b> Un radio de 4 sobre
  * un botón de 44 de alto es un gesto tan pequeño que no se lee como intención,
  * solo como "lo que traía el tema por defecto". Cero se lee como una decisión.
+ *
+ * <h2>La etiqueta en versalita, que era lo que más delataba</h2>
+ *
+ * <p>
+ * <b>Los botones eran el único sitio del sistema con texto en caja baja.</b> El
+ * handoff pide versalita con {@code letter-spacing} para toda etiqueta pequeña, y
+ * así están los rótulos de campo, los chips, las estadísticas y las miguitas. Los
+ * botones se quedaron con una sans normal a 13 puntos — que es, exactamente, la
+ * etiqueta que trae por defecto cualquier framework. Un sistema editorial con
+ * botones de framework se contradice en el elemento que más veces se mira.
+ *
+ * <p>
+ * El cambio no es solo de aspecto: la versalita <b>separa lo que es una acción de
+ * lo que es una frase</b>. "Confirmar reserva" en caja baja compite con el texto
+ * que tiene alrededor; "CONFIRMAR RESERVA" espaciada se lee como un rótulo, que es
+ * lo que es. Va a 12 puntos y no a 13 a propósito: en caja alta, un cuerpo menor
+ * ocupa un ancho parecido, así que las pantallas no cambian de tamaño por esto.
+ *
+ * <h2>La pulsación es física</h2>
+ *
+ * <p>
+ * Al pulsar, el contenido <b>baja un punto</b> y el filete se apoya en el borde.
+ * No cambia de color ni se oscurece un tono: se hunde. Es lo que hace un sello al
+ * apoyarse, y cuesta un {@code translate} — la diferencia entre un control que
+ * acusa el clic y uno que solo cambia de tinta.
  *
  * <h2>El enlace subrayado</h2>
  *
@@ -117,6 +144,18 @@ public final class Buttons {
 		/** Separación del filete respecto al borde, en reposo. */
 		private static final int GRABADO = 3;
 
+		/**
+		 * Cuerpo de la etiqueta de los botones con caja.
+		 *
+		 * <p>
+		 * Doce y no trece, aunque ahora vaya en mayúsculas: en caja alta cada letra es
+		 * más ancha, así que bajar un punto deja el rótulo ocupando aproximadamente lo
+		 * mismo que ocupaba en caja baja. Es lo que permite cambiar la tipografía de los
+		 * botones sin que ninguna pantalla necesite otra vez más ancho — que acababa de
+		 * costar dos días de ajuste.
+		 */
+		private static final float CUERPO_DE_ROTULO = 12f;
+
 		private final transient Estilo estilo;
 
 		/**
@@ -151,10 +190,18 @@ public final class Buttons {
 
 			boolean esEnlace = estilo == Estilo.ENLACE || estilo == Estilo.ENLACE_ACENTO;
 
-			setFont(esEnlace ? Typography.sansSemiBold(Typography.BODY_SM) : Typography.sansSemiBold(13f));
+			// Versalita con tracking en los botones con caja; caja baja en los enlaces.
+			// La diferencia no es estética: un enlace es texto que va dentro de una frase
+			// y debe leerse como texto, mientras que un botón es un rótulo.
+			setFont(esEnlace ? Typography.sansSemiBold(Typography.BODY_SM) : Typography.label(CUERPO_DE_ROTULO));
 			setBorder(esEnlace
 					? BorderFactory.createEmptyBorder(Space.XXS, 0, Space.XXS, 0)
 					: BorderFactory.createEmptyBorder(Space.SM, Space.XL, Space.SM, Space.XL));
+
+			// El texto ya se fijó en el constructor de JButton, antes de que existiera
+			// "estilo", así que se vuelve a fijar ahora para que pase por el filtro de
+			// mayúsculas de setText.
+			setText(texto);
 
 			// Se escucha el MODELO y no el ratón directamente. Es lo correcto y además
 			// resuelve gratis un caso que con MouseListener habría que programar aparte:
@@ -176,6 +223,36 @@ public final class Buttons {
 
 			Animacion.cancelar(animacion);
 			animacion = Animacion.animar(this, encendido, encima ? 1 : 0, Animacion.CONTROL, v -> encendido = v);
+		}
+
+		/**
+		 * Pone el rótulo en mayúsculas, salvo en los enlaces.
+		 *
+		 * <p>
+		 * Se hace aquí y no en cada llamada por dos motivos. Uno, que hay setenta y
+		 * tantas llamadas y una que se olvidara rompería la uniformidad justo donde más
+		 * se nota. Y dos, y más importante, que <b>el texto se vuelve a fijar cada vez
+		 * que cambia el idioma</b> ({@code actualizarTextos()} en cada pantalla): un
+		 * {@code toUpperCase} en la llamada solo funcionaría hasta que alguien cambiara
+		 * a inglés.
+		 *
+		 * <p>
+		 * Con el {@code Locale} activo y no con el de la máquina, que en turco
+		 * convierte la "i" en "İ" y dejaría los botones con una letra que nadie escribió.
+		 */
+		@Override
+		public void setText(String texto) {
+
+			boolean esEnlace = estilo == Estilo.ENLACE || estilo == Estilo.ENLACE_ACENTO;
+
+			// estilo es null la primera vez: JButton fija el texto en su constructor,
+			// antes de que esta clase haya asignado nada.
+			if (estilo == null || esEnlace || texto == null) {
+				super.setText(texto);
+				return;
+			}
+
+			super.setText(texto.toUpperCase(Textos.idioma()));
 		}
 
 		@Override
@@ -220,6 +297,18 @@ public final class Buttons {
 			}
 
 			g2.dispose();
+
+			// **El rótulo baja un punto al pulsar.** Es la mitad del gesto: el fondo ya se
+			// ha pintado con el filete apoyado en el borde, y mover ahora el texto es lo
+			// que convierte las dos cosas en un bloque que se hunde. Se desplaza el
+			// Graphics que recibe JButton, no el nuestro, porque la etiqueta la dibuja él.
+			if (pulsado) {
+				g.translate(0, 1);
+				super.paintComponent(g);
+				g.translate(0, -1);
+				return;
+			}
+
 			super.paintComponent(g);
 		}
 
@@ -236,19 +325,37 @@ public final class Buttons {
 			pintarFilete(g2, ancho, alto);
 		}
 
-		/** Contorno exterior y el mismo filete por dentro, sin relleno. */
+		/**
+		 * Escuadras de imprenta que se cierran hasta formar el marco.
+		 *
+		 * <p>
+		 * <b>Antes era un rectángulo completo que se lavaba un 5 % al pasar el ratón</b>
+		 * — correcto, invisible y exactamente igual que el botón de contorno de
+		 * cualquier framework. El problema de un marco ya cerrado es que no tiene a
+		 * dónde ir: lo único que puede hacer es cambiar de color.
+		 *
+		 * <p>
+		 * Con {@link Escuadras}, el reposo son cuatro ángulos y el marco se
+		 * <b>termina de dibujar</b> al acercarse. Es un gesto de geometría, no de tinta,
+		 * y viene del taller de imprenta en vez de la librería de turno. El lavado del
+		 * fondo se mantiene, muy leve, porque el área pulsable tiene que notarse también
+		 * en el centro y no solo en el contorno.
+		 */
 		private void pintarSecundario(Graphics2D g2, int ancho, int alto, boolean pulsado) {
 
-			if (encendido > 0) {
-				g2.setColor(transparente(Theme.txt(), 0.05 * encendido));
-				g2.fillRect(0, 0, ancho, alto);
-			}
+			// **Sin lavado de fondo, en ningún estado.** Rellenar la caja de gris es lo
+			// que convertía este botón en el botón de contorno de cualquier framework: el
+			// gesto pasaba a ser "se pinta de gris" y las escuadras quedaban de adorno.
+			// Lo único que cambia aquí es la línea —y, al pulsar, el rótulo que baja un
+			// punto—, que es de lo que va este control.
 
-			g2.setColor(Theme.FIELD_BORDER);
-			g2.drawRect(0, 0, ancho - 1, alto - 1);
+			// Trazo de un punto y remate recto: el mismo que los iconos dibujados del
+			// sistema. Un remate redondeado dejaría las esquinas romas y las escuadras
+			// perderían su parecido con una marca de corte.
+			g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
+			g2.setColor(Animacion.mezclar(Theme.FIELD_BORDER, Theme.txt(), pulsado ? 0.75 : 0.15 + 0.45 * encendido));
 
-			g2.setColor(transparente(Theme.txt(), pulsado ? 0.40 : 0.12 + 0.20 * encendido));
-			pintarFilete(g2, ancho, alto);
+			Escuadras.pintar(g2, 0.5, 0.5, ancho - 1.0, alto - 1.0, pulsado ? 1 : encendido);
 		}
 
 		/**

@@ -45,7 +45,24 @@ public class SearchField extends JPanel {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final int ALTO = 38;
+	private static final int ALTO = 46;
+
+	/**
+	 * Lo que se separa el papel del borde del componente.
+	 *
+	 * <p>
+	 * <b>Es la diferencia entre unas escuadras que se ven y unas que no.</b> Con la
+	 * superficie blanca ocupando el componente entero, el rectángulo ya estaba
+	 * dibujado —lo dibujaba el propio papel contra el fondo crema— y las escuadras no
+	 * añadían nada: enfocar el campo no cambiaba nada perceptible. Dejándoles un
+	 * hueco por fuera, las marcas de corte quedan donde van de verdad en un pliego,
+	 * <b>fuera del área impresa</b>, y al enfocar se cierran alrededor del papel.
+	 *
+	 * <p>
+	 * Es la misma idea que el filete grabado del botón primario, del otro lado del
+	 * borde: allí se abre hacia fuera, aquí se cierra hacia dentro.
+	 */
+	private static final int HUECO = 5;
 
 	private final JTextField campo = new JTextField();
 
@@ -56,7 +73,7 @@ public class SearchField extends JPanel {
 
 	public SearchField(String marcador, Runnable alCambiar) {
 
-		super(new MigLayout(Space.insets(0, Space.SM, 0, Space.SM), "[18!]" + Space.XS + "[grow,fill]", "[grow,fill]"));
+		super(new MigLayout(Space.insets(0, Space.MD, 0, Space.MD), "[18!]" + Space.XS + "[grow,fill]", "[grow,fill]"));
 
 		setOpaque(false);
 		setBorder(BorderFactory.createEmptyBorder());
@@ -124,6 +141,21 @@ public class SearchField extends JPanel {
 	}
 
 	/**
+	 * Fuerza el estado de enfoque, para poder retratarlo.
+	 *
+	 * <p>
+	 * Existe para {@code MirarControles} por la misma razón que
+	 * {@code SettingsFrame.generarCodigoPara}: el estado que hay que juzgar no se
+	 * alcanza dibujando el componente, hace falta que alguien lo enfoque, y una
+	 * lámina pintada fuera de pantalla no tiene foco de teclado. Sin esto, la única
+	 * forma de revisar el enfoque sería abrir la aplicación y hacer clic — que es
+	 * justo el bucle lento que las herramientas del proyecto existen para evitar.
+	 */
+	public void mostrarEnfocado(boolean si) {
+		animarHacia(si ? 1 : 0);
+	}
+
+	/**
 	 * Arranca la transición de enfoque, partiendo de donde esté.
 	 *
 	 * <p>
@@ -149,32 +181,65 @@ public class SearchField extends JPanel {
 		return enfocado;
 	}
 
+	/**
+	 * Superficie, escuadras de imprenta y un filete de base que se abre desde el
+	 * centro.
+	 *
+	 * <p>
+	 * <b>Lo que fallaba no era el borde, era la forma.</b> Un rectángulo de esquinas
+	 * redondeadas con una línea alrededor es <em>la</em> forma genérica: la traen
+	 * por defecto todos los frameworks, sale en todas las plantillas y no dice nada
+	 * de quién la ha hecho. Se podía afinar el color y el grosor cuanto se quisiera y
+	 * seguiría siendo un campo de formulario cualquiera.
+	 *
+	 * <p>
+	 * Ahora son tres capas con tres papeles distintos:
+	 *
+	 * <ol>
+	 * <li><b>La superficie blanca</b>, con radio 2 en vez de 4 — el mismo radio
+	 * mínimo que el resto del sistema, lo justo para que la esquina no corte.</li>
+	 * <li><b>Las escuadras</b> de {@link Escuadras}, que en reposo son cuatro
+	 * ángulos y al enfocar se cierran hasta completar el marco. Es el mismo gesto
+	 * del botón secundario, y esa repetición es lo que lo convierte en vocabulario:
+	 * en esta aplicación, unas escuadras que se cierran significan "esto responde".</li>
+	 * <li><b>El filete de base</b>, que crece <b>desde el centro hacia los dos
+	 * lados</b>. Un subrayado que crece de izquierda a derecha ya lo usan los
+	 * enlaces y significa "se lee en esta dirección"; aquí no se lee nada, se
+	 * escribe, y un trazo que se abre simétricamente dice justamente eso: el campo
+	 * se abre.</li>
+	 * </ol>
+	 *
+	 * <p>
+	 * <b>Nada de teñir con el acento.</b> Es lo que haría cualquier plantilla y aquí
+	 * además no funcionaría: el acento de verano sobre blanco es un amarillo que casi
+	 * no se ve. Lo que gana el campo al enfocarse es <em>presencia</em> —más línea,
+	 * más contraste— y eso se comporta igual en las cuatro estaciones.
+	 */
 	@Override
 	protected void paintComponent(Graphics g) {
 
 		Graphics2D g2 = (Graphics2D) g.create();
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 
+		int ancho = getWidth();
+		int alto = getHeight();
+
+		// El papel: la superficie del campo, separada del borde del componente. Ese
+		// hueco es lo que deja sitio a las escuadras por fuera.
 		g2.setColor(Theme.SURFACE);
-		g2.fillRoundRect(0, 0, getWidth(), getHeight(), 4, 4);
+		g2.fillRoundRect(HUECO, HUECO, ancho - 2 * HUECO, alto - 2 * HUECO, 2, 2);
 
-		// **El borde se oscurece y engorda al enfocar, en vez de cambiar de color.**
-		// La alternativa habitual —teñirlo con el acento— es lo que hace cualquier
-		// plantilla, y aquí además chocaría: el acento de verano sobre un campo blanco
-		// es un amarillo que casi no se ve. Un borde que gana presencia funciona en las
-		// cuatro estaciones sin excepciones y es el gesto del papel, no el de la web.
-		g2.setColor(Animacion.mezclar(Theme.FIELD_BORDER, Theme.txt(), enfocado * 0.55));
-		g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 4, 4);
+		g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
 
-		if (enfocado > 0) {
+		g2.setColor(Animacion.mezclar(Theme.FIELD_BORDER, Theme.txt(), enfocado * 0.45));
+		g2.drawRoundRect(HUECO, HUECO, ancho - 2 * HUECO - 1, alto - 2 * HUECO - 1, 2, 2);
 
-			// Un segundo trazo por dentro, cuya opacidad sube con el enfoque. Es la forma
-			// de engordar la línea sin que el borde salte de uno a dos píxeles de golpe,
-			// que se vería como un temblor.
-			g2.setColor(new java.awt.Color(Theme.txt().getRed(), Theme.txt().getGreen(), Theme.txt().getBlue(),
-					(int) Math.round(90 * enfocado)));
-			g2.drawRoundRect(1, 1, getWidth() - 3, getHeight() - 3, 3, 3);
-		}
+		// Remate recto y unión en ángulo: una escuadra con las puntas redondeadas deja
+		// de parecer una marca de corte y pasa a parecer un borde mal terminado.
+		g2.setColor(Animacion.mezclar(Theme.FIELD_BORDER, Theme.txt(), 0.15 + enfocado * 0.6));
+
+		Escuadras.pintar(g2, 0.5, 0.5, ancho - 1.0, alto - 1.0, enfocado);
 
 		g2.dispose();
 	}
