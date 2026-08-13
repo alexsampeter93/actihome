@@ -25,6 +25,8 @@ import fp.project.actihome.model.entities.Reservation;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.ReservationService;
+import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
@@ -81,6 +83,7 @@ public class PlatformPanelFrame extends JFrame {
 	private final transient Navigator navigator;
 	private final HeaderPanel headerPanel;
 
+	private javax.swing.JButton enlaceVolver;
 	private JLabel superTitulo;
 	private JLabel titulo;
 	private Stat statAlojamientos;
@@ -130,13 +133,19 @@ public class PlatformPanelFrame extends JFrame {
 		raiz.add(zonaDeLista(), "grow");
 
 		setContentPane(raiz);
+
+		Foco.alPulsarEscape(this, () -> navigator.volver(ShowHousingsFrame.class));
 	}
 
+	/** Ver la nota de {@code OwnerPanelFrame.titular()}: mismo caso, misma corrección. */
 	private JPanel titular() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.XL, Space.HUGE, Space.MD, Space.HUGE),
 				"[grow,fill]", "[]" + Space.XXS + "[]"));
 		panel.setOpaque(false);
+
+		enlaceVolver = Buttons.link(" ", e -> navigator.volver(ShowHousingsFrame.class));
+		panel.add(enlaceVolver, "gapbottom " + Space.XS);
 
 		superTitulo = Labels.capsAccent(" ");
 		panel.add(superTitulo);
@@ -194,6 +203,7 @@ public class PlatformPanelFrame extends JFrame {
 
 	private void actualizarTextosFijos() {
 
+		enlaceVolver.setText(Textos.t("nav.atras"));
 		superTitulo.setText(Textos.t("panelPlataforma.superTitulo"));
 		titulo.setText(Textos.t("panelPlataforma.titulo"));
 		statAlojamientos.setRotulo(Textos.t("panelPlataforma.resumen.alojamientos"));

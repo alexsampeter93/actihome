@@ -124,6 +124,7 @@ public class HousingForm extends JPanel {
 	private final Chip intercambio = new Chip(Textos.t("alojamientoForm.intercambio"));
 	private final Field queBusca = Field.text(Textos.t("alojamientoForm.queBusca"));
 	private final Field habitaciones;
+	private final Field capacidad;
 	private final Field precio;
 	private final Field ubicacion;
 	private final Field descripcion;
@@ -259,6 +260,7 @@ public class HousingForm extends JPanel {
 		});
 
 		habitaciones = Field.text(Textos.t("alojamientoForm.habitaciones"));
+		capacidad = Field.text(Textos.t("alojamientoForm.capacidad"));
 		precio = Field.text(Textos.t("alojamientoForm.precio"));
 		ubicacion = Field.text(Textos.t("alojamientoForm.ubicacion"));
 		descripcion = Field.textArea(Textos.t("alojamientoForm.descripcion"), 4);
@@ -289,7 +291,8 @@ public class HousingForm extends JPanel {
 
 		panel.add(nombre, "gapbottom " + Space.aire(Space.MD));
 		panel.add(campoTipo(), "gapbottom " + Space.aire(Space.MD));
-		panel.add(dosColumnas(habitaciones, precio));
+		panel.add(dosColumnas(habitaciones, precio), "gapbottom " + Space.aire(Space.MD));
+		panel.add(capacidad);
 
 		return panel;
 	}
@@ -729,6 +732,23 @@ public class HousingForm extends JPanel {
 	 * del formulario haría un campo enorme para escribir un "3", y alargaría el
 	 * formulario una fila de más sin ganar nada.
 	 */
+	/**
+	 * Dos campos cortos en la misma fila.
+	 *
+	 * <p>
+	 * Habitaciones y precio son números de pocos dígitos: darles el ancho
+	 * completo del formulario haría un campo enorme para escribir un "3", y
+	 * alargaría el formulario una fila de más sin ganar nada.
+	 *
+	 * <p>
+	 * <b>La capacidad no entra en esta misma fila a propósito</b> (Fase 9): un
+	 * tercer campo aquí ensancha el mínimo de esta columna lo suficiente para que
+	 * {@link Columnas} deje de poder ponerla junto a las otras dos, y entonces el
+	 * formulario entero salta de 787 a 1198 de alto en cuanto la ventana no es
+	 * ancha de sobra —justo el scroll de pantalla completa que Fase 7 existe
+	 * para evitar—. Un campo más alto cuesta un renglón; un campo más ancho
+	 * puede costar una columna entera.
+	 */
 	private JPanel dosColumnas(Field izquierda, Field derecha) {
 
 		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[grow,fill]" + Space.MD + "[grow,fill]", ""));
@@ -788,6 +808,7 @@ public class HousingForm extends JPanel {
 		intercambio.setText(Textos.t("alojamientoForm.intercambio"));
 		queBusca.setEtiqueta(Textos.t("alojamientoForm.queBusca"));
 		habitaciones.setEtiqueta(Textos.t("alojamientoForm.habitaciones"));
+		capacidad.setEtiqueta(Textos.t("alojamientoForm.capacidad"));
 		precio.setEtiqueta(Textos.t("alojamientoForm.precio"));
 		ubicacion.setEtiqueta(Textos.t("alojamientoForm.ubicacion"));
 
@@ -820,6 +841,7 @@ public class HousingForm extends JPanel {
 		queBusca.setText(housing.getExchangeWanted() == null ? "" : housing.getExchangeWanted());
 		queBusca.setVisible(housing.isOpenToExchange());
 		habitaciones.setText(String.valueOf(housing.getNumberOfRooms()));
+		capacidad.setText(String.valueOf(housing.getCapacity()));
 		precio.setText(housing.getPricePerNight() == null ? "" : housing.getPricePerNight().toPlainString());
 		ubicacion.setText(housing.getLocation() == null ? "" : housing.getLocation());
 		descripcion.setText(housing.getDescription() == null ? "" : housing.getDescription());
@@ -859,6 +881,7 @@ public class HousingForm extends JPanel {
 		queBusca.setText("");
 		queBusca.setVisible(false);
 		habitaciones.setText("");
+		capacidad.setText("");
 		precio.setText("");
 		ubicacion.setText("");
 		descripcion.setText("");
@@ -895,6 +918,7 @@ public class HousingForm extends JPanel {
 				.basico(housingCode, nombre.getText().trim(), (String) tipo.getSelectedItem(),
 						entero(habitaciones.getText(), Textos.t("alojamientoForm.campo.habitaciones")).intValue(),
 						decimal(precio.getText()), ubicacion.getText().trim())
+				.capacity(entero(capacidad.getText(), Textos.t("alojamientoForm.campo.capacidad")).intValue())
 				.description(descripcion.getText().trim())
 				.breakfast(desayuno.isSelected())
 				.lunch(comida.isSelected())

@@ -47,6 +47,7 @@ import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.housings.Galeria;
 import fp.project.actihome.ui.housings.MapaDeUbicacion;
 import fp.project.actihome.ui.housings.PrevisionPanel;
+import fp.project.actihome.ui.nav.ConNombre;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Contenido;
@@ -110,7 +111,7 @@ import fp.project.actihome.ui.theme.Typography;
 @Component
 @Profile("!test")
 @Lazy
-public class HousingDetailsFrame extends JFrame {
+public class HousingDetailsFrame extends JFrame implements ConNombre {
 
 	private static final long serialVersionUID = 1L;
 
@@ -195,7 +196,7 @@ public class HousingDetailsFrame extends JFrame {
 
 		setContentPane(raiz);
 
-		Foco.alPulsarEscape(this, () -> navigator.ir(ShowHousingsFrame.class));
+		Foco.alPulsarEscape(this, () -> navigator.volver(ShowHousingsFrame.class));
 	}
 
 	/** Recarga el alojamiento desde el servicio y reconstruye la pantalla. */
@@ -257,31 +258,35 @@ public class HousingDetailsFrame extends JFrame {
 	// Miga de pan
 	// ------------------------------------------------------------------
 
+	/**
+	 * El enlace de atrás, que dice a dónde va de verdad.
+	 *
+	 * <p>
+	 * <b>Era la única migaja de pan de las cinco pantallas que la usan sin pasar
+	 * por {@code Buttons.link}</b> (Fase 9): un {@code JLabel} con
+	 * {@code MouseAdapter} propio, sin la flecha que sí llevan
+	 * {@code ConversationFrame} o {@code DoCheckInFrame} ("Volver a mis
+	 * reservas"). El código funcionaba, pero no se leía igual: un botón sin
+	 * flecha ni la palabra "volver" es una migaja de pan —sirve para orientarse—,
+	 * no un botón de atrás —sirve para salir—. La flecha es lo que lo dice.
+	 *
+	 * <p>
+	 * <b>Y el texto se calcula, no está escrito.</b> A esta ficha se llega desde
+	 * el catálogo, desde el buscador y desde la comparativa; un enlace que
+	 * dijera siempre "Catálogo" mentiría en dos de los tres casos. Se le pregunta
+	 * al {@link Navigator} de dónde se viene — se reconstruye en cada
+	 * {@code recargar()}, así que la etiqueta nunca se queda vieja. El texto fijo
+	 * queda de reserva para cuando no hay recorrido previo, que es exactamente lo
+	 * que decía antes.
+	 */
 	private JPanel migaDePan() {
 
-		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XXS + "[]" + Space.XXS + "[]", ""));
+		String anterior = navigator.nombreDeLaAnterior();
+		String etiqueta = anterior != null ? Textos.t("nav.volverA", anterior) : Textos.t("detalle.volver");
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]", ""));
 		fila.setOpaque(false);
-
-		JLabel catalogo = Labels.body(Textos.t("header.nav.catalogo"));
-		catalogo.setFont(Typography.sans(Typography.BODY_SM));
-		catalogo.setForeground(Theme.mut());
-		catalogo.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-		catalogo.addMouseListener(new MouseAdapter() {
-
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				navigator.ir(ShowHousingsFrame.class);
-			}
-		});
-
-		JLabel separador = Labels.muted("›");
-
-		JLabel nombre = Labels.body(housing.getName());
-		nombre.setFont(Typography.sansSemiBold(Typography.BODY_SM));
-
-		fila.add(catalogo);
-		fila.add(separador);
-		fila.add(nombre);
+		fila.add(Buttons.link(etiqueta, e -> navigator.volver(ShowHousingsFrame.class)));
 
 		return fila;
 	}
@@ -883,5 +888,18 @@ public class HousingDetailsFrame extends JFrame {
 
 	private void verResenas() {
 		navigator.ir(ShowReviewsFrame.class, frame -> frame.setHousingId(housingId));
+	}
+
+	/**
+	 * Esta pantalla se llama como el alojamiento que enseña.
+	 *
+	 * <p>
+	 * No hay clave de textos que valga: "← Villa Aurora" orienta y "← Detalle" no
+	 * dice nada. Por eso {@code ConNombre} devuelve texto ya resuelto y no una
+	 * clave.
+	 */
+	@Override
+	public String nombreDePantalla() {
+		return housing != null ? housing.getName() : null;
 	}
 }

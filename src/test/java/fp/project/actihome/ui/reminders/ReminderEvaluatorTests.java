@@ -24,7 +24,7 @@ public class ReminderEvaluatorTests {
 	/** Sin id: el constructor de nueve argumentos (reservationCode, no id) basta, porque el evaluador nunca lo toca. */
 	private Reservation reserva(LocalDateTime checkIn, LocalDateTime checkOut, boolean checkedIn) {
 
-		Reservation reserva = new Reservation(Long.valueOf(1), checkIn, checkOut, "Tarjeta de crédito",
+		Reservation reserva = new Reservation(Long.valueOf(1), checkIn, checkOut, 2, 0, "Tarjeta de crédito",
 				LocalDateTime.now().minusDays(1), BigDecimal.valueOf(100), checkedIn, null, null);
 		reserva.setCancelled(false);
 

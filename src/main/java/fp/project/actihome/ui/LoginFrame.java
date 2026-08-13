@@ -132,6 +132,13 @@ public class LoginFrame extends JFrame {
 			fraseEstacional.setText(Theme.estacion().frase());
 			actualizarTextosFijos();
 			SwingUtilities.invokeLater(usuario::requestFocus);
+
+			// Ver la pantalla de login significa que no hay sesión, así que el recorrido
+			// anterior deja de tener dueño. Un historial que le sobreviviera dejaría un
+			// botón de atrás capaz de devolver a la pantalla de la persona anterior, con
+			// sus datos todavía cargados —las pantallas son singleton—, y eso no es un
+			// descuido de navegación sino una fuga.
+			navigator.olvidarHistorial();
 		}
 
 		super.setVisible(visible);
@@ -419,7 +426,7 @@ public class LoginFrame extends JFrame {
 			// recién registrada o una ya existente en una base creada antes de esta
 			// fase, y las dos entran por aquí igual.
 			if (usuarioLogueado.isOnboardingSeen()) {
-				navigator.ir(ShowHousingsFrame.class);
+				navigator.ir(SearchHousingsFrame.class);
 			} else {
 				navigator.ir(OnboardingFrame.class);
 			}

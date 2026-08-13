@@ -131,6 +131,7 @@ public final class MedirNavegacion {
 			pasos.add(new Paso("Login", () -> navigator.ir(LoginFrame.class)));
 			pasos.add(new Paso("Registro", () -> navigator.ir(SignUpFrame.class)));
 			pasos.add(new Paso("Recuperar", () -> navigator.ir(RecoverPasswordFrame.class)));
+			pasos.add(new Paso("Buscar", () -> navigator.ir(fp.project.actihome.ui.SearchHousingsFrame.class)));
 			pasos.add(Paso.lista("Catalogo", () -> navigator.ir(ShowHousingsFrame.class)));
 			pasos.add(new Paso("Detalle", () -> navigator.ir(HousingDetailsFrame.class, f -> f.loadDetails(propio))));
 			pasos.add(new Paso("Reservar", () -> navigator.ir(ReserveHousingFrame.class, f -> f.setHousingId(id))));

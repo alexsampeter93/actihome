@@ -94,8 +94,26 @@ public interface HousingService {
 
 	ArrayList<Housing> filterHousingsByMinimumRooms(int minimum);
 
+	/**
+	 * Permuta la titularidad de dos alojamientos.
+	 *
+	 * <p>
+	 * <b>Esto es el mecanismo, no la operación de negocio.</b> Un intercambio
+	 * necesita el consentimiento de las dos partes, y ese acuerdo lo gestiona
+	 * {@link TradeProposalService}: aquí solo se ejecuta lo ya acordado. Llamar a
+	 * este método directamente desde una pantalla sería saltarse la conformidad
+	 * del otro propietario, que es exactamente el fallo que tenía la aplicación
+	 * antes de la Fase 9.
+	 *
+	 * <p>
+	 * <b>Comprueba que quien lo pide es dueño de lo que ofrece</b>, cosa que no
+	 * hacía. Sin esa comprobación, cualquier usuario podía permutar dos
+	 * alojamientos ajenos entre sí; el método se llamaba desde un solo sitio que
+	 * pasaba siempre un alojamiento propio, así que el agujero no se veía —y "no
+	 * se ve" no es lo mismo que "no está".
+	 */
 	void tradeHousings(Long ownerId, Long ownersHousingId, Long housingToTradeCode)
-			throws InstanceNotFoundException, AlreadyReservedException;
+			throws InstanceNotFoundException, AlreadyReservedException, NotTheOwnerException;
 
 	/**
 	 * Si el alojamiento tiene una estancia en curso justo ahora.

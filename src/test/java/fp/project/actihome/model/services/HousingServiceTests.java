@@ -27,6 +27,7 @@ import fp.project.actihome.model.entities.Reservation;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
+import fp.project.actihome.model.exceptions.CapacityExceededException;
 import fp.project.actihome.model.exceptions.CheckOutMustBeOneDayAfterException;
 import fp.project.actihome.model.exceptions.DuplicateInstanceException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
@@ -443,7 +444,8 @@ public class HousingServiceTests {
 
 	@Test
 	public void testTradeHousings() throws DuplicateInstanceException, InstanceNotFoundException,
-			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException, AlreadyReservedException {
+			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException, AlreadyReservedException,
+			NotTheOwnerException {
 
 		User owner1 = signUpUser("Owner1", RoleType.ADMIN);
 		User owner2 = signUpUser("Owner2", RoleType.ADMIN);
@@ -468,7 +470,8 @@ public class HousingServiceTests {
 	@Test
 	public void testTradeAllowedForFutureReservation() throws DuplicateInstanceException, InstanceNotFoundException,
 			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException, AlreadyReservedException,
-			WrongCreditCardNumberException, MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException {
+			WrongCreditCardNumberException, MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException,
+			CapacityExceededException, NotTheOwnerException {
 
 		User owner1 = signUpUser("Owner1", RoleType.ADMIN);
 		User owner2 = signUpUser("Owner2", RoleType.ADMIN);
@@ -481,7 +484,7 @@ public class HousingServiceTests {
 
 		LocalDateTime entrada = LocalDate.now().plusDays(7).atTime(10, 30);
 		reservationService.reserveHousing(customer.getId(), housing1.getId(), "1234567890123456", entrada,
-				entrada.plusDays(4));
+				entrada.plusDays(4), 1, 0);
 
 		housingService.tradeHousings(owner1.getId(), housing1.getId(), housing2.getHousingCode());
 		assertEquals(owner1, housing2.getOwner());
@@ -497,7 +500,8 @@ public class HousingServiceTests {
 	@Test
 	public void testTradeBlockedDuringActiveStay() throws DuplicateInstanceException, InstanceNotFoundException,
 			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException, AlreadyReservedException,
-			WrongCreditCardNumberException, MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException {
+			WrongCreditCardNumberException, MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException,
+			CapacityExceededException {
 
 		User owner1 = signUpUser("Owner1", RoleType.ADMIN);
 		User owner2 = signUpUser("Owner2", RoleType.ADMIN);
@@ -510,7 +514,7 @@ public class HousingServiceTests {
 
 		LocalDateTime entrada = LocalDate.now().plusDays(7).atTime(10, 30);
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing1.getId(),
-				"1234567890123456", entrada, entrada.plusDays(4));
+				"1234567890123456", entrada, entrada.plusDays(4), 1, 0);
 		reservation.setCheckIn(LocalDateTime.now().minusHours(1));
 
 		assertThrows(AlreadyReservedException.class,

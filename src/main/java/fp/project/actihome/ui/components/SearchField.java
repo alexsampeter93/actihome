@@ -66,14 +66,50 @@ public class SearchField extends JPanel {
 
 	private final JTextField campo = new JTextField();
 
+	/**
+	 * Si el papel es una cápsula en vez de un rectángulo de esquina viva.
+	 *
+	 * <p>
+	 * <b>Es una variante de contexto, no un capricho.</b> En el catálogo este
+	 * campo vive suelto sobre el fondo del hero y su forma no compite con nada.
+	 * En la pantalla de búsqueda vive dentro de una tarjeta, con una fila de
+	 * chips de destino justo debajo y los contadores de huéspedes al lado — todos
+	 * cápsulas—, y ahí el rectángulo era la única silueta distinta del bloque.
+	 * Es el mismo razonamiento que llevó los numéricos de "Más filtros" a
+	 * redondearse: la forma la decide el vecindario.
+	 *
+	 * <p>
+	 * Las escuadras se conservan, y no por inercia: en un pliego las marcas de
+	 * corte van en las esquinas del papel <b>sea cual sea la forma de lo
+	 * impreso</b>. Siguen cerrándose al enfocar, que es lo que significan aquí.
+	 */
+	private final boolean redondo;
+
 	/** Cuánto está enfocado, de 0 a 1. Lo leen el borde y la lupa. */
 	private transient double enfocado;
 
 	private transient javax.swing.Timer animacion;
 
 	public SearchField(String marcador, Runnable alCambiar) {
+		this(marcador, alCambiar, false);
+	}
+
+	/** @param redondo ver {@link #redondo}. */
+	public SearchField(String marcador, Runnable alCambiar, boolean redondo) {
 
 		super(new MigLayout(Space.insets(0, Space.MD, 0, Space.MD), "[18!]" + Space.XS + "[grow,fill]", "[grow,fill]"));
+
+		this.redondo = redondo;
+
+		// La cápsula se come por los lados el sitio que en un rectángulo era recto,
+		// así que la lupa y el texto necesitan algo más de margen para no quedar
+		// montados sobre la curva. Es la misma corrección que pide cualquier forma
+		// redonda: el aire lateral se mide contra la parte estrecha, no contra el
+		// borde de la caja.
+		if (redondo) {
+			setLayout(new MigLayout(Space.insets(0, Space.LG, 0, Space.LG), "[18!]" + Space.XS + "[grow,fill]",
+					"[grow,fill]"));
+		}
 
 		setOpaque(false);
 		setBorder(BorderFactory.createEmptyBorder());
@@ -129,6 +165,19 @@ public class SearchField extends JPanel {
 
 	public String getTexto() {
 		return campo.getText().trim();
+	}
+
+	/**
+	 * Escribe el texto sin que lo haya tecleado nadie.
+	 *
+	 * <p>
+	 * Para las sugerencias de destino de la pantalla de búsqueda (Fase 9): pulsar
+	 * un chip como "Málaga" tiene que rellenar el campo igual que si se hubiera
+	 * escrito, listener del documento incluido, para que quien filtre en vivo se
+	 * entere del cambio.
+	 */
+	public void setTexto(String texto) {
+		campo.setText(texto);
 	}
 
 	/** Cambia el texto de ayuda (idioma, Fase 7.6). */
@@ -227,19 +276,34 @@ public class SearchField extends JPanel {
 
 		// El papel: la superficie del campo, separada del borde del componente. Ese
 		// hueco es lo que deja sitio a las escuadras por fuera.
+		int radio = redondo ? alto - 2 * HUECO : 2;
+
 		g2.setColor(Theme.SURFACE);
-		g2.fillRoundRect(HUECO, HUECO, ancho - 2 * HUECO, alto - 2 * HUECO, 2, 2);
+		g2.fillRoundRect(HUECO, HUECO, ancho - 2 * HUECO, alto - 2 * HUECO, radio, radio);
 
-		g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
+		// **La cápsula engorda el trazo al enfocarse; el rectángulo cierra sus
+		// escuadras.** No es una excepción por comodidad: unas marcas de corte son
+		// las esquinas de un rectángulo, y puestas alrededor de una forma redonda no
+		// se leen como marcas sino como un marco roto — se probó y era exactamente
+		// eso. Lo que la variante redonda conserva es el <em>significado</em> del
+		// gesto (al enfocar, el campo gana presencia y nunca color de acento), que es
+		// lo que hace que los dos se sientan el mismo control.
+		g2.setStroke(new BasicStroke(redondo ? (float) (1 + enfocado * 0.8) : 1f, BasicStroke.CAP_BUTT,
+				BasicStroke.JOIN_MITER));
 
-		g2.setColor(Animacion.mezclar(Theme.FIELD_BORDER, Theme.txt(), enfocado * 0.45));
-		g2.drawRoundRect(HUECO, HUECO, ancho - 2 * HUECO - 1, alto - 2 * HUECO - 1, 2, 2);
+		g2.setColor(Animacion.mezclar(Theme.FIELD_BORDER, Theme.txt(), enfocado * (redondo ? 0.7 : 0.45)));
+		g2.drawRoundRect(HUECO, HUECO, ancho - 2 * HUECO - 1, alto - 2 * HUECO - 1, radio, radio);
 
-		// Remate recto y unión en ángulo: una escuadra con las puntas redondeadas deja
-		// de parecer una marca de corte y pasa a parecer un borde mal terminado.
-		g2.setColor(Animacion.mezclar(Theme.FIELD_BORDER, Theme.txt(), 0.15 + enfocado * 0.6));
+		if (!redondo) {
 
-		Escuadras.pintar(g2, 0.5, 0.5, ancho - 1.0, alto - 1.0, enfocado);
+			// Remate recto y unión en ángulo: una escuadra con las puntas redondeadas
+			// deja de parecer una marca de corte y pasa a parecer un borde mal
+			// terminado.
+			g2.setStroke(new BasicStroke(1f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
+			g2.setColor(Animacion.mezclar(Theme.FIELD_BORDER, Theme.txt(), 0.15 + enfocado * 0.6));
+
+			Escuadras.pintar(g2, 0.5, 0.5, ancho - 1.0, alto - 1.0, enfocado);
+		}
 
 		g2.dispose();
 	}

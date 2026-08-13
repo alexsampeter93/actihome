@@ -146,6 +146,7 @@ public class HousingServiceImpl implements HousingService {
 		housing.setName(data.getName());
 		housing.setType(data.getType());
 		housing.setNumberOfRooms(data.getNumberOfRooms());
+		housing.setCapacity(data.getCapacity());
 		housing.setPricePerNight(data.getPricePerNight());
 		housing.setDescription(data.getDescription());
 		housing.setLocation(data.getLocation());
@@ -264,7 +265,7 @@ public class HousingServiceImpl implements HousingService {
 
 	@Override
 	public void tradeHousings(Long ownerId, Long ownersHousingId, Long housingToTradeCode)
-			throws InstanceNotFoundException, AlreadyReservedException {
+			throws InstanceNotFoundException, AlreadyReservedException, NotTheOwnerException {
 
 		User owner = permissionChecker.checkUser(ownerId);
 		Optional<Housing> housing = housingDao.findById(ownersHousingId);
@@ -272,6 +273,16 @@ public class HousingServiceImpl implements HousingService {
 
 		if (!housing.isPresent() || !housingToTrade.isPresent()) {
 			throw new InstanceNotFoundException("project.entities.housing", ownersHousingId);
+		}
+
+		// **Faltaba, y era el agujero de fondo de esta operación.** El método recibe
+		// "el alojamiento del propietario" y se fiaba del nombre del parámetro: nunca
+		// comprobaba que ese alojamiento fuera de verdad suyo. Como lo llamaba una
+		// sola pantalla, que siempre pasaba uno propio, el fallo no se manifestaba —y
+		// una regla de negocio que solo se cumple porque el único sitio que la usa se
+		// porta bien no es una regla, es una coincidencia.
+		if (!housing.get().getOwner().getId().equals(owner.getId())) {
+			throw new NotTheOwnerException();
 		}
 		// No se usa isAvailableNow aquí: hace la pregunta contraria ("¿está libre?") y
 		// negarla dos veces solo confunde. estaOcupadoAhora dice lo que de verdad

@@ -8,6 +8,7 @@ import fp.project.actihome.model.exceptions.AlreadyCancelledException;
 import fp.project.actihome.model.exceptions.AlreadyCheckedInException;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
 import fp.project.actihome.model.exceptions.CannotCancelException;
+import fp.project.actihome.model.exceptions.CapacityExceededException;
 import fp.project.actihome.model.exceptions.CannotCheckInException;
 import fp.project.actihome.model.exceptions.CheckOutMustBeOneDayAfterException;
 import fp.project.actihome.model.exceptions.CodeDoesNotMatchException;
@@ -19,9 +20,16 @@ import fp.project.actihome.model.exceptions.WrongCreditCardNumberException;
 
 public interface ReservationService {
 
+	/**
+	 * @param numberOfAdults   cuántos adultos viajan, al menos uno
+	 * @param numberOfChildren cuántos niños viajan además, puede ser cero. Los
+	 *                         bebés no se piden aquí: no cuentan para el aforo
+	 *                         del alojamiento (ver {@link Reservation#getNumberOfChildren()})
+	 */
 	Reservation reserveHousing(Long customerId, Long housingId, String creditCardNumber, LocalDateTime checkInDate,
-			LocalDateTime checkOutDate) throws WrongCreditCardNumberException, MustBeTodayOrAfterException,
-			CheckOutMustBeOneDayAfterException, InstanceNotFoundException, AlreadyReservedException, NotAuthorizedUserException;
+			LocalDateTime checkOutDate, int numberOfAdults, int numberOfChildren) throws WrongCreditCardNumberException,
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, InstanceNotFoundException,
+			AlreadyReservedException, NotAuthorizedUserException, CapacityExceededException;
 
 	ArrayList<Reservation> showMyReservations(Long customerId) throws InstanceNotFoundException;
 
@@ -40,6 +48,17 @@ public interface ReservationService {
 	 * comprobación de permisos.
 	 */
 	ArrayList<Reservation> showHousingReservations(Long housingId);
+
+	/**
+	 * Los ids de los alojamientos que ya tienen una reserva activa que pisa el
+	 * rango pedido (Fase 9), para el buscador de destino, fechas y huéspedes.
+	 *
+	 * <p>
+	 * Sin comprobación de permisos, por el mismo motivo que
+	 * {@link #showHousingReservations}: es información agregada de
+	 * disponibilidad, no el detalle de ninguna reserva.
+	 */
+	java.util.Set<Long> showUnavailableHousingIds(LocalDateTime checkIn, LocalDateTime checkOut);
 
 	/**
 	 * Cancela una reserva del cliente.

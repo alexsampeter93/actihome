@@ -115,49 +115,49 @@ WHERE housingCode IN (204183, 204184, 204163, 204132, 2042183)
 -- contradice a sí mismo.
 -- ---------------------------------------------------------------------------
 
-INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, capacity, pricePerNight, description, image,
 	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
-SELECT 10001, 'Casa Rural El Pinar', 'Casa', 3, 75.00,
+SELECT 10001, 'Casa Rural El Pinar', 'Casa', 3, 6, 75.00,
 	'Casa de piedra restaurada a media ladera, con chimenea, huerto y vistas abiertas a la sierra. El pueblo queda a diez minutos a pie.',
 	NULL, TRUE, FALSE, TRUE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE, NULL, 'Sierra Nevada, Granada',
 	(SELECT id FROM USERS WHERE username = 'Lucia')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10001);
 
-INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, capacity, pricePerNight, description, image,
 	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
-SELECT 10002, 'Apartamento Playa Centro', 'Apartamento', 2, 95.00,
+SELECT 10002, 'Apartamento Playa Centro', 'Apartamento', 2, 4, 95.00,
 	'Segunda línea de playa, con terraza orientada al sur y ascensor. La zona de bares y el paseo marítimo quedan al doblar la esquina.',
 	NULL, TRUE, FALSE, FALSE, TRUE, TRUE, TRUE, FALSE, TRUE, FALSE, NULL, 'Málaga',
 	(SELECT id FROM USERS WHERE username = 'Marcos')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10002);
 
-INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, capacity, pricePerNight, description, image,
 	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
-SELECT 10003, 'Villa Mediterráneo', 'Villa', 5, 320.00,
+SELECT 10003, 'Villa Mediterráneo', 'Villa', 5, 10, 320.00,
 	'Villa encalada con piscina privada, porche de sombra y acceso directo a una cala pequeña. Pensión completa incluida.',
 	NULL, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, NULL, 'Ibiza',
 	(SELECT id FROM USERS WHERE username = 'Lucia')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10003);
 
-INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, capacity, pricePerNight, description, image,
 	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
-SELECT 10004, 'Cabaña del Bosque', 'Cabaña', 1, 48.00,
+SELECT 10004, 'Cabaña del Bosque', 'Cabaña', 1, 2, 48.00,
 	'Cabaña de madera para dos, con estufa de leña y ventanal al hayedo. Sin cobertura y sin vecinos: ese es el plan.',
 	NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, NULL, 'Picos de Europa, Asturias',
 	(SELECT id FROM USERS WHERE username = 'Elena')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10004);
 
-INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, capacity, pricePerNight, description, image,
 	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
-SELECT 10005, 'Loft Barrio Gótico', 'Apartamento', 2, 130.00,
+SELECT 10005, 'Loft Barrio Gótico', 'Apartamento', 2, 4, 130.00,
 	'Loft diáfano en un edificio del XIX, con vigas vistas y techos de cuatro metros. En pleno casco antiguo, a paso de todo.',
 	NULL, TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, FALSE, NULL, 'Barcelona',
 	(SELECT id FROM USERS WHERE username = 'Marcos')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10005);
 
-INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, capacity, pricePerNight, description, image,
 	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
-SELECT 10006, 'Casa Adosada Las Palmas', 'Casa', 4, 110.00,
+SELECT 10006, 'Casa Adosada Las Palmas', 'Casa', 4, 8, 110.00,
 	'Adosado con patio, barbacoa y piscina comunitaria, en una urbanización tranquila a quince minutos de la playa de Las Canteras.',
 	NULL, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, NULL, 'Gran Canaria',
 	(SELECT id FROM USERS WHERE username = 'Elena')
@@ -166,33 +166,33 @@ FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10006);
 -- Cuatro alojamientos más (Fase 7.10), para que los filtros nuevos de precio y
 -- ciudad tengan algo de verdad que filtrar: sin variedad de precio ni de
 -- ciudad, esos dos filtros no se pueden ni probar.
-INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, capacity, pricePerNight, description, image,
 	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
-SELECT 10007, 'Ático Malasaña', 'Apartamento', 2, 88.00,
+SELECT 10007, 'Ático Malasaña', 'Apartamento', 2, 4, 88.00,
 	'Ático con terraza recién reformado, cocina abierta y aire acondicionado en las dos habitaciones. El barrio se recorre entero a pie: bares, teatros y el Retiro a quince minutos.',
 	NULL, TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, TRUE, FALSE, NULL, 'Madrid',
 	(SELECT id FROM USERS WHERE username = 'Marcos')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10007);
 
-INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, capacity, pricePerNight, description, image,
 	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
-SELECT 10008, 'Villa Costa del Sol', 'Villa', 5, 275.00,
+SELECT 10008, 'Villa Costa del Sol', 'Villa', 5, 10, 275.00,
 	'Villa de líneas contemporáneas con piscina infinita, terraza panorámica y vistas al mar desde las dos plantas. Pensión completa incluida.',
 	NULL, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, NULL, 'Marbella, Málaga',
 	(SELECT id FROM USERS WHERE username = 'Lucia')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10008);
 
-INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, capacity, pricePerNight, description, image,
 	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
-SELECT 10009, 'Casa Patio Andaluz', 'Casa', 3, 58.00,
+SELECT 10009, 'Casa Patio Andaluz', 'Casa', 3, 6, 58.00,
 	'Casa con patio interior en el corazón del casco histórico, paredes encaladas y suelo de barro cocido. El Tajo queda a cinco minutos a pie desde la puerta.',
 	NULL, TRUE, FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE, TRUE, NULL, 'Ronda, Málaga',
 	(SELECT id FROM USERS WHERE username = 'Elena')
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM HOUSINGS WHERE housingCode = 10009);
 
-INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, pricePerNight, description, image,
+INSERT INTO HOUSINGS(housingCode, name, type, numberOfRooms, capacity, pricePerNight, description, image,
 	breakfast, lunch, dinner, pool, wifi, tv, parking, airConditioning, pets, score, location, ownerId)
-SELECT 10010, 'Refugio de Nieve', 'Cabaña', 2, 68.00,
+SELECT 10010, 'Refugio de Nieve', 'Cabaña', 2, 4, 68.00,
 	'Refugio de madera con estufa de leña y vistas a las pistas desde el porche. Aparcamiento propio junto a la puerta, imprescindible cuando nieva.',
 	NULL, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, TRUE, FALSE, TRUE, NULL, 'Valle de Tena, Huesca',
 	(SELECT id FROM USERS WHERE username = 'Elena')

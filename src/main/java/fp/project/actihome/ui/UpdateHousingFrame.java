@@ -255,6 +255,6 @@ public class UpdateHousingFrame extends JFrame {
 	}
 
 	private void volverAlDetalle() {
-		navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(housing));
+		navigator.volver(HousingDetailsFrame.class, frame -> frame.loadDetails(housing));
 	}
 }

@@ -90,6 +90,7 @@ public class AdministrationFrame extends JFrame {
 	private final transient Navigator navigator;
 	private final HeaderPanel headerPanel;
 
+	private JButton enlaceVolver;
 	private JLabel superTitulo;
 	private JLabel titulo;
 
@@ -150,7 +151,7 @@ public class AdministrationFrame extends JFrame {
 
 		setContentPane(raiz);
 
-		Foco.alPulsarEscape(this, () -> navigator.ir(ShowHousingsFrame.class));
+		Foco.alPulsarEscape(this, () -> navigator.volver(ShowHousingsFrame.class));
 	}
 
 	private JPanel cuerpo() {
@@ -173,6 +174,12 @@ public class AdministrationFrame extends JFrame {
 		return panel;
 	}
 
+	/**
+	 * Era la única pantalla con {@code Foco.alPulsarEscape} sin ningún enlace
+	 * visible que hiciera lo mismo (Fase 9): se llega aquí desde el menú de
+	 * usuario, no desde la cabecera de navegación, así que sin este enlace la
+	 * única forma de salir era conocer de antemano que Escape volvía al catálogo.
+	 */
 	private JPanel cabecera() {
 
 		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[grow,fill]push[]", ""));
@@ -180,6 +187,9 @@ public class AdministrationFrame extends JFrame {
 
 		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		titulos.setOpaque(false);
+
+		enlaceVolver = Buttons.link(" ", e -> navigator.volver(ShowHousingsFrame.class));
+		titulos.add(enlaceVolver, "gapbottom " + Space.XXS);
 
 		superTitulo = Labels.capsAccent(" ");
 		titulos.add(superTitulo);
@@ -252,6 +262,7 @@ public class AdministrationFrame extends JFrame {
 
 	private void actualizarTextos() {
 
+		enlaceVolver.setText(Textos.t("detalle.volver"));
 		superTitulo.setText(Textos.t("admin.superTitulo"));
 		titulo.setText(Textos.t("ajustes.administracion"));
 

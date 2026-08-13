@@ -61,6 +61,18 @@ public class HousingData {
 
 	private int numberOfRooms;
 
+	/**
+	 * Cuántos huéspedes caben, o 0 si el formulario no lo ha escrito todavía.
+	 *
+	 * <p>
+	 * El cero no llega nunca a {@link fp.project.actihome.model.entities.Housing}:
+	 * {@link #getCapacity()} lo sustituye por un valor real derivado de
+	 * {@code numberOfRooms}. Así ningún alojamiento se queda con capacidad cero
+	 * —que bloquearía cualquier reserva de verdad, no solo las grandes— por el
+	 * simple hecho de que quien lo dio de alta no tocó este campo.
+	 */
+	private int capacity;
+
 	private BigDecimal pricePerNight;
 
 	private String description = "";
@@ -199,6 +211,11 @@ public class HousingData {
 		return this;
 	}
 
+	public HousingData capacity(int capacity) {
+		this.capacity = capacity;
+		return this;
+	}
+
 	public HousingData pricePerNight(BigDecimal pricePerNight) {
 		this.pricePerNight = pricePerNight;
 		return this;
@@ -334,6 +351,14 @@ public class HousingData {
 
 	public int getNumberOfRooms() {
 		return numberOfRooms;
+	}
+
+	/**
+	 * La capacidad declarada, o dos huéspedes por habitación si nadie la ha
+	 * fijado. Ver el campo {@link #capacity} para el motivo del reparto.
+	 */
+	public int getCapacity() {
+		return capacity > 0 ? capacity : Math.max(2, numberOfRooms * 2);
 	}
 
 	public BigDecimal getPricePerNight() {

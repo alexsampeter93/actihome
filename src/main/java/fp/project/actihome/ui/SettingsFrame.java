@@ -191,7 +191,7 @@ public class SettingsFrame extends JFrame {
 
 		setContentPane(raiz);
 
-		Foco.alPulsarEscape(this, () -> navigator.ir(ShowHousingsFrame.class));
+		Foco.alPulsarEscape(this, () -> navigator.volver(ShowHousingsFrame.class));
 	}
 
 	/**
@@ -456,7 +456,7 @@ public class SettingsFrame extends JFrame {
 		// El texto se fija en actualizarTextos() en vez de aquí, igual que el resto
 		// de los campos de esta pantalla.
 		guardar = Buttons.primary(" ", e -> guardar());
-		cancelar = Buttons.link(" ", e -> navigator.ir(ShowHousingsFrame.class));
+		cancelar = Buttons.link(" ", e -> navigator.volver(ShowHousingsFrame.class));
 
 		// A la derecha, separadas de los botones de guardar, las dos acciones que no
 		// son "guardar cambios" sino salir de la cuenta por otro lado. El handoff las

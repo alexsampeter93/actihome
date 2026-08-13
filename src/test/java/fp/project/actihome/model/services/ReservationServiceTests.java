@@ -26,6 +26,7 @@ import fp.project.actihome.model.exceptions.AlreadyCheckedInException;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
 import fp.project.actihome.model.exceptions.CannotCancelException;
 import fp.project.actihome.model.exceptions.CannotCheckInException;
+import fp.project.actihome.model.exceptions.CapacityExceededException;
 import fp.project.actihome.model.exceptions.CheckOutMustBeOneDayAfterException;
 import fp.project.actihome.model.exceptions.CodeDoesNotMatchException;
 import fp.project.actihome.model.exceptions.DuplicateInstanceException;
@@ -113,14 +114,15 @@ public class ReservationServiceTests {
 	public void testReserveHousing()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
-			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			CapacityExceededException {
 
 		User customer = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 
 		Reservation myReservation = reservationDao.findById(reservation.getId()).get();
 
@@ -143,7 +145,7 @@ public class ReservationServiceTests {
 
 		assertThrows(InstanceNotFoundException.class,
 				() -> reservationService.reserveHousing(customer.getId(), Long.valueOf(125), "1234567890123456",
-						entrada(), salida()));
+						entrada(), salida(), 1, 0));
 	}
 
 	@Test
@@ -156,7 +158,7 @@ public class ReservationServiceTests {
 
 		assertThrows(MustBeTodayOrAfterException.class,
 				() -> reservationService.reserveHousing(customer.getId(), housing.getId(), "1234567890123456",
-						entradaEnElPasado(), salida()));
+						entradaEnElPasado(), salida(), 1, 0));
 	}
 
 	@Test
@@ -169,7 +171,7 @@ public class ReservationServiceTests {
 
 		assertThrows(CheckOutMustBeOneDayAfterException.class,
 				() -> reservationService.reserveHousing(customer.getId(), housing.getId(), "1234567890123456",
-						entrada(), entrada().plusHours(2)));
+						entrada(), entrada().plusHours(2), 1, 0));
 	}
 
 	@Test
@@ -182,7 +184,7 @@ public class ReservationServiceTests {
 
 		assertThrows(WrongCreditCardNumberException.class,
 				() -> reservationService.reserveHousing(customer.getId(), housing.getId(), "123456789012346",
-						entrada(), salida()));
+						entrada(), salida(), 1, 0));
 	}
 
 	/**
@@ -201,14 +203,35 @@ public class ReservationServiceTests {
 
 		assertThrows(WrongCreditCardNumberException.class,
 				() -> reservationService.reserveHousing(customer.getId(), housing.getId(), "123456789012345A",
-						entrada(), salida()));
+						entrada(), salida(), 1, 0));
+	}
+
+	/**
+	 * La capacidad se comprueba antes de guardar nada (Fase 9): un alojamiento
+	 * dado de alta con {@code createHousing} tiene 6 habitaciones y, sin
+	 * capacidad declarada, {@code HousingData.getCapacity()} le asigna el doble
+	 * (12). Pedir trece huéspedes tiene que rechazarse, y ni siquiera hace falta
+	 * llegar a comprobar la tarjeta para saberlo.
+	 */
+	@Test
+	public void testReserveHousingExceedsCapacity() throws DuplicateInstanceException, InstanceNotFoundException,
+			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException {
+
+		User customer = signUpUser("Author", RoleType.CUSTOMER);
+		User owner = signUpUser("Owner", RoleType.ADMIN);
+		Housing housing = createHousing(Long.valueOf(50), owner.getId());
+
+		assertThrows(CapacityExceededException.class,
+				() -> reservationService.reserveHousing(customer.getId(), housing.getId(), "1234567890123456",
+						entrada(), salida(), 13, 0));
 	}
 
 	@Test
 	public void testReserveUnavailableHousing()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
-			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			CapacityExceededException {
 
 		User customer1 = signUpUser("Author", RoleType.CUSTOMER);
 		User customer2 = signUpUser("Author2", RoleType.CUSTOMER);
@@ -216,21 +239,22 @@ public class ReservationServiceTests {
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		reservationService.reserveHousing(customer1.getId(), housing.getId(), "1234567890123456", entrada(),
-				salida());
+				salida(), 1, 0);
 
 		// Mismo alojamiento, fechas que se cruzan con la reserva ya hecha (entra un
 		// día antes de que la primera salga): tiene que rechazarse aunque sea otro
 		// cliente quien lo intente.
 		assertThrows(AlreadyReservedException.class,
 				() -> reservationService.reserveHousing(customer2.getId(), housing.getId(), "1234567890123456",
-						entrada().plusDays(1), salida().plusDays(1)));
+						entrada().plusDays(1), salida().plusDays(1), 1, 0));
 	}
 
 	@Test
 	public void testReserveNonOverlappingDatesAllowed()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
-			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			CapacityExceededException {
 
 		User customer1 = signUpUser("Author", RoleType.CUSTOMER);
 		User customer2 = signUpUser("Author2", RoleType.CUSTOMER);
@@ -238,13 +262,13 @@ public class ReservationServiceTests {
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		reservationService.reserveHousing(customer1.getId(), housing.getId(), "1234567890123456", entrada(),
-				salida());
+				salida(), 1, 0);
 
 		// Un mes después, sin solape ninguno: dos clientes distintos deben poder
 		// reservar el mismo alojamiento en fechas distintas. Es justo lo que el
 		// booleano available no permitía (bug B5).
 		Reservation segunda = reservationService.reserveHousing(customer2.getId(), housing.getId(),
-				"1234567890123456", entrada().plusMonths(1), salida().plusMonths(1));
+				"1234567890123456", entrada().plusMonths(1), salida().plusMonths(1), 1, 0);
 
 		assertTrue(!segunda.isCheckedIn());
 	}
@@ -253,7 +277,8 @@ public class ReservationServiceTests {
 	public void testReserveAdjacentDatesAllowed()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
-			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			CapacityExceededException {
 
 		User customer1 = signUpUser("Author", RoleType.CUSTOMER);
 		User customer2 = signUpUser("Author2", RoleType.CUSTOMER);
@@ -261,13 +286,13 @@ public class ReservationServiceTests {
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		reservationService.reserveHousing(customer1.getId(), housing.getId(), "1234567890123456", entrada(),
-				salida());
+				salida(), 1, 0);
 
 		// La segunda entra el mismo día en que sale la primera: no se pisan, la
 		// habitación queda libre esa misma mañana. Fija el límite estricto del
 		// solapamiento (checkOut > desde, no >=).
 		Reservation segunda = reservationService.reserveHousing(customer2.getId(), housing.getId(),
-				"1234567890123456", salida(), salida().plusDays(4));
+				"1234567890123456", salida(), salida().plusDays(4), 1, 0);
 
 		assertTrue(!segunda.isCheckedIn());
 	}
@@ -281,14 +306,15 @@ public class ReservationServiceTests {
 
 		assertThrows(NotAuthorizedUserException.class,
 				() -> reservationService.reserveHousing(owner.getId(), housing.getId(), "1234567890123456",
-						entrada(), salida()));
+						entrada(), salida(), 1, 0));
 	}
 
 	@Test
 	public void testShowMyReservations()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
-			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			CapacityExceededException {
 
 		User customer = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
@@ -299,15 +325,15 @@ public class ReservationServiceTests {
 		Housing housing5 = createHousing(Long.valueOf(54), owner.getId());
 
 		Reservation reservation1 = reservationService.reserveHousing(customer.getId(), housing1.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 		Reservation reservation2 = reservationService.reserveHousing(customer.getId(), housing2.getId(),
-				"1234567890123456", entrada().plusMonths(1), salida().plusMonths(1));
+				"1234567890123456", entrada().plusMonths(1), salida().plusMonths(1), 1, 0);
 		Reservation reservation3 = reservationService.reserveHousing(customer.getId(), housing3.getId(),
-				"1234567890123456", entrada().plusMonths(2), salida().plusMonths(2));
+				"1234567890123456", entrada().plusMonths(2), salida().plusMonths(2), 1, 0);
 		Reservation reservation4 = reservationService.reserveHousing(customer.getId(), housing4.getId(),
-				"1234567890123456", entrada().plusMonths(3), salida().plusMonths(3));
+				"1234567890123456", entrada().plusMonths(3), salida().plusMonths(3), 1, 0);
 		Reservation reservation5 = reservationService.reserveHousing(customer.getId(), housing5.getId(),
-				"1234567890123456", entrada().plusMonths(4), salida().plusMonths(4));
+				"1234567890123456", entrada().plusMonths(4), salida().plusMonths(4), 1, 0);
 
 		reservation1.setReservationDate(LocalDateTime.now().plusDays(1));
 		reservation2.setReservationDate(LocalDateTime.now().plusDays(2));
@@ -333,21 +359,22 @@ public class ReservationServiceTests {
 
 		assertThrows(InstanceNotFoundException.class,
 				() -> reservationService.reserveHousing(Long.valueOf(321), housing.getId(), "1234567890123456",
-						entrada(), salida()));
+						entrada(), salida(), 1, 0));
 	}
 
 	@Test
 	public void testDoCheckIn() throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
 			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
-			CodeDoesNotMatchException, NotMyReservationException, CannotCheckInException, AlreadyCheckedInException {
+			CapacityExceededException, CodeDoesNotMatchException, NotMyReservationException, CannotCheckInException,
+			AlreadyCheckedInException {
 
 		User customer = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 
 		reservation.setCheckIn(LocalDateTime.now().minusHours(1));
 		Reservation checkedInReservation = reservationService.doCheckIn(customer.getId(), reservation.getId(),
@@ -360,14 +387,14 @@ public class ReservationServiceTests {
 	public void testDoCheckInNotCheckInDate() throws DuplicateInstanceException, InstanceNotFoundException,
 			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException,
 			WrongCreditCardNumberException, MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException,
-			AlreadyReservedException, CodeDoesNotMatchException {
+			AlreadyReservedException, CapacityExceededException, CodeDoesNotMatchException {
 
 		User customer = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 
 		assertThrows(CannotCheckInException.class, () -> reservationService.doCheckIn(customer.getId(),
 				reservation.getId(), reservation.getReservationCode()));
@@ -377,14 +404,14 @@ public class ReservationServiceTests {
 	public void testDoCheckInAlreadyChecked() throws DuplicateInstanceException, InstanceNotFoundException,
 			LessThanOneRoomException, NegativePrizeException, NotAuthorizedUserException,
 			WrongCreditCardNumberException, MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException,
-			AlreadyReservedException, CodeDoesNotMatchException {
+			AlreadyReservedException, CapacityExceededException, CodeDoesNotMatchException {
 
 		User customer = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 		reservation.setCheckedIn(true);
 		reservation.setCheckIn(LocalDateTime.now().minusHours(1));
 
@@ -396,14 +423,15 @@ public class ReservationServiceTests {
 	public void testDoCheckInWrongCode()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
-			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			CapacityExceededException {
 
 		User customer = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 		reservation.setCheckedIn(true);
 
 		assertThrows(CodeDoesNotMatchException.class,
@@ -414,7 +442,8 @@ public class ReservationServiceTests {
 	public void testDoCheckInNotMyReservation()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
-			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			CapacityExceededException {
 
 		User customer1 = signUpUser("Customer1", RoleType.CUSTOMER);
 		User customer2 = signUpUser("Customer2", RoleType.CUSTOMER);
@@ -422,7 +451,7 @@ public class ReservationServiceTests {
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer1.getId(), housing.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 		reservation.setCheckedIn(true);
 
 		assertThrows(NotMyReservationException.class, () -> reservationService.doCheckIn(customer2.getId(),
@@ -439,7 +468,8 @@ public class ReservationServiceTests {
 	public void testShowHousingReservations()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
-			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			CapacityExceededException {
 
 		User customer = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
@@ -447,7 +477,7 @@ public class ReservationServiceTests {
 		Housing housingSinReservas = createHousing(Long.valueOf(51), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housingConReservas.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 
 		ArrayList<Reservation> reservasDelPrimero = reservationService.showHousingReservations(housingConReservas.getId());
 		ArrayList<Reservation> reservasDelSegundo = reservationService.showHousingReservations(housingSinReservas.getId());
@@ -461,13 +491,14 @@ public class ReservationServiceTests {
 	public void testDoCheckInNonExistentReservation()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
-			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			CapacityExceededException {
 
 		User customer = signUpUser("Customer2", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 		reservation.setCheckedIn(true);
 
 		assertThrows(InstanceNotFoundException.class, () -> reservationService.doCheckIn(customer.getId(),
@@ -480,14 +511,14 @@ public class ReservationServiceTests {
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
 			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
-			NotMyReservationException, AlreadyCancelledException, CannotCancelException {
+			CapacityExceededException, NotMyReservationException, AlreadyCancelledException, CannotCancelException {
 
 		User customer = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 
 		Reservation cancelada = reservationService.cancelReservation(customer.getId(), reservation.getId());
 
@@ -498,7 +529,8 @@ public class ReservationServiceTests {
 	public void testCancelReservationNotMine()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
-			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			CapacityExceededException {
 
 		User customer = signUpUser("Author", RoleType.CUSTOMER);
 		User otro = signUpUser("Author2", RoleType.CUSTOMER);
@@ -506,7 +538,7 @@ public class ReservationServiceTests {
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 
 		assertThrows(NotMyReservationException.class,
 				() -> reservationService.cancelReservation(otro.getId(), reservation.getId()));
@@ -517,14 +549,14 @@ public class ReservationServiceTests {
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
 			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
-			NotMyReservationException, AlreadyCancelledException, CannotCancelException {
+			CapacityExceededException, NotMyReservationException, AlreadyCancelledException, CannotCancelException {
 
 		User customer = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 
 		reservationService.cancelReservation(customer.getId(), reservation.getId());
 
@@ -537,14 +569,15 @@ public class ReservationServiceTests {
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
 			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
-			CodeDoesNotMatchException, NotMyReservationException, CannotCheckInException, AlreadyCheckedInException {
+			CapacityExceededException, CodeDoesNotMatchException, NotMyReservationException, CannotCheckInException,
+			AlreadyCheckedInException {
 
 		User customer = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation reservation = reservationService.reserveHousing(customer.getId(), housing.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 
 		// Mismo truco que testDoCheckIn: se adelanta el checkIn al pasado para poder
 		// hacer el check-in sin depender de una reserva que empiece hoy mismo.
@@ -575,7 +608,7 @@ public class ReservationServiceTests {
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
 			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
-			NotMyReservationException, AlreadyCancelledException, CannotCancelException {
+			CapacityExceededException, NotMyReservationException, AlreadyCancelledException, CannotCancelException {
 
 		User customer1 = signUpUser("Author", RoleType.CUSTOMER);
 		User customer2 = signUpUser("Author2", RoleType.CUSTOMER);
@@ -583,14 +616,14 @@ public class ReservationServiceTests {
 		Housing housing = createHousing(Long.valueOf(50), owner.getId());
 
 		Reservation primera = reservationService.reserveHousing(customer1.getId(), housing.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 
 		reservationService.cancelReservation(customer1.getId(), primera.getId());
 
 		// Mismas fechas exactas, otro cliente: debe triunfar porque la primera ya no
 		// cuenta.
 		Reservation segunda = reservationService.reserveHousing(customer2.getId(), housing.getId(),
-				"1234567890123456", entrada(), salida());
+				"1234567890123456", entrada(), salida(), 1, 0);
 
 		assertTrue(!segunda.isCancelled());
 	}

@@ -285,6 +285,6 @@ public class PublishReviewFrame extends JFrame {
 	}
 
 	private void volverAlListado() {
-		navigator.ir(ShowReviewsFrame.class, frame -> frame.setHousingId(housingId));
+		navigator.volver(ShowReviewsFrame.class, frame -> frame.setHousingId(housingId));
 	}
 }

@@ -268,6 +268,6 @@ public class UpdateReviewFrame extends JFrame {
 	}
 
 	private void volverAlDetalle() {
-		navigator.ir(ReviewDetailsFrame.class, frame -> frame.loadDetails(review));
+		navigator.volver(ReviewDetailsFrame.class, frame -> frame.loadDetails(review));
 	}
 }

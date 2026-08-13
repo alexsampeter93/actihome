@@ -1,11 +1,14 @@
 package fp.project.actihome.ui.catalog;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TreeSet;
 
 import javax.swing.ButtonGroup;
@@ -20,6 +23,7 @@ import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Amenity;
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.Contador;
 import fp.project.actihome.ui.components.IconoDeTipo;
@@ -113,6 +117,28 @@ public class CatalogFilters extends JPanel {
 	/** Índice de la vista de cuadrícula en el conmutador. */
 	public static final int VISTA_CUADRICULA = 1;
 
+	/**
+	 * La forma de los controles de "Más filtros" (Fase 9): precio, huéspedes y
+	 * ciudad.
+	 *
+	 * <p>
+	 * <b>Cápsula, y del mismo alto que todo lo demás.</b> El primer intento fue
+	 * bajarlos seis puntos y matarles un poco las esquinas: quedaron enanos
+	 * respecto a la banda de arriba, el precio máximo salía cortado dentro de su
+	 * propia celda y el rectángulo seguía siendo un rectángulo. Lo que
+	 * desentonaba no era el tamaño sino la silueta — cajas rectas rodeadas de
+	 * chips, que son cápsulas. Ahora comparten forma con sus vecinos y altura
+	 * con el resto de la aplicación.
+	 *
+	 * <p>
+	 * El 999 del radio no es un número mágico: Java2D recorta el arco al lado
+	 * menor de la figura, así que cualquier valor grande significa "todo lo
+	 * redondo que se pueda". Es el mismo truco con el que {@code ActiHomeTheme}
+	 * redondea el pulgar de las barras de scroll.
+	 */
+	private static final int RADIO_PILDORA = 999;
+	private static final int ALTO_CONTROL = Typography.altoDeControlCompacto();
+
 	private final transient Runnable alCambiar;
 
 	private SearchField buscador;
@@ -137,8 +163,29 @@ public class CatalogFilters extends JPanel {
 	private JComboBox<String> ciudad;
 	private boolean actualizandoCiudades;
 
+	private JLabel etiquetaHuespedes;
+	private Contador huespedesMinimos;
+
+	private JLabel etiquetaFechas;
+	private JLabel resumenFechas;
+	private javax.swing.JButton quitarFechas;
+
 	private String tipo = TODOS;
 	private final EnumSet<Amenity> comodidades = EnumSet.noneOf(Amenity.class);
+
+	/**
+	 * El rango de fechas que llega del buscador de destino (Fase 9), o
+	 * {@code null} si no se ha pedido ninguno.
+	 *
+	 * <p>
+	 * No lo elige nadie desde aquí —este panel no lleva calendario propio—, solo
+	 * se aplica y se puede quitar. Por eso vive junto a {@link #idsNoDisponibles},
+	 * que es lo que de verdad filtra: las fechas son lo que se enseña, el
+	 * conjunto de ids es lo que se comprueba.
+	 */
+	private LocalDate fechaEntrada;
+	private LocalDate fechaSalida;
+	private transient Set<Long> idsNoDisponibles = Collections.emptySet();
 
 	public CatalogFilters(Runnable alCambiar) {
 
@@ -270,6 +317,7 @@ public class CatalogFilters extends JPanel {
 		banda.setVisible(false);
 
 		banda.add(filaDePrecioYCiudad(), "growx");
+		banda.add(filaDeHuespedesYFechas(), "growx");
 
 		JPanel filaComodidades = new JPanel(
 				new MigLayout(Space.insets(0), "[]" + Space.SM + "[grow,fill]", "[]"));
@@ -303,21 +351,28 @@ public class CatalogFilters extends JPanel {
 		precioMinimo = new Contador(0, 0, 2000, 25, () -> {
 			refrescarEtiquetaDeMasFiltros();
 			notificar();
-		});
-		fila.add(precioMinimo, "h " + Typography.altoDeControlCompacto() + "!, aligny center");
+		}, true);
+		fila.add(precioMinimo, "h " + ALTO_CONTROL + "!, aligny center");
 
 		fila.add(Labels.muted("–"), "aligny center");
 
 		precioMaximo = new Contador(2000, 0, 2000, 25, () -> {
 			refrescarEtiquetaDeMasFiltros();
 			notificar();
-		});
-		fila.add(precioMaximo, "h " + Typography.altoDeControlCompacto() + "!, aligny center");
+		}, true);
+		fila.add(precioMaximo, "h " + ALTO_CONTROL + "!, aligny center");
 
 		etiquetaCiudad = Labels.caps(Textos.t("catalogo.filtro.ciudad"));
 		fila.add(etiquetaCiudad, "aligny center");
 
 		ciudad = new JComboBox<>(new String[] { TODAS_LAS_CIUDADES });
+
+		// Redondeado y fino, como el resto de "Más filtros" (Fase 9): un
+		// desplegable de Swing crudo trae el marco grueso y recto de siempre, que
+		// desentonaba junto a los contadores ya afinados. FlatLaf expone el radio
+		// como propiedad de cliente en vez de por subclase, así que no hace falta
+		// pintar el combo a mano para conseguirlo.
+		ciudad.putClientProperty("JComponent.arc", RADIO_PILDORA);
 		ciudad.setRenderer(new DefaultListCellRenderer() {
 
 			private static final long serialVersionUID = 1L;
@@ -337,9 +392,120 @@ public class CatalogFilters extends JPanel {
 				notificar();
 			}
 		});
-		fila.add(ciudad, "height " + Typography.altoDeControlCompacto() + "!, aligny center, growx");
+		fila.add(ciudad, "height " + ALTO_CONTROL + "!, aligny center, growx");
 
 		return fila;
+	}
+
+	/**
+	 * Huéspedes mínimos y, si llega del buscador (Fase 9), el rango de fechas
+	 * aplicado.
+	 *
+	 * <p>
+	 * <b>Las fechas no se eligen aquí.</b> Este panel no lleva un calendario
+	 * propio —añadir uno duplicaría {@code CalendarioRango} solo para poder
+	 * cambiar de opinión sobre una fecha ya elegida en el buscador—, así que el
+	 * rango solo se aplica desde fuera ({@link #setDisponibilidad}) y aquí solo
+	 * se enseña y se puede quitar. Es la misma idea que un filtro de precio con
+	 * un botón de "restablecer": no todo control necesita poder construir su
+	 * propio valor, algunos solo necesitan poder soltarlo.
+	 */
+	private JPanel filaDeHuespedesYFechas() {
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0),
+				"[]" + Space.XS + "[]" + Space.MD + "[]" + Space.XS + "[]" + Space.XXS + "[]", "[]"));
+		fila.setOpaque(false);
+
+		etiquetaHuespedes = Labels.caps(Textos.t("catalogo.filtro.huespedes"));
+		fila.add(etiquetaHuespedes, "aligny center");
+
+		huespedesMinimos = new Contador(1, 1, 20, 1, () -> {
+			refrescarEtiquetaDeMasFiltros();
+			notificar();
+		}, true);
+		fila.add(huespedesMinimos, "h " + ALTO_CONTROL + "!, aligny center");
+
+		etiquetaFechas = Labels.caps(Textos.t("catalogo.filtro.fechas"));
+		fila.add(etiquetaFechas, "aligny center");
+
+		resumenFechas = Labels.muted(Textos.t("catalogo.filtro.fechas.ninguna"));
+		fila.add(resumenFechas, "aligny center");
+
+		quitarFechas = Buttons.link(Textos.t("catalogo.filtro.fechas.quitar"), e -> limpiarDisponibilidad());
+		quitarFechas.setVisible(false);
+		fila.add(quitarFechas, "aligny center");
+
+		return fila;
+	}
+
+	/**
+	 * Aplica el rango de fechas del buscador de destino y el conjunto de
+	 * alojamientos que ya no están libres en él.
+	 *
+	 * <p>
+	 * <b>Quien calcula {@code noDisponibles} es el servicio, no este filtro.</b>
+	 * Este panel no conoce ningún {@code ReservationService} —trabajaría sobre el
+	 * catálogo en memoria, y la disponibilidad no vive en {@code Housing}—, así
+	 * que recibe ya resuelta la pregunta "¿quién está libre?" y se limita a
+	 * excluir a quien no lo está.
+	 */
+	public void setDisponibilidad(LocalDate entrada, LocalDate salida, Set<Long> noDisponibles) {
+
+		this.fechaEntrada = entrada;
+		this.fechaSalida = salida;
+		this.idsNoDisponibles = noDisponibles;
+
+		resumenFechas.setText(Formato.rangoDeFechas(entrada, salida));
+		quitarFechas.setVisible(true);
+	}
+
+	private void limpiarDisponibilidad() {
+
+		fechaEntrada = null;
+		fechaSalida = null;
+		idsNoDisponibles = Collections.emptySet();
+
+		resumenFechas.setText(Textos.t("catalogo.filtro.fechas.ninguna"));
+		quitarFechas.setVisible(false);
+
+		notificar();
+	}
+
+	private boolean fechasActivas() {
+		return fechaEntrada != null && fechaSalida != null;
+	}
+
+	private boolean huespedesActivo() {
+		return huespedesMinimos.getValor() > 1;
+	}
+
+	/**
+	 * Marca una comodidad como ya elegida, sin que el usuario haya tocado el
+	 * chip (Fase 9): la usa el buscador de destino para preseleccionar
+	 * "Mascotas" cuando se pide desde allí. Reutiliza el mismo chip que ya
+	 * filtra el catálogo en lugar de sumar un segundo campo booleano — pedir
+	 * mascota en el buscador y marcar la comodidad en el catálogo son la misma
+	 * pregunta.
+	 */
+	public void preseleccionarComodidad(Amenity amenity) {
+
+		Chip chip = chipsPorComodidad.get(amenity);
+
+		if (chip != null && !chip.isSelected()) {
+			chip.setSelected(true);
+			comodidades.add(amenity);
+			refrescarEtiquetaDeMasFiltros();
+		}
+	}
+
+	/**
+	 * Fija el mínimo de huéspedes sin que el usuario haya tocado el contador
+	 * (Fase 9): lo usa el buscador de destino para trasladar "adultos + niños"
+	 * al catálogo.
+	 */
+	public void setHuespedesMinimos(int minimo) {
+		huespedesMinimos.setValor(minimo);
+		refrescarEtiquetaDeMasFiltros();
 	}
 
 	/**
@@ -399,7 +565,8 @@ public class CatalogFilters extends JPanel {
 	 */
 	private void refrescarEtiquetaDeMasFiltros() {
 
-		int activos = comodidades.size() + (precioActivo() ? 1 : 0) + (ciudadActiva() ? 1 : 0);
+		int activos = comodidades.size() + (precioActivo() ? 1 : 0) + (ciudadActiva() ? 1 : 0)
+				+ (huespedesActivo() ? 1 : 0) + (fechasActivas() ? 1 : 0);
 
 		String base = Textos.t("catalogo.filtro.masFiltros");
 		masFiltros.setText(activos == 0 ? base : base + " (" + activos + ")");
@@ -550,6 +717,11 @@ public class CatalogFilters extends JPanel {
 		etiquetaPrecio.setText(Textos.t("catalogo.filtro.precio"));
 		etiquetaCiudad.setText(Textos.t("catalogo.filtro.ciudad"));
 		ciudad.repaint();
+		etiquetaHuespedes.setText(Textos.t("catalogo.filtro.huespedes"));
+		etiquetaFechas.setText(Textos.t("catalogo.filtro.fechas"));
+		resumenFechas.setText(fechasActivas() ? Formato.rangoDeFechas(fechaEntrada, fechaSalida)
+				: Textos.t("catalogo.filtro.fechas.ninguna"));
+		quitarFechas.setText(Textos.t("catalogo.filtro.fechas.quitar"));
 
 		vista.actualizarTextos(Textos.t("catalogo.vista.lista"), Textos.t("catalogo.vista.cuadricula"));
 		orden.actualizarTextos(ordenesTraducidos());
@@ -636,6 +808,14 @@ public class CatalogFilters extends JPanel {
 			}
 
 			if (!TODAS_LAS_CIUDADES.equals(ciudadElegida) && !ciudadElegida.equals(housing.getLocation())) {
+				continue;
+			}
+
+			if (housing.getCapacity() < huespedesMinimos.getValor()) {
+				continue;
+			}
+
+			if (idsNoDisponibles.contains(housing.getId())) {
 				continue;
 			}
 

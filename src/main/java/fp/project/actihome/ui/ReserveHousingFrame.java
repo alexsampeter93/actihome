@@ -24,6 +24,7 @@ import net.miginfocom.swing.MigLayout;
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.entities.Reservation;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
+import fp.project.actihome.model.exceptions.CapacityExceededException;
 import fp.project.actihome.model.exceptions.CheckOutMustBeOneDayAfterException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.exceptions.MustBeTodayOrAfterException;
@@ -34,6 +35,7 @@ import fp.project.actihome.model.services.ReservationService;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Columnas;
 import fp.project.actihome.ui.components.CalendarioRango;
+import fp.project.actihome.ui.components.Contador;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Labels;
@@ -101,6 +103,11 @@ public class ReserveHousingFrame extends JFrame {
 	private JLabel subtituloUbicacion;
 	private JLabel etiquetaFechas;
 	private CalendarioRango calendario;
+	private JLabel etiquetaHuespedes;
+	private JLabel etiquetaAdultos;
+	private JLabel etiquetaNinos;
+	private Contador adultos;
+	private Contador ninos;
 	private JLabel etiquetaPago;
 	private Field titular;
 	private Field tarjeta;
@@ -148,6 +155,9 @@ public class ReserveHousingFrame extends JFrame {
 
 		superTitulo.setText(Textos.t("reservar.titulo"));
 		etiquetaFechas.setText(Textos.t("reservar.entradaYSalida"));
+		etiquetaHuespedes.setText(Textos.t("reservar.huespedes.label"));
+		etiquetaAdultos.setText(Textos.t("reservar.huespedes.adultos"));
+		etiquetaNinos.setText(Textos.t("reservar.huespedes.ninos"));
 		etiquetaPago.setText(Textos.t("reservar.pago.label"));
 		titular.setEtiqueta(Textos.t("reservar.titular"));
 		tarjeta.setEtiqueta(Textos.t("reservar.tarjeta"));
@@ -179,6 +189,8 @@ public class ReserveHousingFrame extends JFrame {
 		LocalDate manana = LocalDate.now().plusDays(1);
 
 		calendario.seleccionar(manana, manana.plusDays(1));
+		adultos.setValor(1);
+		ninos.setValor(0);
 		titular.setText("");
 		tarjeta.setText("");
 		caducidad.setText("");
@@ -354,7 +366,48 @@ public class ReserveHousingFrame extends JFrame {
 		calendario = new CalendarioRango(this::actualizarResumen);
 		panel.add(calendario, "gaptop " + Space.XS);
 
+		panel.add(campoHuespedes(), "gaptop " + Space.aire(Space.LG));
+
 		return panel;
+	}
+
+	/**
+	 * Cuántos adultos y niños viajan (Fase 9). Los bebés no se piden aquí: no
+	 * cuentan para el aforo del alojamiento, así que preguntarlos no cambiaría
+	 * nada en esta pantalla (ver {@link fp.project.actihome.model.entities.Reservation#getNumberOfChildren()}).
+	 */
+	private JPanel campoHuespedes() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		panel.setOpaque(false);
+
+		etiquetaHuespedes = Labels.caps(Textos.t("reservar.huespedes.label"));
+		panel.add(etiquetaHuespedes);
+
+		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
+		fila.setOpaque(false);
+
+		etiquetaAdultos = Labels.muted(Textos.t("reservar.huespedes.adultos"));
+		adultos = new Contador(1, 1, 12, 1, null);
+		fila.add(columnaContador(etiquetaAdultos, adultos));
+
+		etiquetaNinos = Labels.muted(Textos.t("reservar.huespedes.ninos"));
+		ninos = new Contador(0, 0, 10, 1, null);
+		fila.add(columnaContador(etiquetaNinos, ninos));
+
+		panel.add(fila, "gaptop " + Space.XXS);
+
+		return panel;
+	}
+
+	private JPanel columnaContador(JLabel etiqueta, Contador contador) {
+
+		JPanel columna = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[]", ""));
+		columna.setOpaque(false);
+		columna.add(etiqueta);
+		columna.add(contador, "gaptop " + Space.XXS);
+
+		return columna;
 	}
 
 	private JPanel acciones() {
@@ -388,7 +441,7 @@ public class ReserveHousingFrame extends JFrame {
 	}
 
 	private void volver() {
-		navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(housing));
+		navigator.volver(HousingDetailsFrame.class, frame -> frame.loadDetails(housing));
 	}
 
 	/**
@@ -528,7 +581,7 @@ public class ReserveHousingFrame extends JFrame {
 
 		try {
 			Reservation reserva = reservationService.reserveHousing(sessionManager.getLoggedInUser().getId(),
-					housingId, numeroTarjeta, checkIn, checkOut);
+					housingId, numeroTarjeta, checkIn, checkOut, adultos.getValor(), ninos.getValor());
 
 			navigator.ir(ShowMyReservationsFrame.class);
 			Toast.mostrar(navigator.ventanaVisible(),
@@ -550,6 +603,10 @@ public class ReserveHousingFrame extends JFrame {
 		} catch (AlreadyReservedException ex) {
 			restaurarBotonConfirmar();
 			error.setText(Textos.t("reservar.error.disponibilidadPerdida"));
+
+		} catch (CapacityExceededException ex) {
+			restaurarBotonConfirmar();
+			error.setText(Textos.t("reservar.error.capacidadSuperada", housing.getCapacity()));
 
 		} catch (InstanceNotFoundException | NotAuthorizedUserException ex) {
 			// InstanceNotFoundException no debería darse: se llega aquí siempre desde un

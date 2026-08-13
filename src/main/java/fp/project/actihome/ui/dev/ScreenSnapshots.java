@@ -30,6 +30,7 @@ import fp.project.actihome.model.entities.Review;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.services.HousingService;
+import fp.project.actihome.model.services.TradeProposalService;
 import fp.project.actihome.model.services.MessageService;
 import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.model.services.UserService;
@@ -174,6 +175,18 @@ public final class ScreenSnapshots {
 
 				Theme.cambiarA(Season.INVIERNO);
 				guardar(context.getBean(fp.project.actihome.ui.LoginFrame.class), "login");
+
+			} else if ("buscar".equals(prefijo)) {
+
+				abrirSesion(context, "alex", rol);
+
+				fp.project.actihome.ui.SearchHousingsFrame buscador = context
+						.getBean(fp.project.actihome.ui.SearchHousingsFrame.class);
+
+				for (Season estacion : Season.values()) {
+					Theme.cambiarA(estacion);
+					guardar(buscador, "buscar-" + estacion.name().toLowerCase());
+				}
 
 			} else if ("ajustes".equals(prefijo)) {
 				capturarAjustes(context);
@@ -444,6 +457,13 @@ public final class ScreenSnapshots {
 		// limpia el código, así que hacerla antes no dejaría rastro en la captura.
 		guardar(intercambio, "fase6-intercambio", () -> intercambio.buscarPorCodigo("10004"));
 
+		// Intercambio CON una propuesta pendiente. Es el estado nuevo de la Fase 9 y
+		// es de los que no se pueden revisar de otra forma: aparece solo cuando otra
+		// persona te ha propuesto algo, así que hay que sembrarlo. Mismo criterio que
+		// el codigo de recuperacion de la captura de Administracion.
+		sembrarPropuesta(context, housingService);
+		guardar(intercambio, "fase6-intercambio-propuesta");
+
 		// Intercambio sin alojamientos propios: se abre con un ADMIN recien creado, que
 		// no es duenno de nada, para ver el estado vacio.
 		abrirSesion(context, "nuevoadmin", RoleType.ADMIN);
@@ -457,6 +477,37 @@ public final class ScreenSnapshots {
 
 		ChangePasswordFrame contrasena = context.getBean(ChangePasswordFrame.class);
 		guardar(contrasena, "fase6-contrasena");
+	}
+
+	/**
+	 * Deja una propuesta pendiente de Marcos hacia un alojamiento de Lucia, para
+	 * poder retratar el bloque de propuestas.
+	 *
+	 * <p>
+	 * Se envía llamando al servicio de verdad y no insertando una fila a mano: si
+	 * mañana proponer exige algo más, esta siembra fallará al generar la captura
+	 * en vez de producir una lámina de un estado imposible.
+	 */
+	private static void sembrarPropuesta(ConfigurableApplicationContext context, HousingService housingService) {
+
+		TradeProposalService propuestas = context.getBean(TradeProposalService.class);
+		UserService userService = context.getBean(UserService.class);
+
+		try {
+			User marcos = userService.login("Marcos", "1234");
+
+			Housing deMarcos = housingService.showHousings().stream()
+					.filter(h -> h.getOwner() != null && h.getOwner().getId().equals(marcos.getId())).findFirst()
+					.orElseThrow(IllegalStateException::new);
+
+			Housing deLucia = housingService.showHousings().stream().filter(h -> h.getHousingCode().equals(10001L))
+					.findFirst().orElseThrow(IllegalStateException::new);
+
+			propuestas.propose(marcos.getId(), deMarcos.getId(), deLucia.getHousingCode());
+
+		} catch (Exception ex) {
+			throw new IllegalStateException("No se pudo sembrar la propuesta de ejemplo", ex);
+		}
 	}
 
 	/** Tres reservas del mismo cliente, una en cada estado visual. */
@@ -483,7 +534,7 @@ public final class ScreenSnapshots {
 	private static Reservation reservaDeEjemplo(Long codigo, LocalDateTime checkIn, LocalDateTime checkOut,
 			boolean checkedIn, User cliente, Housing housing) {
 
-		return new Reservation(codigo, checkIn, checkOut, "Tarjeta de crédito", LocalDateTime.now().minusDays(30),
+		return new Reservation(codigo, checkIn, checkOut, 2, 0, "Tarjeta de crédito", LocalDateTime.now().minusDays(30),
 				housing.getPricePerNight().multiply(BigDecimal.valueOf(3)), checkedIn, cliente, housing);
 	}
 
@@ -615,6 +666,17 @@ public final class ScreenSnapshots {
 			despuesDeMostrar.run();
 		}
 
+		// **Se vacía la cola de eventos antes de medir, y esto arregla capturas que
+		// mentían.** Varias pantallas aplazan trabajo de colocación con
+		// {@code invokeLater} porque hay cosas que no se pueden saber hasta que el
+		// layout ha corrido una vez —el alto de un párrafo que se ajusta al ancho, la
+		// posición de un scroll recién reconstruido—. Esta herramienta corre en el
+		// hilo principal, así que sin este paso pintaba el primer fotograma, antes de
+		// que nada de eso ocurriera: la aplicación se veía bien y la captura no, que
+		// es la peor combinación posible para una herramienta cuyo trabajo es contar
+		// cómo se ve la aplicación.
+		vaciarLaColaDeEventos();
+
 		disponer(ventana.getContentPane());
 
 		// La imagen se hace del tamaño del panel de contenido, no del de la ventana. La
@@ -638,6 +700,33 @@ public final class ScreenSnapshots {
 		g2.dispose();
 
 		return imagen;
+	}
+
+	/**
+	 * Espera a que el hilo de eventos termine lo que tuviera pendiente.
+	 *
+	 * <p>
+	 * Un {@code invokeAndWait} vacío basta: la cola se despacha en orden, así que
+	 * cuando le toca el turno a este bloque vacío todo lo encolado antes ya se ha
+	 * ejecutado. Se hacen dos vueltas porque un {@code revalidate} aplazado puede
+	 * encolar a su vez el repintado que provoca.
+	 */
+	private static void vaciarLaColaDeEventos() {
+
+		try {
+
+			for (int vuelta = 0; vuelta < 2; vuelta++) {
+				javax.swing.SwingUtilities.invokeAndWait(() -> {
+					// Solo sirve para esperar turno.
+				});
+			}
+
+		} catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+
+		} catch (java.lang.reflect.InvocationTargetException ex) {
+			throw new IllegalStateException(ex);
+		}
 	}
 
 	/** Recorre el árbol colocando cada componente. Ver {@code ThemeSnapshots}. */

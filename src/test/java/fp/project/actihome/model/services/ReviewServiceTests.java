@@ -21,6 +21,7 @@ import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.AlreadyPublishedException;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
+import fp.project.actihome.model.exceptions.CapacityExceededException;
 import fp.project.actihome.model.exceptions.CheckOutMustBeOneDayAfterException;
 import fp.project.actihome.model.exceptions.DuplicateInstanceException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
@@ -94,11 +95,12 @@ public class ReviewServiceTests {
 
 		try {
 			Reservation reserva = reservationService.reserveHousing(customer.getId(), housing.getId(),
-					"1234567890123456", entrada, salida);
+					"1234567890123456", entrada, salida, 1, 0);
 			reserva.setCheckOut(LocalDateTime.now().minusDays(1));
 
 		} catch (WrongCreditCardNumberException | MustBeTodayOrAfterException | CheckOutMustBeOneDayAfterException
-				| InstanceNotFoundException | AlreadyReservedException | NotAuthorizedUserException e) {
+				| InstanceNotFoundException | AlreadyReservedException | NotAuthorizedUserException
+				| CapacityExceededException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -396,7 +398,8 @@ public class ReviewServiceTests {
 	public void testPublishReviewBeforeCheckOutRejected()
 			throws DuplicateInstanceException, InstanceNotFoundException, LessThanOneRoomException,
 			NegativePrizeException, NotAuthorizedUserException, WrongCreditCardNumberException,
-			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException {
+			MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException, AlreadyReservedException,
+			CapacityExceededException {
 
 		User author = signUpUser("Author", RoleType.CUSTOMER);
 		User owner = signUpUser("Owner", RoleType.ADMIN);
@@ -406,7 +409,7 @@ public class ReviewServiceTests {
 		// en el futuro, sin el truco de createCompletedStay.
 		LocalDateTime entrada = LocalDateTime.now().plusDays(1);
 		reservationService.reserveHousing(author.getId(), housing.getId(), "1234567890123456", entrada,
-				entrada.plusDays(2));
+				entrada.plusDays(2), 1, 0);
 
 		assertThrows(MustHaveStayedException.class, () -> reviewService.publishReview(author.getId(), housing.getId(),
 				"Título", "Cuerpo", 3.5, 3.5, 3.5, 3.5, 3.5));

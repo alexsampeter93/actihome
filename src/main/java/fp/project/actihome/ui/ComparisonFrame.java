@@ -122,7 +122,7 @@ public class ComparisonFrame extends JFrame {
 
 		setContentPane(raiz);
 
-		Foco.alPulsarEscape(this, () -> navigator.ir(ShowHousingsFrame.class));
+		Foco.alPulsarEscape(this, () -> navigator.volver(ShowHousingsFrame.class));
 	}
 
 	/**
@@ -194,7 +194,7 @@ public class ComparisonFrame extends JFrame {
 
 		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]", "[]"));
 		panel.setOpaque(false);
-		panel.add(Buttons.link(Textos.t("comparar.volver"), e -> navigator.ir(ShowHousingsFrame.class)));
+		panel.add(Buttons.link(Textos.t("comparar.volver"), e -> navigator.volver(ShowHousingsFrame.class)));
 		return panel;
 	}
 

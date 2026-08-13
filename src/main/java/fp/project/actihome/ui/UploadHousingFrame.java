@@ -144,7 +144,7 @@ public class UploadHousingFrame extends JFrame {
 
 		setContentPane(raiz);
 
-		Foco.alPulsarEscape(this, () -> navigator.ir(ShowHousingsFrame.class));
+		Foco.alPulsarEscape(this, () -> navigator.volver(ShowHousingsFrame.class));
 	}
 
 	private JPanel cabecera() {
@@ -172,7 +172,7 @@ public class UploadHousingFrame extends JFrame {
 
 		botonPublicar = Buttons.primary(Textos.t("alojamientoAlta.publicar"), e -> publicar());
 		fila.add(botonPublicar, "height " + Typography.altoDeBoton() + "!");
-		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> navigator.ir(ShowHousingsFrame.class));
+		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> navigator.volver(ShowHousingsFrame.class));
 		fila.add(botonCancelar);
 
 		return fila;

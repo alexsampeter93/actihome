@@ -2,6 +2,8 @@ package fp.project.actihome.ui.theme;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 /**
@@ -81,5 +83,29 @@ public final class Formato {
 	/** Concordancia de singular y plural: {@code 1 reseña} / {@code 14 reseñas}. */
 	public static String plural(int cantidad, String singular, String plural) {
 		return cantidad + " " + (cantidad == 1 ? singular : plural);
+	}
+
+	/**
+	 * Un rango de fechas corto, para el resumen del buscador y del filtro de
+	 * catálogo: {@code 12 jul – 17 jul}.
+	 *
+	 * <p>
+	 * En el idioma activo, como el resto de fechas de la aplicación (ver
+	 * {@code ReviewDetailsFrame.formatoFecha()} para el mismo patrón ES/EN). El
+	 * año no aparece: un buscador de estancias solo ofrece fechas futuras
+	 * cercanas, y repetirlo en los dos extremos del rango no añade nada que la
+	 * persona no sepa ya.
+	 */
+	public static String rangoDeFechas(LocalDate entrada, LocalDate salida) {
+
+		if (entrada == null || salida == null) {
+			return "—";
+		}
+
+		DateTimeFormatter formato = Textos.idioma().getLanguage().equals("en")
+				? DateTimeFormatter.ofPattern("MMM d", Textos.idioma())
+				: DateTimeFormatter.ofPattern("d MMM", Textos.idioma());
+
+		return entrada.format(formato) + " – " + salida.format(formato);
 	}
 }

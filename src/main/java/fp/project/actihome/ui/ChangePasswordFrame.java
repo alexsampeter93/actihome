@@ -112,7 +112,7 @@ public class ChangePasswordFrame extends JFrame {
 
 		setContentPane(raiz);
 
-		Foco.alPulsarEscape(this, () -> navigator.ir(ShowHousingsFrame.class));
+		Foco.alPulsarEscape(this, () -> navigator.volver(ShowHousingsFrame.class));
 	}
 
 	private JPanel formulario() {
@@ -169,7 +169,7 @@ public class ChangePasswordFrame extends JFrame {
 
 		botonCambiar = Buttons.primary(Textos.t("contrasena.titulo"), e -> cambiar());
 		fila.add(botonCambiar, "height " + Typography.altoDeBoton() + "!");
-		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> navigator.ir(ShowHousingsFrame.class));
+		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> navigator.volver(ShowHousingsFrame.class));
 		fila.add(botonCancelar);
 
 		return fila;

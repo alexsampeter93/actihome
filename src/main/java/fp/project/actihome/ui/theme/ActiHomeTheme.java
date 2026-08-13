@@ -1,9 +1,16 @@
 package fp.project.actihome.ui.theme;
 
+import java.awt.AWTEvent;
+import java.awt.Component;
 import java.awt.Insets;
+import java.awt.KeyboardFocusManager;
+import java.awt.Toolkit;
+import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import com.formdev.flatlaf.FlatLaf;
@@ -63,6 +70,88 @@ public final class ActiHomeTheme {
 		// A partir de aquí, cualquier cambio de estación repinta la aplicación entera.
 		// Ver Theme: quien quiere enterarse se apunta; el emisor no conoce a nadie.
 		Theme.alCambiar(ActiHomeTheme::aplicarPaleta);
+
+		quitarFocoAlPulsarFuera();
+	}
+
+	/**
+	 * Pulsar en cualquier sitio inerte de la pantalla suelta el foco del campo
+	 * que lo tuviera — el cursor de escritura deja de parpadear y el marco del
+	 * buscador vuelve a su forma de reposo.
+	 *
+	 * <p>
+	 * <b>El problema que resuelve no es de esta aplicación, es de Swing.</b> Un
+	 * clic solo mueve el foco de teclado si el componente pulsado lo pide por su
+	 * cuenta, y eso lo decide cada Look and Feel dentro de su propio
+	 * {@code MouseListener}: un botón sí, un campo de texto sí, un
+	 * {@code JPanel} no. Pulsar sobre el fondo de una tarjeta, un margen o un
+	 * titular no hace absolutamente nada, así que el campo que tuviera el foco
+	 * lo sigue teniendo. Con {@link fp.project.actihome.ui.components.SearchField},
+	 * cuyo marco de escuadras se cierra al enfocarse, eso se ve: el buscador se
+	 * queda con pinta de activo hasta que se pulsa otro control.
+	 *
+	 * <p>
+	 * <b>Y la pregunta obvia —"¿el componente pulsado es enfocable?"— no
+	 * sirve.</b> Fue el primer intento y no disparó ni una vez: en Swing
+	 * {@code isFocusable()} viene a {@code true} de fábrica en casi todo,
+	 * paneles incluidos (lo que impide que el tabulador se pare en ellos es la
+	 * política de recorrido, no esa bandera). Preguntarlo devuelve "sí" para el
+	 * fondo de cualquier tarjeta, así que la condición nunca se cumplía.
+	 *
+	 * <p>
+	 * <b>Lo que sí se puede preguntar es el resultado.</b> Se anota quién tiene
+	 * el foco al empezar el clic y se vuelve a mirar cuando el clic ya se ha
+	 * repartido entero: si nadie se lo ha quedado, es que se ha pulsado algo
+	 * inerte y el foco se suelta. Funciona sin saber qué componentes piden foco
+	 * y cuáles no — que es justo lo que no hay forma de consultar. El
+	 * {@code invokeLater} es lo que espera a que el reparto termine; los
+	 * traspasos de foco dentro de una misma ventana son síncronos, así que para
+	 * entonces el nuevo dueño ya está anotado.
+	 *
+	 * <p>
+	 * Un solo oyente global y no un {@code MouseListener} por cada panel vacío:
+	 * cubrirlos a mano habría significado acordarse en cada pantalla nueva, y
+	 * olvidarlo en una sería indistinguible de "aquí funciona así".
+	 */
+	private static void quitarFocoAlPulsarFuera() {
+
+		Toolkit.getDefaultToolkit().addAWTEventListener(evento -> {
+
+			if (evento.getID() != MouseEvent.MOUSE_PRESSED) {
+				return;
+			}
+
+			Component conElFoco = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+
+			if (conElFoco == null) {
+				return;
+			}
+
+			Component pulsado = ((MouseEvent) evento).getComponent();
+
+			// El clic ha caído dentro del propio componente enfocado: colocar el cursor
+			// en mitad de un texto ya escrito no debe soltarlo.
+			if (pulsado != null && SwingUtilities.isDescendingFrom(pulsado, conElFoco)) {
+				return;
+			}
+
+			// Un desplegable abierto es un caso aparte: su lista vive en un
+			// JPopupMenu y el foco se queda en el combo mientras se elige. Soltarlo
+			// aquí cerraría la lista a mitad de la elección.
+			if (pulsado != null && SwingUtilities.getAncestorOfClass(JPopupMenu.class, pulsado) != null) {
+				return;
+			}
+
+			SwingUtilities.invokeLater(() -> {
+
+				KeyboardFocusManager gestor = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+
+				if (gestor.getFocusOwner() == conElFoco) {
+					gestor.clearFocusOwner();
+				}
+			});
+
+		}, AWTEvent.MOUSE_EVENT_MASK);
 	}
 
 	/**

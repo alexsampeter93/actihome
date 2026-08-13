@@ -15,6 +15,7 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
@@ -23,15 +24,25 @@ import org.springframework.stereotype.Component;
 import net.miginfocom.swing.MigLayout;
 
 import fp.project.actihome.model.entities.Housing;
+import fp.project.actihome.model.entities.TradeProposal;
 import fp.project.actihome.model.entities.User;
+import fp.project.actihome.model.exceptions.AlreadyProposedException;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
+import fp.project.actihome.model.exceptions.CannotTradeWithSelfException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
+import fp.project.actihome.model.exceptions.NotTheOwnerException;
+import fp.project.actihome.model.exceptions.ProposalNotPendingException;
 import fp.project.actihome.model.services.HousingService;
+import fp.project.actihome.model.services.TradeProposalService;
 import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Card;
+import fp.project.actihome.ui.components.Confirmacion;
+import fp.project.actihome.ui.components.Toast;
 import fp.project.actihome.ui.components.WrappingText;
+import fp.project.actihome.ui.components.Chip;
 import fp.project.actihome.ui.components.Field;
+import fp.project.actihome.ui.components.FilaFluida;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
@@ -99,7 +110,18 @@ public class TradeHousingsFrame extends JFrame {
 	 */
 	private static final String ALTO_DE_FOTO = "56:84:84";
 
+	/**
+	 * Cuántos códigos se sugieren como mucho.
+	 *
+	 * <p>
+	 * Cinco es lo que cabe en una fila cómoda; enseñar el catálogo entero
+	 * convertiría una pista rápida en una segunda lista que hay que leer. Mismo
+	 * número y mismo motivo que las sugerencias de destino del buscador.
+	 */
+	private static final int SUGERENCIAS_DE_CODIGO = 5;
+
 	private final transient HousingService housingService;
+	private final transient TradeProposalService tradeProposalService;
 	private final transient SessionManager sessionManager;
 	private final transient Navigator navigator;
 	private final HeaderPanel headerPanel;
@@ -108,6 +130,10 @@ public class TradeHousingsFrame extends JFrame {
 	private transient Housing propio;
 	private transient Housing candidato;
 
+	private JPanel sugerencias;
+	private FilaFluida filaSugerencias;
+	private JLabel etiquetaSugerencias;
+	private JPanel propuestas;
 	private JPanel comparacion;
 	private JPanel vacio;
 	private JPanel buscador;
@@ -127,10 +153,11 @@ public class TradeHousingsFrame extends JFrame {
 	private JLabel vacioCuerpo;
 	private JButton vacioBoton;
 
-	public TradeHousingsFrame(HousingService housingService, SessionManager sessionManager, Navigator navigator,
-			HeaderPanel headerPanel) {
+	public TradeHousingsFrame(HousingService housingService, TradeProposalService tradeProposalService,
+			SessionManager sessionManager, Navigator navigator, HeaderPanel headerPanel) {
 
 		this.housingService = housingService;
+		this.tradeProposalService = tradeProposalService;
 		this.sessionManager = sessionManager;
 		this.navigator = navigator;
 		this.headerPanel = headerPanel;
@@ -177,12 +204,29 @@ public class TradeHousingsFrame extends JFrame {
 				// el aire no da para más, se desborda hacia abajo y sale la barra de rescate
 				// — que es lo correcto: mejor desplazarse que leer un texto rebanado.
 				Space.margen(Space.XXL) + "[shrink 0]" + Space.aire(Space.LG) + "[shrink 0]" + Space.aire(Space.LG)
-						+ "[shrink 0]" + Space.aire(Space.MD) + "[shrink 0]" + Space.margen(Space.XXL)));
+						+ "[shrink 0]" + Space.aire(Space.MD) + "[shrink 0]" + Space.aire(Space.MD) + "[shrink 0]"
+						+ Space.aire(Space.XXL) + "[shrink 0]" + Space.margen(Space.XXL)));
 		exterior.setOpaque(false);
 
 		buscador = buscador();
 
 		exterior.add(cabecera(), Layout.anchoCentrado(Layout.CONTENIDO));
+
+		// **Las propuestas van ARRIBA, antes de la comparación.** La primera versión
+		// las puso al final, después del botón de enviar, y la captura lo dejó claro:
+		// quedaban por debajo del borde de la ventana, así que quien entraba con una
+		// propuesta esperando respuesta no se enteraba salvo que se desplazara. Lo que
+		// pide una decisión va antes que lo que ofrece una acción — y el bloque se
+		// oculta entero cuando no hay ninguna, que es el caso normal, así que no le
+		// roba sitio a nadie.
+		propuestas = propuestas();
+		exterior.add(propuestas, Layout.anchoCentrado(Layout.CONTENIDO));
+
+		// Las sugerencias van pegadas a la comparación, no al campo de código: lo que
+		// hacen es rellenar la tarjeta de "Recibes", y verlas justo encima de ella
+		// dice a qué hueco van sin necesidad de explicarlo.
+		sugerencias = sugerencias();
+		exterior.add(sugerencias, Layout.anchoCentrado(Layout.CONTENIDO));
 
 		comparacion = comparacion();
 		exterior.add(comparacion, Layout.anchoCentrado(Layout.CONTENIDO));
@@ -296,10 +340,239 @@ public class TradeHousingsFrame extends JFrame {
 		JPanel fila = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.LG + "[]", ""));
 		fila.setOpaque(false);
 
-		confirmar = Buttons.primary(Textos.t("intercambio.confirmar"), e -> intercambiar());
+		confirmar = Buttons.primary(Textos.t("intercambio.confirmar"), e -> proponer());
 		fila.add(confirmar, "height " + Typography.altoDeBoton() + "!");
 		botonCancelar = Buttons.link(Textos.t("ajustes.cancelar"), e -> volverAlDetalle());
 		fila.add(botonCancelar);
+
+		return fila;
+	}
+
+	/**
+	 * Los códigos que se pueden pedir, a un clic.
+	 *
+	 * <p>
+	 * <b>El fallo que corrige lo reportó alguien usando la aplicación, y es de
+	 * los que no se ven desde dentro:</b> la pantalla pedía "el código del
+	 * alojamiento que quieres recibir" y <b>en ningún sitio decía qué códigos
+	 * existen</b>. Quien la programó sabe que salen en cada ficha del catálogo;
+	 * quien la usa por primera vez se queda delante de un campo numérico sin
+	 * ninguna pista de qué escribir, y probar números es exactamente lo que un
+	 * formulario no debe pedir nunca.
+	 *
+	 * <p>
+	 * <b>Y la solución no es un texto de ayuda</b> —"los códigos están en el
+	 * catálogo"— porque eso manda al usuario a otra pantalla a copiar un número a
+	 * mano. Se enseñan aquí los de otros propietarios, con su nombre al lado para
+	 * que el número signifique algo, y pulsando uno se rellena el campo y se busca:
+	 * el mismo gesto que las sugerencias de destino de la pantalla de búsqueda, y
+	 * por el mismo motivo.
+	 *
+	 * <p>
+	 * <b>Primero los abiertos a intercambio.</b> Un propietario que ya ha
+	 * declarado que quiere permutar es más probable que acepte, así que ordenarlos
+	 * delante no es cosmético: cambia la probabilidad de que la propuesta llegue a
+	 * algo.
+	 */
+	private JPanel sugerencias() {
+
+		JPanel panel = new JPanel(new MigLayout("hidemode 3, " + Space.insets(0), "[]" + Space.SM + "[grow,fill]", "[]"));
+		panel.setOpaque(false);
+
+		etiquetaSugerencias = Labels.caps(Textos.t("intercambio.sugerencias"));
+		panel.add(etiquetaSugerencias, "aligny top, gaptop 6");
+
+		filaSugerencias = new FilaFluida(Space.XS, Space.XS);
+		panel.add(filaSugerencias, "growx");
+
+		return panel;
+	}
+
+	private void pintarSugerencias() {
+
+		filaSugerencias.removeAll();
+
+		User usuario = sessionManager.getLoggedInUser();
+
+		if (usuario == null) {
+			sugerencias.setVisible(false);
+			return;
+		}
+
+		List<Housing> candidatos = housingService.showHousings().stream()
+				.filter(h -> h.getOwner() != null && !h.getOwner().getId().equals(usuario.getId()))
+				// Los abiertos a intercambio delante. Comparar por el booleano negado
+				// ordena "false" antes que "true", así que se niega la condición que
+				// queremos primero.
+				.sorted(java.util.Comparator.comparing((Housing h) -> !h.isOpenToExchange()))
+				.limit(SUGERENCIAS_DE_CODIGO)
+				.toList();
+
+		sugerencias.setVisible(!candidatos.isEmpty());
+
+		for (Housing candidatoPosible : candidatos) {
+
+			Chip chip = new Chip(Textos.t("catalogo.numero") + " " + candidatoPosible.getHousingCode() + " · "
+					+ candidatoPosible.getName());
+
+			// Momentáneo, como los chips de destino del buscador: rellena el campo y se
+			// suelta. Lo que manda a partir de ahí es el código escrito, no qué chip se
+			// tocó por última vez.
+			chip.addActionListener(e -> {
+				chip.setSelected(false);
+				buscarPorCodigo(String.valueOf(candidatoPosible.getHousingCode()));
+			});
+
+			filaSugerencias.add(chip);
+		}
+
+		filaSugerencias.revalidate();
+		filaSugerencias.repaint();
+	}
+
+	/**
+	 * Las propuestas vivas: las que te han hecho arriba, las que has hecho
+	 * debajo.
+	 *
+	 * <p>
+	 * <b>Aquí y no en una pantalla nueva.</b> Una propuesta pendiente es el
+	 * intercambio a medio hacer, así que su sitio natural es la pantalla del
+	 * intercambio — y quien viene a proponer algo es exactamente quien necesita
+	 * enterarse de que le han propuesto otra cosa. Una decimonovena pantalla
+	 * habría repartido en dos sitios un mismo asunto y habría necesitado además
+	 * su propia entrada en la cabecera.
+	 *
+	 * <p>
+	 * <b>Recibidas primero, y no es un capricho de orden.</b> Las recibidas piden
+	 * una decisión tuya; las enviadas solo esperan la de otro. Lo que reclama
+	 * acción va antes que lo que informa.
+	 *
+	 * <p>
+	 * El bloque entero desaparece cuando no hay ninguna: un titular
+	 * "Propuestas" con nada debajo ocupa alto para decir que no hay nada que
+	 * decir.
+	 */
+	private JPanel propuestas() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, hidemode 3, " + Space.insets(0), "[grow,fill]", "[]"));
+		panel.setOpaque(false);
+		panel.setVisible(false);
+
+		return panel;
+	}
+
+	private void pintarPropuestas() {
+
+		propuestas.removeAll();
+
+		User usuario = sessionManager.getLoggedInUser();
+
+		if (usuario == null) {
+			propuestas.setVisible(false);
+			return;
+		}
+
+		List<TradeProposal> recibidas;
+		List<TradeProposal> enviadas;
+
+		try {
+			recibidas = tradeProposalService.showReceived(usuario.getId());
+			enviadas = tradeProposalService.showSent(usuario.getId());
+
+		} catch (InstanceNotFoundException ex) {
+			// El usuario de la sesión ha dejado de existir. No es un caso que la
+			// aplicación pueda provocar hoy, y enseñar la pantalla sin propuestas es
+			// más honesto que enseñar un error sobre algo que no se pidió.
+			propuestas.setVisible(false);
+			return;
+		}
+
+		propuestas.setVisible(!recibidas.isEmpty() || !enviadas.isEmpty());
+
+		if (!recibidas.isEmpty()) {
+
+			propuestas.add(Labels.caps(Textos.t("intercambio.propuestas.recibidas")), "gapbottom " + Space.XS);
+
+			for (TradeProposal propuesta : recibidas) {
+				propuestas.add(filaDePropuesta(propuesta, true), "growx, gapbottom " + Space.XS);
+			}
+		}
+
+		if (!enviadas.isEmpty()) {
+
+			propuestas.add(Labels.caps(Textos.t("intercambio.propuestas.enviadas")),
+					"gaptop " + Space.LG + ", gapbottom " + Space.XS);
+
+			for (TradeProposal propuesta : enviadas) {
+				propuestas.add(filaDePropuesta(propuesta, false), "growx, gapbottom " + Space.XS);
+			}
+		}
+
+		propuestas.revalidate();
+		propuestas.repaint();
+
+		// **Un segundo pase, y no es un apaño supersticioso.** El texto de cada
+		// propuesta es un WrappingText, y un JTextArea con ajuste de línea calcula su
+		// alto a partir del ancho que YA tiene: recién construido no tiene ninguno,
+		// así que la primera vez contesta el alto de un párrafo partido en tantas
+		// líneas como quepan en cero puntos — y la tarjeta salía con medio palmo de
+		// hueco muerto debajo de una frase de una línea. En cuanto el layout le ha
+		// dado su ancho de verdad, la misma pregunta tiene otra respuesta.
+		//
+		// Es el mismo motivo por el que reiniciar la posición de un scroll va también
+		// dentro de un invokeLater: la lista acaba de reconstruirse y su alto todavía
+		// no está calculado.
+		SwingUtilities.invokeLater(propuestas::revalidate);
+	}
+
+	/**
+	 * Una propuesta: qué se ofrece a cambio de qué, y qué puedes hacer con ella.
+	 *
+	 * <p>
+	 * El texto va en {@link WrappingText} y no en una etiqueta, por la regla 5 de
+	 * la adaptabilidad: lleva dentro dos nombres de alojamiento y un nombre de
+	 * usuario, ninguno de longitud conocida, y un {@code JLabel} declararía la
+	 * frase entera como ancho mínimo.
+	 */
+	private Card filaDePropuesta(TradeProposal propuesta, boolean recibida) {
+
+		// **El texto en su propia fila y los botones debajo, no los dos en una.**
+		// Compartiendo fila, la tarjeta salía tres veces más alta de lo que su
+		// contenido pedía: un JTextArea con ajuste de línea calcula su alto a partir
+		// del ancho que ya tiene, y en una celda cuyo ancho depende de lo que ocupen
+		// los botones de al lado ese ancho todavía no existe cuando se le pregunta.
+		// Ocupando el ancho entero desde el principio, el párrafo sabe en cuántas
+		// líneas cabe. Y de paso se lee mejor: la frase completa arriba, lo que se
+		// puede hacer con ella debajo.
+		Card fila = new Card(
+				new MigLayout("wrap 1, " + Space.insets(Space.MD), "[grow,fill]", "[]" + Space.SM + "[]"));
+
+		String texto = recibida
+				? Textos.t("intercambio.propuestas.recibida", propuesta.getProposer().getUsername(),
+						propuesta.getOffered().getName(), propuesta.getRequested().getName())
+				: Textos.t("intercambio.propuestas.enviada", propuesta.getOffered().getName(),
+						propuesta.getRequested().getName(), propuesta.getRequested().getOwner().getUsername());
+
+		fila.add(new WrappingText(texto), "growx, wmin 0");
+
+		// El "push" es lo que empuja los botones a la derecha. No vale un "align
+		// right" en el componente: la columna de esta tarjeta es "[grow,fill]", y
+		// fill anula cualquier alineación —el componente ocupa la celda entera, así
+		// que no queda hueco hacia el que alinearlo—. Es la trampa de MigLayout que
+		// el manual del proyecto describe para los anchos, vista en el otro eje.
+		JPanel botones = new JPanel(new MigLayout(Space.insets(0), "push[]" + Space.SM + "[]", "[]"));
+		botones.setOpaque(false);
+
+		if (recibida) {
+			botones.add(Buttons.primary(Textos.t("intercambio.propuestas.aceptar"), e -> aceptar(propuesta)),
+					"height " + Typography.altoDeBoton() + "!");
+			botones.add(Buttons.link(Textos.t("intercambio.propuestas.rechazar"), e -> rechazar(propuesta)));
+
+		} else {
+			botones.add(Buttons.link(Textos.t("intercambio.propuestas.retirar"), e -> retirar(propuesta)));
+		}
+
+		fila.add(botones, "growx");
 
 		return fila;
 	}
@@ -310,6 +583,7 @@ public class TradeHousingsFrame extends JFrame {
 		tituloCabecera.setText(Textos.t("intercambio.titulo"));
 		subtituloCabecera.setText(Textos.t("intercambio.subtitulo"));
 		codigo.setEtiqueta(Textos.t("intercambio.codigo"));
+		etiquetaSugerencias.setText(Textos.t("intercambio.sugerencias"));
 		botonBuscar.setText(Textos.t("intercambio.buscar"));
 		confirmar.setText(Textos.t("intercambio.confirmar"));
 		botonCancelar.setText(Textos.t("ajustes.cancelar"));
@@ -399,7 +673,14 @@ public class TradeHousingsFrame extends JFrame {
 		comparacion.setVisible(!sinAlojamiento);
 		buscador.setVisible(!sinAlojamiento);
 		acciones.setVisible(!sinAlojamiento);
+		sugerencias.setVisible(!sinAlojamiento);
 		vacio.setVisible(sinAlojamiento);
+
+		// Las propuestas se pintan también sin alojamiento propio, y es a propósito:
+		// se puede haber quedado sin ninguno justo por haber aceptado un intercambio,
+		// y aun así seguir teniendo propuestas enviadas que retirar. Su propio
+		// pintado decide si el bloque se ve o no.
+		pintarPropuestas();
 
 		if (sinAlojamiento) {
 			return;
@@ -407,6 +688,7 @@ public class TradeHousingsFrame extends JFrame {
 
 		pintarPropio();
 		pintarCandidato();
+		pintarSugerencias();
 	}
 
 	private void pintarPropio() {
@@ -707,28 +989,136 @@ public class TradeHousingsFrame extends JFrame {
 		pintarCandidato();
 	}
 
-	private void intercambiar() {
+	/**
+	 * Envía la propuesta. <b>No permuta nada</b>: eso lo hará quien la reciba, si
+	 * quiere.
+	 *
+	 * <p>
+	 * <b>Con confirmación previa, y no por costumbre.</b> La regla del proyecto no
+	 * es "pregunta antes de todo" sino "pregunta antes de lo que no se puede
+	 * deshacer", y aquí lo irreversible no es enviar —una propuesta se retira—
+	 * sino lo que puede pasar después sin volver a preguntarte: que el otro acepte
+	 * y tu alojamiento deje de ser tuyo. El diálogo dice exactamente eso, con el
+	 * nombre de la persona delante, porque enseñar a quién se lo estás mandando es
+	 * la última oportunidad de detectar que te has equivocado de código.
+	 */
+	private void proponer() {
 
 		if (candidato == null) {
 			return;
 		}
 
+		String otro = candidato.getOwner().getUsername();
+
+		if (!Confirmacion.preguntar(this, Textos.t("intercambio.proponer.titulo"),
+				Textos.t("intercambio.proponer.cuerpo", otro), Textos.t("intercambio.confirmar"))) {
+			return;
+		}
+
 		try {
-			housingService.tradeHousings(sessionManager.getLoggedInUser().getId(), housingId,
+			tradeProposalService.propose(sessionManager.getLoggedInUser().getId(), housingId,
 					candidato.getHousingCode());
 
-			navigator.ir(ShowHousingsFrame.class);
+			// Se recarga la pantalla en lugar de navegar a otra: la propuesta acaba de
+			// aparecer en "las que has enviado", tres dedos más abajo. Mandar al catálogo
+			// —lo que hacía la versión anterior— era justo lo que hacía que pareciera que
+			// no había pasado nada.
+			recargar();
+			Toast.mostrar(this, Textos.t("intercambio.proponer.enviada", otro));
 
 		} catch (AlreadyReservedException ex) {
 			error.setText(Textos.t("intercambio.error.algunoReservado"));
+
+		} catch (AlreadyProposedException ex) {
+			error.setText(Textos.t("intercambio.error.yaPropuesto"));
+
+		} catch (CannotTradeWithSelfException ex) {
+			error.setText(Textos.t("intercambio.error.contigoMismo"));
+
+		} catch (NotTheOwnerException ex) {
+			error.setText(Textos.t("intercambio.error.noEsTuyo"));
 
 		} catch (InstanceNotFoundException ex) {
 			error.setText(Textos.t("intercambio.error.unoNoExiste"));
 		}
 	}
 
+	private void aceptar(TradeProposal propuesta) {
+
+		String otro = propuesta.getProposer().getUsername();
+		String recibes = propuesta.getOffered().getName();
+		String entregas = propuesta.getRequested().getName();
+
+		if (!Confirmacion.preguntar(this, Textos.t("intercambio.propuestas.aceptar.titulo"),
+				Textos.t("intercambio.propuestas.aceptar.cuerpo", recibes, entregas, otro),
+				Textos.t("intercambio.propuestas.aceptar"))) {
+			return;
+		}
+
+		try {
+			tradeProposalService.accept(sessionManager.getLoggedInUser().getId(), propuesta.getId());
+
+			recargar();
+			Toast.mostrar(this, Textos.t("intercambio.propuestas.aceptada", recibes));
+
+		} catch (AlreadyReservedException ex) {
+			recargar();
+			error.setText(Textos.t("intercambio.error.algunoReservado"));
+
+		} catch (NotTheOwnerException ex) {
+			recargar();
+			error.setText(Textos.t("intercambio.error.noEsTuyo"));
+
+		} catch (ProposalNotPendingException ex) {
+			// Alguien la retiró mientras estaba en pantalla. Se recarga en silencio: el
+			// estado real ha cambiado y la lista de abajo ya lo cuenta.
+			recargar();
+			error.setText(Textos.t("intercambio.error.yaNoPendiente"));
+
+		} catch (InstanceNotFoundException ex) {
+			recargar();
+			error.setText(Textos.t("intercambio.error.unoNoExiste"));
+		}
+	}
+
+	private void rechazar(TradeProposal propuesta) {
+
+		try {
+			tradeProposalService.reject(sessionManager.getLoggedInUser().getId(), propuesta.getId());
+
+			recargar();
+			Toast.mostrar(this, Textos.t("intercambio.propuestas.rechazada"));
+
+		} catch (ProposalNotPendingException ex) {
+			recargar();
+			error.setText(Textos.t("intercambio.error.yaNoPendiente"));
+
+		} catch (NotTheOwnerException | InstanceNotFoundException ex) {
+			recargar();
+			error.setText(Textos.t("intercambio.error.unoNoExiste"));
+		}
+	}
+
+	private void retirar(TradeProposal propuesta) {
+
+		try {
+			tradeProposalService.withdraw(sessionManager.getLoggedInUser().getId(), propuesta.getId());
+
+			recargar();
+			Toast.mostrar(this, Textos.t("intercambio.propuestas.retirada"));
+
+		} catch (ProposalNotPendingException ex) {
+			recargar();
+			error.setText(Textos.t("intercambio.error.yaNoPendiente"));
+
+		} catch (NotTheOwnerException | InstanceNotFoundException ex) {
+			recargar();
+			error.setText(Textos.t("intercambio.error.unoNoExiste"));
+		}
+	}
+
 	private void volverAlDetalle() {
-		navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(propio));
+		navigator.volver(HousingDetailsFrame.class, frame -> frame.loadDetails(propio));
 	}
 
 	/**

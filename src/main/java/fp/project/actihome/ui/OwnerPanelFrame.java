@@ -26,6 +26,7 @@ import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.services.HousingService;
 import fp.project.actihome.model.services.ReservationService;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
@@ -71,6 +72,7 @@ public class OwnerPanelFrame extends JFrame {
 	private final transient Navigator navigator;
 	private final HeaderPanel headerPanel;
 
+	private javax.swing.JButton enlaceVolver;
 	private JLabel superTitulo;
 	private JLabel titulo;
 	private Stat statAlojamientos;
@@ -120,13 +122,29 @@ public class OwnerPanelFrame extends JFrame {
 		raiz.add(zonaDeLista(), "grow");
 
 		setContentPane(raiz);
+
+		Foco.alPulsarEscape(this, () -> navigator.volver(ShowHousingsFrame.class));
 	}
 
+	/**
+	 * Titular con enlace de salida.
+	 *
+	 * <p>
+	 * <b>Esta pantalla no tenía ninguna forma visible de salir</b> (Fase 9,
+	 * segunda pasada). Se llega desde el menú de usuario, no desde la barra de
+	 * navegación, así que la regla del proyecto la señala: <em>a una pantalla a la
+	 * que se llega desde la barra no le hace falta un "atrás", porque la barra ya
+	 * lo es; a una a la que se llega desde dentro, sí.</em> Aquí ni siquiera había
+	 * Escape.
+	 */
 	private JPanel titular(){
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.XL, Space.HUGE, Space.MD, Space.HUGE),
 				"[grow,fill]", "[]" + Space.XXS + "[]"));
 		panel.setOpaque(false);
+
+		enlaceVolver = Buttons.link(" ", e -> navigator.volver(ShowHousingsFrame.class));
+		panel.add(enlaceVolver, "gapbottom " + Space.XS);
 
 		superTitulo = Labels.capsAccent(" ");
 		panel.add(superTitulo);
@@ -183,6 +201,7 @@ public class OwnerPanelFrame extends JFrame {
 
 	private void actualizarTextosFijos() {
 
+		enlaceVolver.setText(Textos.t("nav.atras"));
 		superTitulo.setText(Textos.t("panelPropietario.superTitulo"));
 		titulo.setText(Textos.t("panelPropietario.titulo"));
 		statAlojamientos.setRotulo(Textos.t("panelPropietario.resumen.alojamientos"));

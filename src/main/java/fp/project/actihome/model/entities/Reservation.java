@@ -24,6 +24,23 @@ public class Reservation {
 
 	private LocalDateTime checkOut;
 
+	/**
+	 * Cuántos adultos viajan. Al menos uno: una reserva sin nadie no significa
+	 * nada.
+	 */
+	private int numberOfAdults;
+
+	/**
+	 * Cuántos niños viajan, además de los adultos. Puede ser cero.
+	 *
+	 * <p>
+	 * Los bebés no están aquí a propósito: no ocupan plaza en ningún sistema de
+	 * reservas real, así que el buscador los pregunta por completitud pero no
+	 * cuentan para el aforo del alojamiento ni se guardan en la reserva. Contar
+	 * un dato que no se usa para nada sería peor que no preguntarlo.
+	 */
+	private int numberOfChildren;
+
 	private String paymentMethod;
 
 	private LocalDateTime reservationDate;
@@ -43,13 +60,15 @@ public class Reservation {
 	}
 
 	public Reservation(Long id, Long reservationCode, LocalDateTime checkIn, LocalDateTime checkOut,
-			String paymentMethod, LocalDateTime reservationDate, BigDecimal totalPrice, boolean checkedIn, User customer,
-			Housing housing) {
+			int numberOfAdults, int numberOfChildren, String paymentMethod, LocalDateTime reservationDate,
+			BigDecimal totalPrice, boolean checkedIn, User customer, Housing housing) {
 		super();
 		this.id = id;
 		this.reservationCode = reservationCode;
 		this.checkIn = checkIn;
 		this.checkOut = checkOut;
+		this.numberOfAdults = numberOfAdults;
+		this.numberOfChildren = numberOfChildren;
 		this.paymentMethod = paymentMethod;
 		this.reservationDate = reservationDate;
 		this.totalPrice = totalPrice;
@@ -58,16 +77,19 @@ public class Reservation {
 		this.housing = housing;
 	}
 
-	public Reservation(Long reservationCode, LocalDateTime checkIn, LocalDateTime checkOut, String paymentMethod, LocalDateTime reservationDate,
-			BigDecimal totalPrice, boolean checkedIn, User customer, Housing housing) {
+	public Reservation(Long reservationCode, LocalDateTime checkIn, LocalDateTime checkOut, int numberOfAdults,
+			int numberOfChildren, String paymentMethod, LocalDateTime reservationDate, BigDecimal totalPrice,
+			boolean checkedIn, User customer, Housing housing) {
 		super();
 		this.reservationCode = reservationCode;
 		this.checkIn = checkIn;
 		this.checkOut = checkOut;
+		this.numberOfAdults = numberOfAdults;
+		this.numberOfChildren = numberOfChildren;
 		this.paymentMethod = paymentMethod;
 		this.reservationDate = reservationDate;
 		this.totalPrice = totalPrice;
-		this.checkedIn = checkedIn; 
+		this.checkedIn = checkedIn;
 		this.customer = customer;
 		this.housing = housing;
 	}
@@ -104,6 +126,22 @@ public class Reservation {
 
 	public void setCheckOut(LocalDateTime checkOut) {
 		this.checkOut = checkOut;
+	}
+
+	public int getNumberOfAdults() {
+		return numberOfAdults;
+	}
+
+	public void setNumberOfAdults(int numberOfAdults) {
+		this.numberOfAdults = numberOfAdults;
+	}
+
+	public int getNumberOfChildren() {
+		return numberOfChildren;
+	}
+
+	public void setNumberOfChildren(int numberOfChildren) {
+		this.numberOfChildren = numberOfChildren;
 	}
 
 	public String getPaymentMethod() {

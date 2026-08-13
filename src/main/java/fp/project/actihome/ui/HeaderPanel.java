@@ -161,9 +161,16 @@ public class HeaderPanel extends JPanel {
 		// ella la barra usa el aire que el diseño pide cuando hay sitio y lo cede —solo
 		// entonces, y solo hasta un tope decente— cuando no lo hay. Es preferible a
 		// esconder elementos: el aire se puede negociar, un botón no.
+		// **El tercer hueco tras "push" cedía hasta MD (16) y no más abajo, y hasta
+		// la Fase 9 eso bastaba.** Con tres destinos de navegación el hueco nunca
+		// llegaba a necesitar más: "BUSCAR" fue el cuarto texto fijo que la barra
+		// tuvo que sumar sin poder encoger, y a 1024 de ancho el nombre de usuario
+		// empezaba a salirse por 14 puntos. El aire tenía más margen que ceder —XS
+		// en vez de MD entre navegación, selector y usuario, XXS en vez de SM entre
+		// destinos— y no se le había pedido.
 		setLayout(new MigLayout(Space.insets(Space.XS, 0, Space.XS, 0),
-				Space.LG + ":" + Space.XXXL + ":" + Space.XXXL + "[]11[]push[]" + Space.MD + ":" + Space.XXL + ":"
-						+ Space.XXL + "[]" + Space.MD + ":" + Space.XXL + ":" + Space.XXL + "[]" + Space.LG + ":"
+				Space.LG + ":" + Space.XXXL + ":" + Space.XXXL + "[]11[]push[]" + Space.XS + ":" + Space.XXL + ":"
+						+ Space.XXL + "[]" + Space.XS + ":" + Space.XXL + ":" + Space.XXL + "[]" + Space.LG + ":"
 						+ Space.XXXL + ":" + Space.XXXL,
 				"[]"));
 		setOpaque(false);
@@ -201,6 +208,7 @@ public class HeaderPanel extends JPanel {
 	 */
 	private void construirNavegacion() {
 
+		anadirDestino(navegacion, Textos.t("header.nav.buscar"), SearchHousingsFrame.class);
 		anadirDestino(navegacion, Textos.t("header.nav.catalogo"), ShowHousingsFrame.class);
 		anadirDestino(navegacion, Textos.t("header.nav.mensajes"), MessagesFrame.class);
 
@@ -259,9 +267,12 @@ public class HeaderPanel extends JPanel {
 		destinos.add(destino);
 
 		// El hueco entre destinos también es elástico, por el mismo motivo que los de la
-		// barra: es aire, y el aire es lo primero que se cede cuando falta ancho.
+		// barra: es aire, y el aire es lo primero que se cede cuando falta ancho. El
+		// mínimo es XXS y no SM desde que la barra pasó de tres destinos a cuatro
+		// (Fase 9): con cuatro textos fijos que no pueden encoger, el hueco entre
+		// ellos es lo único que puede ceder algo más.
 		contenedor.add(destino,
-				destinos.size() == 1 ? "gapleft 0" : "gapleft " + Space.SM + ":" + Space.XL + ":" + Space.XL);
+				destinos.size() == 1 ? "gapleft 0" : "gapleft " + Space.XXS + ":" + Space.XL + ":" + Space.XL);
 	}
 
 	private void construirZonaUsuario() {

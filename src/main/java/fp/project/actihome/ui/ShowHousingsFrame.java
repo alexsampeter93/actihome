@@ -23,11 +23,13 @@ import org.springframework.stereotype.Component;
 
 import net.miginfocom.swing.MigLayout;
 
+import fp.project.actihome.model.entities.Amenity;
 import fp.project.actihome.model.entities.Housing;
 import fp.project.actihome.model.entities.User;
 import fp.project.actihome.model.entities.User.RoleType;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.services.HousingService;
+import fp.project.actihome.model.services.ReservationService;
 import fp.project.actihome.model.services.ReviewService;
 import fp.project.actihome.ui.catalog.BarraComparar;
 import fp.project.actihome.ui.catalog.BotonMas;
@@ -41,6 +43,7 @@ import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.nav.ConNombre;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.Space;
@@ -103,7 +106,7 @@ import fp.project.actihome.ui.components.Rescate;
 @Component
 @Profile("!test")
 @Lazy
-public class ShowHousingsFrame extends JFrame {
+public class ShowHousingsFrame extends JFrame implements ConNombre {
 
 	private static final long serialVersionUID = 1L;
 
@@ -130,6 +133,7 @@ public class ShowHousingsFrame extends JFrame {
 
 	private final transient HousingService housingService;
 	private final transient ReviewService reviewService;
+	private final transient ReservationService reservationService;
 	private final transient SessionManager sessionManager;
 	private final transient Navigator navigator;
 	private final HeaderPanel headerPanel;
@@ -210,17 +214,54 @@ public class ShowHousingsFrame extends JFrame {
 	 */
 	private transient Object suscripcion;
 
-	public ShowHousingsFrame(HousingService housingService, ReviewService reviewService, SessionManager sessionManager,
-			Navigator navigator, HeaderPanel headerPanel) {
+	public ShowHousingsFrame(HousingService housingService, ReviewService reviewService,
+			ReservationService reservationService, SessionManager sessionManager, Navigator navigator,
+			HeaderPanel headerPanel) {
 
 		this.housingService = housingService;
 		this.reviewService = reviewService;
+		this.reservationService = reservationService;
 		this.sessionManager = sessionManager;
 		this.navigator = navigator;
 		this.headerPanel = headerPanel;
 
 		initUI();
 	}
+
+	/**
+	 * Deja pendiente lo que se pidió en el buscador de destino, fechas y
+	 * huéspedes (Fase 9), para aplicarlo en cuanto el catálogo esté cargado.
+	 *
+	 * <p>
+	 * <b>No se aplica aquí mismo.</b> Este método se llama desde
+	 * {@code navigator.ir(ShowHousingsFrame.class, frame -> frame.aplicarBusqueda(...))},
+	 * es decir, <em>antes</em> de que {@code setVisible(true)} recargue
+	 * {@link #catalogo} y reconstruya {@link #filtros}. Escribir directamente en
+	 * los controles del filtro en este punto se perdería en cuanto
+	 * {@code cargarAlojamientos()} los reinicie.
+	 *
+	 * @param destino    texto libre de destino, o vacío para no filtrar por él
+	 * @param entrada    fecha de entrada, o {@code null} si el buscador no la pidió
+	 * @param salida     fecha de salida, o {@code null}
+	 * @param huespedes  adultos + niños; los bebés no cuentan para el aforo
+	 * @param conMascota si se pidió que el alojamiento admita mascotas
+	 */
+	public void aplicarBusqueda(String destino, java.time.LocalDate entrada, java.time.LocalDate salida,
+			int huespedes, boolean conMascota) {
+
+		busquedaPendiente = new BusquedaPendiente(destino, entrada, salida, huespedes, conMascota);
+	}
+
+	/**
+	 * Lo que trae el buscador de destino, en un solo objeto para no repartir
+	 * cinco campos sueltos que solo tienen sentido juntos y solo hasta la
+	 * próxima carga.
+	 */
+	private record BusquedaPendiente(String destino, java.time.LocalDate entrada, java.time.LocalDate salida,
+			int huespedes, boolean conMascota) {
+	}
+
+	private transient BusquedaPendiente busquedaPendiente;
 
 	@Override
 	public void setVisible(boolean visible) {
@@ -395,7 +436,50 @@ public class ShowHousingsFrame extends JFrame {
 		hero.actualizarCifras(catalogo, ocupadosAhora);
 		filtros.setUbicaciones(catalogo);
 		aplicarVistaPorDefecto();
+		aplicarBusquedaPendiente();
 		aplicarFiltros();
+	}
+
+	/**
+	 * Traslada al filtro lo que trajo el buscador de destino, si lo trajo, y lo
+	 * olvida a continuación.
+	 *
+	 * <p>
+	 * <b>Se olvida siempre, incluso si no había nada que aplicar.</b> Sin eso,
+	 * volver al catálogo por la cabecera después de una búsqueda repetiría esos
+	 * mismos criterios en cada visita posterior de la sesión, que es justo el
+	 * fallo que ya se corrigió una vez para la vista por defecto
+	 * ({@link #usuarioDeLaVistaAplicada}).
+	 */
+	private void aplicarBusquedaPendiente() {
+
+		BusquedaPendiente busqueda = busquedaPendiente;
+		busquedaPendiente = null;
+
+		if (busqueda == null) {
+			return;
+		}
+
+		if (busqueda.destino() != null && !busqueda.destino().isBlank()) {
+			filtros.extraerBuscador().setTexto(busqueda.destino());
+		}
+
+		if (busqueda.huespedes() > 1) {
+			filtros.setHuespedesMinimos(busqueda.huespedes());
+		}
+
+		if (busqueda.conMascota()) {
+			filtros.preseleccionarComodidad(Amenity.PETS);
+		}
+
+		if (busqueda.entrada() != null && busqueda.salida() != null) {
+
+			java.time.LocalDateTime checkIn = busqueda.entrada().atStartOfDay();
+			java.time.LocalDateTime checkOut = busqueda.salida().atStartOfDay();
+
+			filtros.setDisponibilidad(busqueda.entrada(), busqueda.salida(),
+					reservationService.showUnavailableHousingIds(checkIn, checkOut));
+		}
 	}
 
 	/**
@@ -705,6 +789,12 @@ public class ShowHousingsFrame extends JFrame {
 		comparar.actualizarTextos();
 
 		hero.ajustarEscalaDeDisplay(getWidth());
+	}
+
+	/** El nombre con el que la enseña el enlace de atrás de otra pantalla. */
+	@Override
+	public String nombreDePantalla() {
+		return Textos.t("header.nav.catalogo");
 	}
 
 }

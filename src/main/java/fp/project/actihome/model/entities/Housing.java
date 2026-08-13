@@ -64,6 +64,18 @@ public class Housing {
 
 	private int numberOfRooms;
 
+	/**
+	 * Cuántos huéspedes caben, en total (adultos y niños).
+	 *
+	 * <p>
+	 * Añadido para la búsqueda por destino, fechas y huéspedes: sin este dato,
+	 * "cuántos venís" no tenía nada que comprobar y un contador de personas
+	 * habría sido un adorno que no filtraba nada de verdad. Ver
+	 * {@link fp.project.actihome.model.services.HousingData#getCapacity()} para
+	 * el valor por defecto que reciben los alojamientos que no lo declaran.
+	 */
+	private int capacity;
+
 	private BigDecimal pricePerNight;
 
 	private String description;
@@ -158,6 +170,14 @@ public class Housing {
 
 	public void setNumberOfRooms(int numberOfRooms) {
 		this.numberOfRooms = numberOfRooms;
+	}
+
+	public int getCapacity() {
+		return capacity;
+	}
+
+	public void setCapacity(int capacity) {
+		this.capacity = capacity;
 	}
 
 	public BigDecimal getPricePerNight() {

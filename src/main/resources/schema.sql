@@ -56,6 +56,10 @@ CREATE TABLE IF NOT EXISTS HOUSINGS (
 	name VARCHAR(80) NOT NULL,
 	type VARCHAR(30) NOT NULL,
 	numberOfRooms INTEGER NOT NULL,
+	-- Cuántos huéspedes caben en total (adultos y niños). La búsqueda por
+	-- destino, fechas y huéspedes necesita algo real que comprobar: sin esto, un
+	-- contador de personas en el buscador no filtraría nada de verdad.
+	capacity INTEGER DEFAULT 2 NOT NULL,
 	pricePerNight DECIMAL(10, 2) NOT NULL,
 	description VARCHAR(500) NOT NULL,
 	-- Nombre del archivo de foto dentro de /images/housings/. Nulo mientras no
@@ -135,6 +139,11 @@ CREATE TABLE IF NOT EXISTS RESERVATIONS (
 	reservationCode BIGINT NOT NULL,
 	checkIn DATETIME NOT NULL,
 	checkOut DATETIME NOT NULL,
+	-- Cuántas personas viajan (Fase 9). Al menos un adulto; los niños son
+	-- opcionales. Sirve para comprobar que la reserva no supera la capacidad del
+	-- alojamiento, y es lo que el buscador de destino+fechas+huéspedes filtra.
+	numberOfAdults INTEGER DEFAULT 1 NOT NULL,
+	numberOfChildren INTEGER DEFAULT 0 NOT NULL,
 	paymentMethod VARCHAR(50) NOT NULL,
 	reservationDate DATETIME NOT NULL,
 	totalPrice DECIMAL(10, 2) NOT NULL,
@@ -228,4 +237,34 @@ CREATE TABLE IF NOT EXISTS TRANSLATIONS (
 	targetLanguage VARCHAR(5) NOT NULL,
 	translatedText VARCHAR(1000) NOT NULL,
 	CONSTRAINT UniqueTranslation UNIQUE (sourceHash, targetLanguage)
+);
+
+-- Propuestas de intercambio (Fase 9).
+--
+-- Antes de esta tabla el intercambio era instantáneo y unilateral: el otro
+-- propietario no aceptaba nada porque no había dónde esperar su respuesta. Un
+-- acuerdo entre dos partes necesita un estado que viva entre las dos, y eso es
+-- exactamente lo que no se puede deducir de ninguna otra tabla.
+--
+-- "state" es texto y no un número, como el rol de USERS: insertar mañana un
+-- estado en medio del enum de Java no puede convertir en silencio una propuesta
+-- rechazada en una aceptada.
+--
+-- No se guarda a quién va dirigida. El destinatario es el dueño ACTUAL del
+-- alojamiento pedido, y se consulta cada vez: si mientras la propuesta estaba
+-- pendiente ese alojamiento cambió de manos, quien tiene que contestar es el
+-- dueño de ahora. Un destinatario guardado sería un dato derivado capaz de
+-- sobrevivir a su origen.
+CREATE TABLE IF NOT EXISTS TRADE_PROPOSALS (
+	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	proposerId BIGINT NOT NULL,
+	offeredHousingId BIGINT NOT NULL,
+	requestedHousingId BIGINT NOT NULL,
+	state VARCHAR(20) NOT NULL,
+	createdDate DATETIME NOT NULL,
+	-- Nulo mientras siga pendiente.
+	resolvedDate DATETIME,
+	CONSTRAINT ProposalProposerIdFK FOREIGN KEY(proposerId) REFERENCES USERS(id),
+	CONSTRAINT ProposalOfferedIdFK FOREIGN KEY(offeredHousingId) REFERENCES HOUSINGS(id),
+	CONSTRAINT ProposalRequestedIdFK FOREIGN KEY(requestedHousingId) REFERENCES HOUSINGS(id)
 );

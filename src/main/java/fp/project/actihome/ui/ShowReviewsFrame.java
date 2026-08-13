@@ -126,7 +126,7 @@ public class ShowReviewsFrame extends JFrame {
 
 		// Al detalle del alojamiento, no al catálogo: es el paso inmediatamente
 		// anterior en la miga de pan, y Escape es "un paso atrás", no "ir al inicio".
-		Foco.alPulsarEscape(this, () -> navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(housing)));
+		Foco.alPulsarEscape(this, () -> navigator.volver(HousingDetailsFrame.class, frame -> frame.loadDetails(housing)));
 	}
 
 	/**
@@ -249,6 +249,12 @@ public class ShowReviewsFrame extends JFrame {
 		titular.repaint();
 	}
 
+	/**
+	 * "Catálogo" es solo orientación (más lejos en la miga de pan, no a donde va
+	 * Escape); el nombre del alojamiento lleva la flecha porque es el paso
+	 * inmediato anterior de verdad —el mismo destino que Escape— y por eso es el
+	 * que tiene que leerse como un botón de atrás, no solo como un enlace.
+	 */
 	private JPanel migaDePan() {
 
 		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XS + "[]" + Space.XS + "[]", "[]"));
@@ -256,8 +262,8 @@ public class ShowReviewsFrame extends JFrame {
 
 		panel.add(Buttons.link(Textos.t("header.nav.catalogo"), e -> navigator.ir(ShowHousingsFrame.class)));
 		panel.add(Labels.muted("›"));
-		panel.add(Buttons.link(housing.getName(),
-				e -> navigator.ir(HousingDetailsFrame.class, frame -> frame.loadDetails(housing))));
+		panel.add(Buttons.link("← " + housing.getName(),
+				e -> navigator.volver(HousingDetailsFrame.class, frame -> frame.loadDetails(housing))));
 
 		return panel;
 	}

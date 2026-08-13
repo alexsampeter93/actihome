@@ -95,6 +95,38 @@ public class Navigator {
 	 */
 	private final java.util.Map<JFrame, Dimension> disenos = new java.util.IdentityHashMap<>();
 
+	/**
+	 * Por dónde se ha pasado, de lo más reciente a lo más antiguo.
+	 *
+	 * <p>
+	 * <b>El fallo que corrige.</b> Cada pantalla que tenía un "volver" llevaba su
+	 * destino escrito a mano, y eso solo funciona mientras a esa pantalla se
+	 * llegue por un único camino. A la conversación se llega por dos —desde la
+	 * bandeja de mensajes y desde el "Preguntar al propietario" de la ficha— y su
+	 * enlace iba siempre a la bandeja: quien preguntaba desde una ficha se
+	 * quedaba tirado en Mensajes, y para seguir donde estaba tenía que rehacer el
+	 * camino entero desde el catálogo.
+	 *
+	 * <p>
+	 * <b>Se guarda la ventana, no la clase ni los datos.</b> Las pantallas son
+	 * singleton y conservan su estado —de qué alojamiento hablan, qué reserva
+	 * tienen cargada—, así que volver es literalmente volver a mostrar el mismo
+	 * objeto: no hay que recordar con qué se preparó. Es el mismo motivo por el
+	 * que {@link #disenos} puede usar la ventana como clave.
+	 *
+	 * <p>
+	 * <b>Tope de {@value #MAXIMO_HISTORIAL}.</b> Ir y venir entre dos pantallas
+	 * apila una entrada por viaje, así que sin tope una sesión larga acumularía
+	 * miles. Recortar por el fondo pierde el principio del recorrido, que es
+	 * justo la parte que ya no le importa a nadie.
+	 */
+	private final java.util.Deque<JFrame> historial = new java.util.ArrayDeque<>();
+
+	private static final int MAXIMO_HISTORIAL = 24;
+
+	/** Si la navegación en curso es un "atrás": entonces no se apila nada. */
+	private boolean volviendo;
+
 	public Navigator(ApplicationContext context) {
 		this.context = context;
 	}
@@ -135,9 +167,144 @@ public class Navigator {
 		return visible;
 	}
 
+	/**
+	 * Vuelve a la pantalla anterior de verdad, sea cual sea.
+	 *
+	 * @param alternativa a dónde ir cuando no hay anterior — se llega a la
+	 *                    pantalla en la primera navegación de la sesión, o
+	 *                    después de cerrar sesión. Un "atrás" que no hace nada
+	 *                    se lee como un botón roto, así que siempre lleva a algún
+	 *                    sitio razonable
+	 */
+	public void volver(Class<? extends JFrame> alternativa) {
+		volver(alternativa, ventana -> {
+			// Sin preparación previa.
+		});
+	}
+
+	/**
+	 * Vuelve a la pantalla anterior; si no hay ninguna, va al destino de reserva
+	 * dándole antes lo que necesite.
+	 *
+	 * <p>
+	 * La preparación es <b>solo para la alternativa</b>, y no para la pantalla a
+	 * la que se vuelve de verdad: a esa no hay nada que prepararle, porque es la
+	 * misma instancia que el usuario estaba viendo hace un momento y conserva su
+	 * estado. Es la misma razón por la que el historial guarda ventanas y no
+	 * clases.
+	 */
+	public <T extends JFrame> void volver(Class<T> alternativa, Consumer<T> preparar) {
+
+		JFrame anterior = historial.pollFirst();
+
+		if (anterior == null) {
+			ir(alternativa, preparar);
+			return;
+		}
+
+		volviendo = true;
+
+		try {
+			mostrar(anterior);
+		} finally {
+			volviendo = false;
+		}
+	}
+
+	/**
+	 * Cómo se llama la pantalla a la que llevaría {@link #volver}, o
+	 * {@code null} si no la hay o si no sabe decirlo.
+	 *
+	 * <p>
+	 * Para que el enlace de atrás pueda escribir el nombre del sitio al que de
+	 * verdad va. Ver {@link ConNombre}.
+	 */
+	public String nombreDeLaAnterior() {
+
+		JFrame anterior = historial.peekFirst();
+
+		return anterior instanceof ConNombre nombrada ? nombrada.nombreDePantalla() : null;
+	}
+
+	/**
+	 * Anota por dónde se pasaba, y <b>desenrolla el recorrido si el destino ya
+	 * estaba en él</b>.
+	 *
+	 * <p>
+	 * <b>Este segundo comportamiento corrige un bucle real, reportado usando la
+	 * aplicación:</b> desde la ficha de un alojamiento se entraba en "Reservar",
+	 * se pulsaba atrás y se volvía a la ficha; pero desde la ficha, atrás llevaba
+	 * otra vez a "Reservar", y de ahí no se salía.
+	 *
+	 * <p>
+	 * La causa es que convivían dos formas de volver. La ficha usaba
+	 * {@link #volver}, que desapila; la pantalla de reservar seguía navegando con
+	 * un {@code ir(ficha)} de destino escrito a mano, que <b>apila</b>. El
+	 * resultado era un recorrido con la ficha y la reserva repetidas una encima de
+	 * otra: cada "atrás" sacaba la de arriba y el usuario iba y venía entre las
+	 * dos para siempre.
+	 *
+	 * <p>
+	 * <b>Se podría haber arreglado solo cambiando esa pantalla</b>, y de hecho
+	 * también se hizo. Pero eso deja la trampa puesta para la siguiente que
+	 * navegue "hacia atrás" con un {@code ir(...)}, que es un despiste
+	 * perfectamente razonable — y el fallo que produce no se parece en nada a su
+	 * causa. Así que la garantía se pone aquí: <b>el historial es un camino, y un
+	 * camino no pasa dos veces por el mismo sitio.</b> Volver a una pantalla que
+	 * ya estaba en el recorrido significa que se ha desandado hasta ella, sin
+	 * importar con qué método se haya pedido.
+	 */
+	private void apilar(JFrame anterior, JFrame destino) {
+
+		int posicion = 0;
+
+		for (JFrame visitada : historial) {
+
+			if (visitada == destino) {
+
+				// Se ha vuelto a un sitio por el que ya se había pasado: todo lo que
+				// había por encima deja de formar parte del camino.
+				for (int i = 0; i <= posicion; i++) {
+					historial.removeFirst();
+				}
+
+				return;
+			}
+
+			posicion++;
+		}
+
+		historial.addFirst(anterior);
+
+		while (historial.size() > MAXIMO_HISTORIAL) {
+			historial.removeLast();
+		}
+	}
+
+	/**
+	 * Borra el recorrido.
+	 *
+	 * <p>
+	 * Se llama al mostrar el login. Un historial que sobreviviera al cierre de
+	 * sesión dejaría un botón de atrás capaz de devolver a la pantalla de otra
+	 * persona —con sus datos ya cargados en la ventana, porque las pantallas son
+	 * singleton—, y eso no es un problema de navegación sino de privacidad.
+	 */
+	public void olvidarHistorial() {
+		historial.clear();
+	}
+
 	private void mostrar(JFrame ventana) {
 
 		JFrame anterior = visible;
+
+		// El recorrido se apila aquí y no en ir(...) porque este es el único punto por
+		// el que pasan todas las navegaciones, y porque solo aquí se sabe todavía cuál
+		// era la anterior. Un "atrás" no apila: si lo hiciera, pulsarlo dos veces
+		// dejaría al usuario rebotando entre las dos mismas pantallas para siempre.
+		if (!volviendo && anterior != null && anterior != ventana) {
+			apilar(anterior, ventana);
+		}
 
 		// Pulsar la X cierra la aplicación. Es una app de una sola ventana: ocultarla
 		// y dejar el proceso vivo, que es el comportamiento por defecto de Swing, solo

@@ -143,11 +143,11 @@ public class OnboardingFrame extends JFrame {
 
 		} catch (InstanceNotFoundException ex) {
 			// La cuenta ha desaparecido entre el login y este clic — caso extremo, sin
-			// nada útil que decir aquí. Se sigue igualmente al catálogo: quedarse
+			// nada útil que decir aquí. Se sigue igualmente al buscador: quedarse
 			// atascado en la bienvenida sería peor que dejar la bandera sin marcar.
 		}
 
-		navigator.ir(ShowHousingsFrame.class);
+		navigator.ir(SearchHousingsFrame.class);
 	}
 
 	/**

@@ -154,6 +154,7 @@ public final class MedirPantallas {
 			pantallas.add(tarea("Registro", c.getBean(SignUpFrame.class), null));
 			pantallas.add(tarea("Login", c.getBean(LoginFrame.class), null));
 			pantallas.add(tarea("Recuperar", c.getBean(RecoverPasswordFrame.class), null));
+			pantallas.add(tarea("Buscar", c.getBean(fp.project.actihome.ui.SearchHousingsFrame.class), null));
 			pantallas.add(tarea("Alta alojamiento", c.getBean(UploadHousingFrame.class), null));
 			pantallas.add(tarea("Editar alojamiento", c.getBean(UpdateHousingFrame.class),
 					f -> ((UpdateHousingFrame) f).setHousingId(propio.getId())));

@@ -84,6 +84,7 @@ public class ConversationFrame extends JFrame {
 	private JScrollPane scroll;
 	private Field mensaje;
 	private JButton botonEnviar;
+	private JButton enlaceVolver;
 	private JLabel error;
 
 	public ConversationFrame(MessageService messageService, SessionManager sessionManager, Navigator navigator,
@@ -150,7 +151,9 @@ public class ConversationFrame extends JFrame {
 		// de la pantalla, encima de un título alineado a la izquierda.
 		JPanel migaDePan = new JPanel(new MigLayout(Space.insets(0), "[]", "[]"));
 		migaDePan.setOpaque(false);
-		migaDePan.add(Buttons.link(Textos.t("mensajes.volver"), e -> volver()));
+
+		enlaceVolver = Buttons.link(Textos.t("mensajes.volver"), e -> volver());
+		migaDePan.add(enlaceVolver);
 		panel.add(migaDePan);
 
 		titulo = Labels.title(" ");
@@ -212,10 +215,32 @@ public class ConversationFrame extends JFrame {
 
 		mensaje.setEtiqueta(Textos.t("mensajes.campo"));
 		botonEnviar.setText(Textos.t("mensajes.enviar"));
+
+		// El enlace de atrás se reescribe en cada visita, no una vez al construir la
+		// pantalla: es la única etiqueta de la ventana cuyo valor correcto depende de
+		// por dónde se ha llegado esta vez.
+		String anterior = navigator.nombreDeLaAnterior();
+
+		enlaceVolver.setText(anterior != null ? Textos.t("nav.volverA", anterior) : Textos.t("mensajes.volver"));
 	}
 
+	/**
+	 * Vuelve a donde se estaba, no a la bandeja.
+	 *
+	 * <p>
+	 * <b>Este era el atasco.</b> A la conversación se llega por dos caminos —la
+	 * bandeja de mensajes y el "Preguntar al propietario" de la ficha de un
+	 * alojamiento— y el enlace llevaba siempre a la bandeja. Quien preguntaba
+	 * desde una ficha acababa en Mensajes, que no es de donde venía, y para
+	 * seguir donde estaba tenía que rehacer el camino entero: catálogo,
+	 * alojamiento, y otra vez lo que estuviera haciendo.
+	 *
+	 * <p>
+	 * La bandeja se queda como destino de reserva, para cuando no hay recorrido
+	 * previo que deshacer.
+	 */
 	private void volver() {
-		navigator.ir(MessagesFrame.class);
+		navigator.volver(MessagesFrame.class);
 	}
 
 	private void volverAbajo() {

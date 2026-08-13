@@ -39,6 +39,21 @@ public interface ReservationDao extends JpaRepository<Reservation, Long> {
 			+ "where r.cancelled = false and r.checkIn < ?1 and r.checkOut > ?1")
 	List<Long> findHousingIdsWithActiveStay(LocalDateTime ahora);
 
+	/**
+	 * Los alojamientos que ya tienen una reserva activa dentro del rango pedido
+	 * (Fase 9), para el buscador de destino, fechas y huéspedes.
+	 *
+	 * <p>
+	 * Misma condición de solapamiento que {@link #existsOverlappingReservation},
+	 * pero <b>agregada sobre todos los alojamientos a la vez</b> en lugar de
+	 * comprobar uno por uno: el buscador filtra un catálogo entero contra un
+	 * rango de fechas, y treinta consultas —una por fila— serían treinta
+	 * viajes a la base de datos para responder una sola pregunta.
+	 */
+	@Query("select distinct r.housing.id from Reservation r "
+			+ "where r.cancelled = false and r.checkIn < ?2 and r.checkOut > ?1")
+	List<Long> findHousingIdsUnavailableBetween(LocalDateTime desde, LocalDateTime hasta);
+
 	/** Todas las reservas de un alojamiento, para pintar los días ocupados en el calendario. */
 	ArrayList<Reservation> findByHousingId(Long housingId);
 

@@ -152,7 +152,19 @@ public class MedirResponsive {
 			mensajeria.sendMessage(lucia.getId(), propiaResena.getAuthor().getId(), propio.getId(),
 					"¡Hola! Sí, admitimos mascotas pequeñas sin problema.");
 
+			// Fase 9: una propuesta de intercambio pendiente, por el mismo motivo que
+			// la reseña enriquecida y la conversación de arriba — sin ella, la pantalla
+			// de intercambio se mediría con su bloque de propuestas oculto, que es
+			// justo la parte nueva. Se mide el peor caso, no el cómodo.
+			User marcos = usuarios.login("Marcos", "1234");
+			Housing deMarcos = alojamientos.showHousings().stream()
+					.filter(h -> h.getOwner() != null && h.getOwner().getId().equals(marcos.getId())).findFirst()
+					.orElseThrow();
+			c.getBean(fp.project.actihome.model.services.TradeProposalService.class).propose(marcos.getId(),
+					deMarcos.getId(), propio.getHousingCode());
+
 			List<Pantalla> pantallas = new ArrayList<>();
+			pantallas.add(new Pantalla("Buscar", c.getBean(fp.project.actihome.ui.SearchHousingsFrame.class), null));
 			pantallas.add(new Pantalla("Catalogo", c.getBean(ShowHousingsFrame.class), null));
 			pantallas.add(new Pantalla("Detalle", c.getBean(HousingDetailsFrame.class),
 					f -> ((HousingDetailsFrame) f).loadDetails(propio)));

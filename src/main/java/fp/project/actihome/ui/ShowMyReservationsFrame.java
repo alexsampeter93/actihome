@@ -30,6 +30,7 @@ import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.components.Page;
+import fp.project.actihome.ui.nav.ConNombre;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.reservations.ReservationRow;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
@@ -49,7 +50,7 @@ import fp.project.actihome.ui.components.Rescate;
 @Component
 @Profile("!test")
 @Lazy
-public class ShowMyReservationsFrame extends JFrame {
+public class ShowMyReservationsFrame extends JFrame implements ConNombre {
 
 	private static final long serialVersionUID = 1L;
 
@@ -280,5 +281,11 @@ public class ShowMyReservationsFrame extends JFrame {
 		fila.setOpaque(false);
 		fila.add(componente);
 		return fila;
+	}
+
+	/** El nombre con el que la enseña el enlace de atrás de otra pantalla. */
+	@Override
+	public String nombreDePantalla() {
+		return Textos.t("header.nav.misReservas");
 	}
 }

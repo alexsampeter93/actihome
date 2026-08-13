@@ -163,7 +163,7 @@ public class DoCheckInFrame extends JFrame {
 
 		setContentPane(raiz);
 
-		Foco.alPulsarEscape(this, () -> navigator.ir(ShowMyReservationsFrame.class));
+		Foco.alPulsarEscape(this, () -> navigator.volver(ShowMyReservationsFrame.class));
 	}
 
 	private JPanel formulario() {
@@ -231,7 +231,7 @@ public class DoCheckInFrame extends JFrame {
 
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				navigator.ir(ShowMyReservationsFrame.class);
+				navigator.volver(ShowMyReservationsFrame.class);
 			}
 		});
 

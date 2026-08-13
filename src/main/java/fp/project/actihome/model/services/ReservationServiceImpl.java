@@ -22,6 +22,7 @@ import fp.project.actihome.model.exceptions.AlreadyCheckedInException;
 import fp.project.actihome.model.exceptions.AlreadyReservedException;
 import fp.project.actihome.model.exceptions.CannotCancelException;
 import fp.project.actihome.model.exceptions.CannotCheckInException;
+import fp.project.actihome.model.exceptions.CapacityExceededException;
 import fp.project.actihome.model.exceptions.CheckOutMustBeOneDayAfterException;
 import fp.project.actihome.model.exceptions.CodeDoesNotMatchException;
 import fp.project.actihome.model.exceptions.InstanceNotFoundException;
@@ -45,9 +46,9 @@ public class ReservationServiceImpl implements ReservationService {
 
 	@Override
 	public Reservation reserveHousing(Long customerId, Long housingId, String creditCardNumber,
-			LocalDateTime checkInDate, LocalDateTime checkOutDate)
+			LocalDateTime checkInDate, LocalDateTime checkOutDate, int numberOfAdults, int numberOfChildren)
 			throws WrongCreditCardNumberException, MustBeTodayOrAfterException, CheckOutMustBeOneDayAfterException,
-			InstanceNotFoundException, AlreadyReservedException, NotAuthorizedUserException {
+			InstanceNotFoundException, AlreadyReservedException, NotAuthorizedUserException, CapacityExceededException {
 
 		User customer = permissionChecker.checkUser(customerId);
 		Optional<Housing> housing = housingDao.findById(housingId);
@@ -62,6 +63,12 @@ public class ReservationServiceImpl implements ReservationService {
 
 		if (!housing.isPresent()) {
 			throw new InstanceNotFoundException("project.housing.entities", housingId);
+		}
+
+		// Los bebés no cuentan aquí (no se piden ni se guardan): en ningún sistema
+		// de reservas real ocupan una plaza del aforo.
+		if (numberOfAdults + numberOfChildren > housing.get().getCapacity()) {
+			throw new CapacityExceededException();
 		}
 
 		// F13: no basta con contar caracteres. Antes "123456789012345A" pasaba la
@@ -88,8 +95,8 @@ public class ReservationServiceImpl implements ReservationService {
 
 		nights = ChronoUnit.DAYS.between(checkInDate.toLocalDate(), checkOutDate.toLocalDate());
 		totalPrice = housing.get().getPricePerNight().multiply(BigDecimal.valueOf(nights));
-		Reservation reservation = new Reservation(reservationCode, checkInDate, checkOutDate, "Tarjeta de crédito",
-				reservationDate, totalPrice, false, customer, housing.get());
+		Reservation reservation = new Reservation(reservationCode, checkInDate, checkOutDate, numberOfAdults,
+				numberOfChildren, "Tarjeta de crédito", reservationDate, totalPrice, false, customer, housing.get());
 		return reservationDao.save(reservation);
 	}
 
@@ -137,6 +144,11 @@ public class ReservationServiceImpl implements ReservationService {
 	@Override
 	public ArrayList<Reservation> showHousingReservations(Long housingId) {
 		return reservationDao.findByHousingId(housingId);
+	}
+
+	@Override
+	public java.util.Set<Long> showUnavailableHousingIds(LocalDateTime checkIn, LocalDateTime checkOut) {
+		return new java.util.HashSet<>(reservationDao.findHousingIdsUnavailableBetween(checkIn, checkOut));
 	}
 
 	@Override

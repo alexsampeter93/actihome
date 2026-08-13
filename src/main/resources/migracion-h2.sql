@@ -112,3 +112,31 @@ ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS exchangeWanted VARCHAR(120);
 --     ALTER TABLE HOUSINGS ADD COLUMN longitude DOUBLE;
 ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS latitude DOUBLE;
 ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS longitude DOUBLE;
+
+-- Fase 9: capacidad del alojamiento y huéspedes de la reserva, para el
+-- buscador de destino, fechas y huéspedes. Quien tenga una base MySQL
+-- anterior a esta fase necesita aplicar a mano:
+--     ALTER TABLE HOUSINGS ADD COLUMN capacity INTEGER DEFAULT 0 NOT NULL;
+--     ALTER TABLE RESERVATIONS ADD COLUMN numberOfAdults INTEGER DEFAULT 1 NOT NULL;
+--     ALTER TABLE RESERVATIONS ADD COLUMN numberOfChildren INTEGER DEFAULT 0 NOT NULL;
+--     UPDATE HOUSINGS SET capacity = GREATEST(2, numberOfRooms * 2) WHERE capacity = 0;
+--
+-- El DEFAULT de esta ALTER es 0 y no el 2 de schema.sql a propósito: ninguna
+-- capacidad real es 0 —el formulario no deja bajar de uno—, así que sirve de
+-- centinela seguro para la UPDATE de más abajo. Con un 2 de relleno, esa
+-- misma UPDATE no podría distinguir nunca "todavía sin corregir" de "el
+-- propietario ha fijado 2 a propósito", y en cada arranque le pisaría el
+-- valor real. Es el mismo motivo por el que la corrección de "name" de más
+-- arriba usa '' como centinela y no un nombre cualquiera.
+ALTER TABLE HOUSINGS ADD COLUMN IF NOT EXISTS capacity INTEGER DEFAULT 0 NOT NULL;
+ALTER TABLE RESERVATIONS ADD COLUMN IF NOT EXISTS numberOfAdults INTEGER DEFAULT 1 NOT NULL;
+ALTER TABLE RESERVATIONS ADD COLUMN IF NOT EXISTS numberOfChildren INTEGER DEFAULT 0 NOT NULL;
+
+UPDATE HOUSINGS SET capacity = GREATEST(2, numberOfRooms * 2) WHERE capacity = 0;
+
+-- Fase 9: propuestas de intercambio. AQUÍ NO HAY NADA QUE HACER, y conviene
+-- dejarlo escrito para que nadie añada un ALTER por si acaso: TRADE_PROPOSALS es
+-- una tabla NUEVA, y "CREATE TABLE IF NOT EXISTS" sí se ejecuta en una base que
+-- ya existe —lo que se salta entero es el CREATE de una tabla que ya está—. Este
+-- archivo existe solo para las COLUMNAS nuevas de tablas viejas, que es el caso
+-- que aquel CREATE no puede cubrir.
