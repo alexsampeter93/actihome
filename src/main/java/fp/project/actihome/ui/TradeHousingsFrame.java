@@ -111,14 +111,33 @@ public class TradeHousingsFrame extends JFrame {
 	private static final String ALTO_DE_FOTO = "56:84:84";
 
 	/**
+	 * El ancho de esa misma foto, ahora que va al lado del texto y no encima.
+	 *
+	 * <p>
+	 * Rango y no número por lo de siempre: con la ventana estrecha, las dos
+	 * tarjetas comparten los 940 puntos de la zona de contenido y la foto cede
+	 * hasta 88 antes de que el texto de al lado empiece a apretarse.
+	 */
+	private static final String ANCHO_DE_FOTO = "88:132:132";
+
+	/**
 	 * Cuántos códigos se sugieren como mucho.
 	 *
 	 * <p>
-	 * Cinco es lo que cabe en una fila cómoda; enseñar el catálogo entero
-	 * convertiría una pista rápida en una segunda lista que hay que leer. Mismo
-	 * número y mismo motivo que las sugerencias de destino del buscador.
+	 * Enseñar el catálogo entero convertiría una pista rápida en una segunda lista
+	 * que hay que leer, así que hay un tope — el mismo criterio que las
+	 * sugerencias de destino del buscador, que usan cinco.
+	 *
+	 * <p>
+	 * <b>Aquí son cuatro y no cinco, y el motivo se vio en una captura.</b> Estos
+	 * chips viven dentro de la tarjeta de "Recibes", no en una fila a todo lo
+	 * ancho: en un portátil esa columna mide unos 390 puntos y cada chip ocupa su
+	 * propia línea, así que el quinto empujaba la comparación una línea más alta
+	 * — y la comparación es el bloque que decide si esta pantalla cabe. Cuatro
+	 * pistas y un botón visible valen más que cinco pistas y un botón fuera de la
+	 * ventana.
 	 */
-	private static final int SUGERENCIAS_DE_CODIGO = 5;
+	private static final int SUGERENCIAS_DE_CODIGO = 4;
 
 	private final transient HousingService housingService;
 	private final transient TradeProposalService tradeProposalService;
@@ -130,9 +149,9 @@ public class TradeHousingsFrame extends JFrame {
 	private transient Housing propio;
 	private transient Housing candidato;
 
-	private JPanel sugerencias;
+
 	private FilaFluida filaSugerencias;
-	private JLabel etiquetaSugerencias;
+
 	private JPanel propuestas;
 	private JPanel comparacion;
 	private JPanel vacio;
@@ -204,8 +223,8 @@ public class TradeHousingsFrame extends JFrame {
 				// el aire no da para más, se desborda hacia abajo y sale la barra de rescate
 				// — que es lo correcto: mejor desplazarse que leer un texto rebanado.
 				Space.margen(Space.XXL) + "[shrink 0]" + Space.aire(Space.LG) + "[shrink 0]" + Space.aire(Space.LG)
-						+ "[shrink 0]" + Space.aire(Space.MD) + "[shrink 0]" + Space.aire(Space.MD) + "[shrink 0]"
-						+ Space.aire(Space.XXL) + "[shrink 0]" + Space.margen(Space.XXL)));
+						+ "[shrink 0]" + Space.aire(Space.MD) + "[shrink 0]" + Space.aire(Space.LG) + "[shrink 0]"
+						+ Space.margen(Space.XXL)));
 		exterior.setOpaque(false);
 
 		buscador = buscador();
@@ -221,12 +240,6 @@ public class TradeHousingsFrame extends JFrame {
 		// roba sitio a nadie.
 		propuestas = propuestas();
 		exterior.add(propuestas, Layout.anchoCentrado(Layout.CONTENIDO));
-
-		// Las sugerencias van pegadas a la comparación, no al campo de código: lo que
-		// hacen es rellenar la tarjeta de "Recibes", y verlas justo encima de ella
-		// dice a qué hueco van sin necesidad de explicarlo.
-		sugerencias = sugerencias();
-		exterior.add(sugerencias, Layout.anchoCentrado(Layout.CONTENIDO));
 
 		comparacion = comparacion();
 		exterior.add(comparacion, Layout.anchoCentrado(Layout.CONTENIDO));
@@ -374,20 +387,6 @@ public class TradeHousingsFrame extends JFrame {
 	 * delante no es cosmético: cambia la probabilidad de que la propuesta llegue a
 	 * algo.
 	 */
-	private JPanel sugerencias() {
-
-		JPanel panel = new JPanel(new MigLayout("hidemode 3, " + Space.insets(0), "[]" + Space.SM + "[grow,fill]", "[]"));
-		panel.setOpaque(false);
-
-		etiquetaSugerencias = Labels.caps(Textos.t("intercambio.sugerencias"));
-		panel.add(etiquetaSugerencias, "aligny top, gaptop 6");
-
-		filaSugerencias = new FilaFluida(Space.XS, Space.XS);
-		panel.add(filaSugerencias, "growx");
-
-		return panel;
-	}
-
 	private void pintarSugerencias() {
 
 		filaSugerencias.removeAll();
@@ -395,7 +394,6 @@ public class TradeHousingsFrame extends JFrame {
 		User usuario = sessionManager.getLoggedInUser();
 
 		if (usuario == null) {
-			sugerencias.setVisible(false);
 			return;
 		}
 
@@ -407,8 +405,6 @@ public class TradeHousingsFrame extends JFrame {
 				.sorted(java.util.Comparator.comparing((Housing h) -> !h.isOpenToExchange()))
 				.limit(SUGERENCIAS_DE_CODIGO)
 				.toList();
-
-		sugerencias.setVisible(!candidatos.isEmpty());
 
 		for (Housing candidatoPosible : candidatos) {
 
@@ -428,6 +424,18 @@ public class TradeHousingsFrame extends JFrame {
 
 		filaSugerencias.revalidate();
 		filaSugerencias.repaint();
+
+		// Segundo pase, por lo mismo que el bloque de propuestas: una FilaFluida
+		// decide en cuántas líneas se reparte a partir del ancho que ya tiene, y
+		// recién construida dentro de una tarjeta cuyo ancho aún no se ha resuelto
+		// contesta de menos. Se vio en una captura a 1280×660: la tarjeta se quedaba
+		// con sitio para cuatro chips y el quinto no se pintaba — no cortado por la
+		// ventana, sino por su propia tarjeta, que es justo el punto ciego que
+		// MedirResponsive no cubre.
+		SwingUtilities.invokeLater(() -> {
+			panelCandidato.revalidate();
+			panelCandidato.repaint();
+		});
 	}
 
 	/**
@@ -583,7 +591,7 @@ public class TradeHousingsFrame extends JFrame {
 		tituloCabecera.setText(Textos.t("intercambio.titulo"));
 		subtituloCabecera.setText(Textos.t("intercambio.subtitulo"));
 		codigo.setEtiqueta(Textos.t("intercambio.codigo"));
-		etiquetaSugerencias.setText(Textos.t("intercambio.sugerencias"));
+
 		botonBuscar.setText(Textos.t("intercambio.buscar"));
 		confirmar.setText(Textos.t("intercambio.confirmar"));
 		botonCancelar.setText(Textos.t("ajustes.cancelar"));
@@ -673,7 +681,7 @@ public class TradeHousingsFrame extends JFrame {
 		comparacion.setVisible(!sinAlojamiento);
 		buscador.setVisible(!sinAlojamiento);
 		acciones.setVisible(!sinAlojamiento);
-		sugerencias.setVisible(!sinAlojamiento);
+
 		vacio.setVisible(sinAlojamiento);
 
 		// Las propuestas se pintan también sin alojamiento propio, y es a propósito:
@@ -873,7 +881,14 @@ public class TradeHousingsFrame extends JFrame {
 		panelCandidato.add(Labels.caps(Textos.t("intercambio.recibes")), "gapbottom " + Space.XS);
 
 		if (candidato == null) {
+
+			// Los chips se rellenan DESPUÉS de construir la tarjeta, porque es ella
+			// quien crea la fila que los aloja. Con candidato, esta tarjeta no se pinta
+			// y las sugerencias desaparecen con ella, que es lo que se quiere: ya no
+			// hay hueco que rellenar.
 			panelCandidato.add(tarjetaVacia(), "growx");
+			pintarSugerencias();
+
 		} else {
 			panelCandidato.add(tarjeta(candidato), "growx");
 		}
@@ -886,44 +901,104 @@ public class TradeHousingsFrame extends JFrame {
 		confirmar.setEnabled(candidato != null);
 	}
 
+	/**
+	 * Una de las dos tarjetas de la comparación: foto a la izquierda, datos a la
+	 * derecha.
+	 *
+	 * <p>
+	 * <b>Era vertical —foto arriba, texto debajo— y eso es lo que sacaba el botón
+	 * de enviar fuera de la pantalla en un portátil.</b> Apiladas, las dos medidas
+	 * se suman: 84 puntos de foto más unos 120 de texto son 204 por tarjeta, y la
+	 * comparación es el bloque más alto de la pantalla. En horizontal la altura es
+	 * <em>el mayor de los dos</em>, no su suma, y el ancho sobra: la pantalla tiene
+	 * 940 puntos y cada tarjeta ocupa la mitad.
+	 *
+	 * <p>
+	 * No es un apaño de última hora, es el mismo reparto que ya usa
+	 * {@code HousingRow} en la vista de lista del catálogo, y por el mismo motivo.
+	 * <b>La lección general:</b> cuando falta alto y sobra ancho, mirar qué hay
+	 * apilado que podría ir al lado — sumar dos medidas siempre cuesta más que
+	 * quedarse con la mayor.
+	 */
 	private Card tarjeta(Housing housing) {
 
-		Card card = new Card(new MigLayout("wrap 1, " + Space.insets(Space.MD), "[grow,fill]", ""));
+		Card card = new Card(new MigLayout(Space.insets(Space.MD), "[]" + Space.MD + "[grow,fill]", "[]"));
 		boolean disponible = housingService.isAvailableNow(housing.getId());
 
 		card.add(new ImagePlaceholder(Textos.tipoDeAlojamiento(housing.getType()),
 				disponible ? Textos.t("catalogo.disponibilidad.disponible") : Textos.t("catalogo.disponibilidad.reservada"),
-				disponible, housing.getImage()), "h " + ALTO_DE_FOTO + ", growx, gapbottom " + Space.aire(Space.SM));
+				disponible, housing.getImage()), "w " + ANCHO_DE_FOTO + ", h " + ALTO_DE_FOTO + ", aligny top");
 
-		card.add(Labels.capsAccent(Textos.t("catalogo.numero") + " " + housing.getHousingCode()));
+		JPanel datos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		datos.setOpaque(false);
+
+		datos.add(Labels.capsAccent(Textos.t("catalogo.numero") + " " + housing.getHousingCode()));
 
 		JLabel nombre = Labels.cardTitle(housing.getName());
 		nombre.setFont(Typography.serifMedium(Typography.CARD_TITLE));
-		card.add(nombre, "gaptop " + Space.XXS);
+		datos.add(nombre, "gaptop " + Space.XXS);
 
-		card.add(Labels.muted(housing.getLocation()), "gaptop " + Space.XXS);
-		card.add(Labels.muted(Textos.t("intercambio.titular", housing.getOwner().getUsername())),
+		datos.add(Labels.muted(housing.getLocation()), "gaptop " + Space.XXS);
+		datos.add(Labels.muted(Textos.t("intercambio.titular", housing.getOwner().getUsername())),
 				"gaptop " + Space.XXS);
-		card.add(Labels.priceSmall(Textos.t("intercambio.precioPorNoche", Formato.precio(housing.getPricePerNight()))),
+		datos.add(Labels.priceSmall(Textos.t("intercambio.precioPorNoche", Formato.precio(housing.getPricePerNight()))),
 				"gaptop " + Space.aire(Space.XS));
 
 		if (!disponible) {
 			// Es la causa exacta por la que el servicio rechazaría el intercambio, dicha
 			// antes de intentarlo.
-			card.add(Labels.error(Textos.t("intercambio.error.reservadoNoIntercambiable")),
+			datos.add(Labels.error(Textos.t("intercambio.error.reservadoNoIntercambiable")),
 					"gaptop " + Space.aire(Space.XS));
 		}
+
+		card.add(datos, "aligny top");
 
 		return card;
 	}
 
+	/**
+	 * El hueco de "Recibes" mientras no se ha buscado nada: el marcador de foto,
+	 * la explicación y <b>los códigos que se pueden pedir</b>.
+	 *
+	 * <p>
+	 * <b>Los chips vivían en una fila propia y se han movido aquí, por dos motivos
+	 * que apuntan en la misma dirección.</b> El de medida: esa fila costaba 68
+	 * puntos de alto —medidos con {@code MedirPantallas}— y era justo lo que sacaba
+	 * el botón de enviar fuera de la ventana en un portátil. Aquí no cuesta
+	 * ninguno: esta tarjeta ya ocupa el alto de la comparación y estaba medio
+	 * vacía.
+	 *
+	 * <p>
+	 * Y el de sentido, que es el bueno: <b>las sugerencias rellenan este hueco
+	 * exactamente</b>. Pulsar un chip sustituye la tarjeta vacía por el alojamiento
+	 * que representa, así que verlos dentro del sitio donde va a aparecer el
+	 * resultado dice lo que hacen sin necesidad de explicarlo — y desaparecen solos
+	 * en cuanto hay un candidato, porque entonces esta tarjeta ya no se pinta.
+	 */
 	private Card tarjetaVacia() {
 
-		Card card = new Card(new MigLayout("wrap 1, " + Space.insets(Space.MD), "[grow,fill]", ""));
+		Card card = new Card(new MigLayout(Space.insets(Space.MD), "[]" + Space.MD + "[grow,fill]", "[]"));
 
-		card.add(new ImagePlaceholder(), "h " + ALTO_DE_FOTO + ", growx, gapbottom " + Space.aire(Space.SM));
-		card.add(Labels.muted(Textos.t("intercambio.tarjetaVacia.linea1")), "gaptop " + Space.XXS);
-		card.add(Labels.muted(Textos.t("intercambio.tarjetaVacia.linea2")));
+		card.add(new ImagePlaceholder(), "w " + ANCHO_DE_FOTO + ", h " + ALTO_DE_FOTO + ", aligny top");
+
+		JPanel datos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		datos.setOpaque(false);
+
+		// **WrappingText y no Labels.muted**, y el cambio es obligado desde que esta
+		// tarjeta reparte en dos columnas: un JLabel no parte el texto, así que
+		// declara la frase entera como ancho mínimo —313 puntos medidos— y en una
+		// columna de 336 eso empuja la tarjeta de al lado fuera de la ventana. Lo
+		// cazó MedirResponsive a 1024×600 en cuanto la tarjeta dejó de ocupar todo el
+		// ancho. Es la regla 5 de la adaptabilidad, incumplida sin querer al mover el
+		// texto a un sitio más estrecho: **un texto que antes cabía no es un texto
+		// que quepa.**
+		datos.add(WrappingText.muted(Textos.t("intercambio.tarjetaVacia.linea1") + " "
+				+ Textos.t("intercambio.tarjetaVacia.linea2")), "growx, wmin 0");
+
+		filaSugerencias = new FilaFluida(Space.XS, Space.XS);
+		datos.add(filaSugerencias, "growx, gaptop " + Space.aire(Space.SM));
+
+		card.add(datos, "aligny top");
 
 		return card;
 	}
