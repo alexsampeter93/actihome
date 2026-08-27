@@ -1,7 +1,16 @@
 # DOCUMENTACIÓN COMPLETA — ActiHome
 
-> Esta guía explica el proyecto desde cero, como si nunca hubieras visto código Java ni arquitecturas de software. Cada concepto se explica antes de entrar en detalle técnico.
+> ⚠️ **DOCUMENTO HISTÓRICO.** Esta guía se escribió para la versión original del
+> proyecto, **antes del rediseño**, y describe cosas que ya no son ciertas — la
+> más visible, que la base de datos sea MySQL: desde la Fase 1.5 la aplicación
+> usa H2 embebida y no necesita instalar nada. Se conserva porque explica la
+> arquitectura desde cero y esa parte sigue valiendo, pero **el documento vigente
+> es [README.md](README.md)**.
+>
+> Es en sí una lección del proyecto: un documento que describe un *estado* caduca
+> en silencio, aunque nadie lo toque, simplemente porque el estado cambia.
 
+> Esta guía explica el proyecto desde cero, como si nunca hubieras visto código Java ni arquitecturas de software. Cada concepto se explica antes de entrar en detalle técnico.
 ---
 
 ## 1. ¿Qué es ActiHome?

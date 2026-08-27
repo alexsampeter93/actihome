@@ -2,6 +2,8 @@
 
 **Fecha:** 05-08-2026 · **Alcance:** 145 ficheros de código, 25.401 líneas, 10 clases de test, 120 tests.
 
+> **Los números de arriba son los del 05-08-2026 y hoy se han quedado cortos** (223 ficheros, 41.862 líneas, 21 clases de test, 180 tests). No se actualizan a propósito: esto es una foto fechada, y una foto que se retoca deja de ser una foto. Para el estado de hoy, [README.md](README.md).
+
 Este documento es una foto del estado técnico, no una lista de tareas. Lo que se corrigió durante la propia auditoría va marcado ✅; lo que queda abierto lleva una valoración honesta de si merece la pena tocarlo.
 
 ---

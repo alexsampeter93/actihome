@@ -21,23 +21,15 @@ spring:
     password: ""
     driverClassName: org.h2.Driver
 
-  # Movido de spring.datasource a spring.sql.init en la migracion a Spring Boot 3:
-  # las propiedades viejas ya no existen en la 3.x y se ignoran EN SILENCIO.
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:schema.sql
-      data-locations:
-        - classpath:data.sql
-        # Precarga de la cache de traducciones (Fase 8.7), generada por
-        # ui/dev/SembrarTraducciones. Va DESPUES de data.sql porque no depende de
-        # ninguna fila suya: traduce textos, no campos de entidades.
-        - classpath:traducciones.sql
-      encoding: UTF-8
-
   jpa:
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
+
+  # Flyway hereda la configuración de application.yaml y se ejecuta también aquí:
+  # cada clase de test arranca contra una base vacía, así que corre V1 y siembra
+  # los datos de ejemplo. Es a propósito y no un descuido — varios tests dependen
+  # de que existan los diez alojamientos y los usuarios de data.sql, y esa
+  # dependencia estaba ahí antes de Flyway.

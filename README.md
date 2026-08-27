@@ -8,7 +8,7 @@ Aplicación de escritorio para gestión, reserva e intercambio de alojamientos t
 
 La interfaz se repinta entera según la estación del año, que el usuario elige y la aplicación recuerda. No es un cambio de color: cada estación tiene su paleta de nueve tokens, su frase editorial, sus partículas animadas y su variante de la mascota.
 
-Ninguna pantalla escribe un color. Pide un *papel* —"el acento", "el texto secundario"— y la estación activa decide cuál es, así que añadir una estación no toca ninguna de las dieciocho pantallas.
+Ninguna pantalla escribe un color. Pide un *papel* —"el acento", "el texto secundario"— y la estación activa decide cuál es, así que añadir una estación no toca ninguna de las veinticinco pantallas.
 
 <p align="center">
   <img src="docs/progreso/fase82-primavera.png" width="24%" alt="Primavera">
@@ -96,7 +96,7 @@ Ningún servicio importa nada de `ui`. Eso es lo que permitió **rediseñar las 
 - Las reglas de negocio viven solo en los servicios, con **29 excepciones propias** —una por regla— que la interfaz captura de una en una. No hay ningún `catch (Exception)` genérico en acciones de usuario.
 - Las actualizaciones se apoyan en el *dirty checking* de JPA: `updateHousing` muta la entidad dentro de la transacción y **nunca llama a `save`**.
 - Los servicios reciben objetos de datos con nombre, nunca listas de argumentos posicionales. Añadir un campo al modelo no cambia ninguna llamada existente — y evitó un fallo real que activaba desayuno, comida y cena al editar el precio.
-- `schema.sql` y `data.sql` son **portables entre H2 y MySQL e idempotentes**: se ejecutan en cada arranque sin duplicar nada.
+- El esquema lo gestiona **Flyway**: cada migracion corre exactamente una vez por base de datos y las instalaciones que ya existen se adoptan con `baseline-on-migrate`. Antes eran tres scripts que se ejecutaban en cada arranque y dependian de que cada sentencia supiera comprobarse a si misma, con la trampa de que anadir una columna obligaba a tocar dos archivos.
 
 ---
 
@@ -106,22 +106,24 @@ Un catálogo de alojamientos lo tiene cualquiera. Lo que merece la pena mirar aq
 
 ### Herramientas de medición propias
 
-Cuatro programas que recorren la aplicación. **Dos pueden fallar y dos no, y la diferencia importa:**
+Seis programas que recorren la aplicacion. **Tres pueden poner el build en rojo y tres no, y la diferencia importa:**
 
 | Herramienta | Qué contesta | ¿Puede poner el build en rojo? |
 |---|---|---|
-| `MedirResponsive` | Coloca las 23 pantallas en 6 tamaños (1024×600 → 2560×1350) y recorre el árbol de componentes buscando lo que queda **fuera del área visible** | **Sí** |
+| `MedirResponsive` | Coloca las 25 pantallas en 6 tamaños (1024×600 → 2560×1350) y recorre el árbol de componentes buscando lo que queda **fuera del área visible** | **Sí** |
 | `MedirContraste` | Comprueba WCAG en las 4 estaciones: cada par de colores contra su mínimo real (4,5:1 para texto, 3:1 para componentes) | **Sí** |
+| `MedirNavegacion` | Recorre las 17 pantallas con el navegador de verdad y comprueba dos cosas: que ninguna necesita la barra de rescate al tamaño real de apertura, y que **la ventana no cambia de tamaño ella sola** al cambiar de pantalla | **Sí** |
+| `MedirPantallas` | Si cada pantalla cabe sin scroll en portátiles reales, y **dónde se va el alto** cuando no cabe | No: informativa |
 | `MedirGlifos` | Qué símbolos sabe dibujar de verdad cada fuente empaquetada | No: informativa. Un símbolo ausente no es un fallo, es un aviso de que hay que dibujarlo a mano |
 | `ScreenSnapshots` | Captura pantallas reales, con sesión iniciada por código y datos de verdad, fuera de pantalla y a cualquier tamaño | No: nada automático puede decir si una pantalla «se ve bien» |
 
-Solo las dos primeras entran en el CI, y es deliberado: **un paso que nunca se pone en rojo no es una comprobación, es una decoración que da tranquilidad falsa.**
+Solo las que pueden fallar entran en el CI, y es deliberado: **un paso que nunca se pone en rojo no es una comprobación, es una decoración que da tranquilidad falsa.**
 
 `MedirResponsive` encontró **107 componentes rotos que ninguna captura enseñaba**. Y trae algo que casi nadie escribe: un **autocontrol**. A un tamaño imposible (600×400) *tiene* que quejarse; si dijera «todo bien» también ahí, sabríamos que el detector no detecta y que su «sin recortes» no vale nada.
 
 ### Integración continua
 
-Cada `push` a `main` y cada *pull request* ejecuta los **156 tests**, los recortes de layout en los seis tamaños y el contraste WCAG en las cuatro estaciones ([`comprobaciones.yml`](.github/workflows/comprobaciones.yml)).
+Cada `push` a `main` y cada *pull request* ejecuta los **180 tests**, los recortes de layout en los seis tamaños y el contraste WCAG en las cuatro estaciones ([`comprobaciones.yml`](.github/workflows/comprobaciones.yml)).
 
 Las dos herramientas de medición construyen ventanas de Swing de verdad, así que corren bajo `xvfb` — una pantalla virtual, porque un servidor no tiene escritorio donde dibujarlas.
 
@@ -149,14 +151,30 @@ Sustituyeron a Spectral y Manrope por una razón concreta: Manrope pertenece a l
 
 | Pieza | Versión | Papel |
 |---|---|---|
-| Java | 11 | |
+| Java | 17 | Migrado desde Java 11 en la Fase 8.9 |
 | Spring Boot | 3.5.3 | Inyección de dependencias y Spring Data JPA. **No levanta servidor web** (`WebApplicationType.NONE`) |
 | Swing + FlatLaf | 3.7.2 | Interfaz y Look & Feel base |
 | MigLayout | 11.4.2 | Gestor de layout de todas las pantallas |
 | H2 / MySQL 8 | | H2 embebida por defecto; MySQL disponible por perfil, con credenciales desde variables de entorno |
-| JUnit 5 | | 156 tests, casi todos sobre la capa de servicio, en H2 en memoria |
+| JUnit 5 | | 180 tests: la capa de servicio al completo, mas los componentes de interfaz que ya han roto algo alguna vez, en H2 en memoria |
 
 ---
+
+---
+
+## Licencia y uso
+
+**Todos los derechos reservados.** Este repositorio se publica para que su código
+pueda ser **leído y evaluado** —es parte de un portfolio profesional— y no para
+ser copiado, modificado, redistribuido ni usado con fines comerciales. Los
+detalles están en [LICENSE](LICENSE).
+
+**No se distribuye el ejecutable.** El proyecto se empaqueta con `jpackage` en un
+`.exe` que funciona sin tener Java instalado, y las instrucciones para generarlo
+están arriba, pero el binario no se publica aquí.
+
+"ActiHome", "CocoBrain" y la mascota **Olaz** son signos distintivos propios: la
+licencia cubre el código, no la marca ni las ilustraciones.
 
 ## Créditos
 

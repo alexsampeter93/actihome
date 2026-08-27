@@ -1,0 +1,75 @@
+Copyright (c) 2026 Alejandro Sampedro Calo (CocoBrain)
+
+Todos los derechos reservados. / All rights reserved.
+
+---
+
+ESPAÑOL
+
+Este repositorio se publica con un único fin: que su código pueda ser
+CONSULTADO Y EVALUADO (por ejemplo, como parte de un portfolio profesional).
+
+Queda permitido:
+
+  - Leer el código.
+  - Estudiarlo con fines educativos o de evaluación.
+  - Citar fragmentos breves, indicando la fuente.
+
+NO se concede permiso para:
+
+  - Copiar, reproducir o redistribuir el código, total o parcialmente.
+  - Modificarlo o crear obras derivadas.
+  - Usarlo con fines comerciales.
+  - Incorporarlo a otros proyectos, sean o no comerciales.
+  - Redistribuir el ejecutable, se haya generado desde este código o no.
+
+Para cualquier uso no contemplado aquí, hace falta autorización expresa
+y por escrito del titular.
+
+MARCA. "ActiHome", "CocoBrain" y la mascota Olaz son signos distintivos del
+titular. Esta licencia no concede ningún derecho sobre ellos: leer el código
+no autoriza a usar el nombre, el logotipo ni las ilustraciones.
+
+TERCEROS. Este proyecto incorpora software de terceros (Spring Boot, FlatLaf,
+MigLayout, H2, el conector de MySQL y otros), cada uno bajo su propia
+licencia. Las tipografías Fraunces y Archivo se distribuyen bajo SIL Open
+Font License 1.1, y las fotografías de ejemplo pertenecen a sus autores y
+están acreditadas en CREDITOS.md. Esta licencia se aplica únicamente al
+código original de ActiHome, no a esas dependencias.
+
+---
+
+ENGLISH
+
+This repository is published for one purpose only: so that its source
+code can be READ AND EVALUATED (for example, as part of a professional
+portfolio).
+
+You are permitted to:
+
+  - Read the source code.
+  - Study it for educational or evaluation purposes.
+  - Quote short excerpts, with attribution.
+
+You are NOT granted permission to:
+
+  - Copy, reproduce or redistribute the code, in whole or in part.
+  - Modify it or create derivative works.
+  - Use it for commercial purposes.
+  - Incorporate it into other projects, commercial or otherwise.
+  - Redistribute the executable, whether built from this source or not.
+
+Any use not covered above requires express written permission from the
+copyright holder.
+
+TRADEMARKS. "ActiHome", "CocoBrain" and the mascot Olaz are distinctive
+signs of the copyright holder. This licence grants no rights over them:
+reading the code does not authorise use of the name, the logo or the
+illustrations.
+
+THIRD PARTIES. This project bundles third-party software (Spring Boot,
+FlatLaf, MigLayout, H2, the MySQL connector and others), each under its own
+licence. The Fraunces and Archivo typefaces are distributed under the SIL
+Open Font License 1.1, and the sample photographs belong to their authors
+and are credited in CREDITOS.md. This licence applies solely to ActiHome's
+original code, not to those dependencies.

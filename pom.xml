@@ -53,6 +53,28 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
+
+		<!--
+			Flyway: lleva la cuenta de qué migraciones se han aplicado a cada base de
+			datos, en su propia tabla `flyway_schema_history`.
+
+			Sustituye al trío schema.sql + migracion-h2.sql + data.sql, que dependía de
+			que cada sentencia supiera comprobarse a sí misma (`IF NOT EXISTS`,
+			`WHERE NOT EXISTS`) y obligaba a tocar DOS archivos por cada columna nueva.
+
+			flyway-mysql va aparte porque desde Flyway 10 cada base de datos que no sea
+			de las básicas vive en su propio módulo. H2 sí viene en el núcleo; MySQL no,
+			y sin este artefacto el perfil "mysql" arrancaría diciendo que no reconoce
+			la base de datos.
+		-->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-mysql</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-crypto</artifactId>

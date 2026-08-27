@@ -128,7 +128,32 @@ public final class Typography {
 	 * Carga las fuentes empaquetadas y las registra en el entorno gráfico. Debe
 	 * llamarse una sola vez, al arrancar, antes de construir ninguna ventana.
 	 */
-	static void register() {
+	/**
+	 * Carga las nueve fuentes empaquetadas. Es idempotente: llamarla dos veces no
+	 * hace nada la segunda.
+	 *
+	 * <p>
+	 * <b>Se llama sola desde cualquier accesor, y eso corrige una trampa real.</b>
+	 * Hasta la Fase 9 había que acordarse de invocarla antes de tocar nada, porque
+	 * la llama {@code ActiHomeTheme.install()} al arrancar. Quien escribiera una
+	 * herramienta de desarrollo o un test que construyera un componente suelto se
+	 * encontraba un {@code NullPointerException} dentro de {@code sans()} —"Cannot
+	 * invoke Font.deriveFont because sansRegular is null"— que no dice en ningún
+	 * sitio lo que de verdad pasa, que es que faltaba una llamada de preparación.
+	 *
+	 * <p>
+	 * Una clase de utilidad estática que exige un ritual previo y castiga
+	 * olvidarlo con un fallo ilegible está mal diseñada, aunque la aplicación
+	 * nunca lo note: la aplicación no lo nota porque su único punto de entrada
+	 * hace el ritual. Ahora se prepara sola la primera vez que alguien le pide una
+	 * fuente, y {@code install()} la sigue llamando explícitamente para que el
+	 * coste se pague en el arranque y no a mitad del primer pintado.
+	 */
+	static synchronized void register() {
+
+		if (sansRegular != null) {
+			return;
+		}
 
 		sansRegular = load("Archivo-Regular.ttf", Font.SANS_SERIF);
 		sansMedium = load("Archivo-Medium.ttf", Font.SANS_SERIF);
@@ -181,14 +206,17 @@ public final class Typography {
 	// --- Sans (Manrope): interfaz, cuerpo, etiquetas ---
 
 	public static Font sans(float size) {
+		register();
 		return sansRegular.deriveFont(size);
 	}
 
 	public static Font sansMedium(float size) {
+		register();
 		return sansMedium.deriveFont(size);
 	}
 
 	public static Font sansSemiBold(float size) {
+		register();
 		return sansSemiBold.deriveFont(size);
 	}
 
@@ -197,6 +225,7 @@ public final class Typography {
 	// necesita saber que por debajo de 26 se sirve otro archivo.
 
 	public static Font serif(float size) {
+		register();
 		return optica(serifTextoRegular, serifDisplayRegular, size);
 	}
 
@@ -214,10 +243,12 @@ public final class Typography {
 	 * los títulos»), no el número del eje.
 	 */
 	public static Font serifMedium(float size) {
+		register();
 		return optica(serifTextoSemiBold, serifDisplaySemiBold, size);
 	}
 
 	public static Font serifItalic(float size) {
+		register();
 		return optica(serifTextoItalic, serifDisplayItalic, size);
 	}
 
@@ -339,6 +370,7 @@ public final class Typography {
 	 * letras sueltas en vez de en una palabra.
 	 */
 	public static Font serifTracked(float size) {
+		register();
 		return serifMedium(size).deriveFont(Collections.singletonMap(TextAttribute.TRACKING, 0.14f));
 	}
 }

@@ -76,6 +76,16 @@ jobs:
           xvfb-run -a ./mvnw --batch-mode --quiet exec:java
           -Dexec.mainClass=fp.project.actihome.ui.dev.MedirContraste
 
+      # Navegar de verdad, no medir pantallas sueltas. Comprueba dos cosas que
+      # ninguna de las otras ve: que ninguna pantalla necesita la barra de
+      # rescate al tamaño con el que la aplicación abre, y que **la ventana no
+      # cambia de tamaño ella sola** al cambiar de pantalla — un fallo que se
+      # reportó cuatro veces antes de que existiera esta comprobación.
+      - name: Navegación real, sin saltos de tamaño
+        run: >
+          xvfb-run -a ./mvnw --batch-mode --quiet exec:java
+          -Dexec.mainClass=fp.project.actihome.ui.dev.MedirNavegacion
+
       # Si los tests fallan, los informes dicen cuál y por qué. Se suben también
       # cuando el trabajo va en rojo -que es justo cuando hacen falta- y por eso
       # lleva if: always() en vez del comportamiento por defecto.

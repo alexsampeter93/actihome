@@ -1,3 +1,41 @@
+-- =============================================================================
+-- V1 — El esquema de ActiHome, tal y como está hoy.
+--
+-- POR QUÉ ESTE ARCHIVO SUSTITUYE A TRES
+--
+-- Hasta la Fase 9 el esquema vivía repartido en `schema.sql` (CREATE TABLE IF
+-- NOT EXISTS, ejecutado en CADA arranque) y `migracion-h2.sql` (ALTER TABLE ADD
+-- COLUMN IF NOT EXISTS, solo para H2). Ese reparto tenía una trampa que el
+-- propio repositorio documentaba y que aun así mordió dos veces: **añadir una
+-- columna obligaba a tocar dos archivos**, porque `CREATE TABLE IF NOT EXISTS`
+-- se salta la tabla entera si ya existe, así que una columna nueva solo aparecía
+-- en instalaciones creadas desde cero. Olvidar el segundo archivo dejaba sin
+-- arrancar cualquier instalación anterior, con `ddl-auto: validate` quejándose de
+-- una columna que falta.
+--
+-- Flyway resuelve eso de raíz llevando la cuenta: cada migración se ejecuta
+-- **exactamente una vez** por base de datos, y esa cuenta se guarda en la tabla
+-- `flyway_schema_history`. Por eso aquí ya no hace falta ningún `IF NOT EXISTS`
+-- ni ninguna sentencia que sepa comprobarse a sí misma: a partir de ahora, un
+-- cambio de esquema es **un archivo nuevo** (`V2__...sql`) y nada más.
+--
+-- QUÉ PASA CON LAS INSTALACIONES QUE YA EXISTÍAN
+--
+-- Nada, y es deliberado. La configuración usa `baseline-on-migrate` con
+-- `baseline-version: 1`: cuando Flyway encuentra una base de datos que ya tiene
+-- tablas pero no tiene historial, la da por hecha en la versión 1 —que es
+-- exactamente lo que es, porque este archivo describe el esquema que esas bases
+-- ya tienen— y solo aplica lo que venga después. Este archivo se ejecuta
+-- únicamente en bases nuevas.
+--
+-- PORTABILIDAD
+--
+-- Sigue siendo el mismo SQL portable entre H2 y MySQL 8 que antes: comillas
+-- simples para texto, nada de tipos con precisión que solo entienda MySQL, y
+-- ningún `IF NOT EXISTS` en los ALTER, que era justo lo que obligaba a tener un
+-- archivo aparte para H2.
+-- =============================================================================
+
 -- Esquema de ActiHome.
 --
 -- Dos cambios importantes respecto a la versión anterior:
@@ -13,7 +51,7 @@
 -- Si alguna vez hace falta empezar de cero, basta con borrar el fichero
 -- ~/.actihome/actihome.mv.db
 
-CREATE TABLE IF NOT EXISTS USERS (
+CREATE TABLE USERS (
 	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	username VARCHAR(50) NOT NULL,
 	password VARCHAR(200) NOT NULL,
@@ -47,7 +85,7 @@ CREATE TABLE IF NOT EXISTS USERS (
 	CONSTRAINT UniqueUsername UNIQUE (username)
 );
 
-CREATE TABLE IF NOT EXISTS HOUSINGS (
+CREATE TABLE HOUSINGS (
 	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	housingCode BIGINT NOT NULL,
 	-- Nombre comercial del alojamiento ("Casa Rural El Pinar"). Es distinto del
@@ -110,7 +148,7 @@ CREATE TABLE IF NOT EXISTS HOUSINGS (
 	CONSTRAINT OwnerIdFK FOREIGN KEY(ownerId) REFERENCES USERS(id)
 );
 
-CREATE TABLE IF NOT EXISTS REVIEWS (
+CREATE TABLE REVIEWS (
 	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	title VARCHAR(50) NOT NULL,
 	body VARCHAR(500) NOT NULL,
@@ -134,7 +172,7 @@ CREATE TABLE IF NOT EXISTS REVIEWS (
 	CONSTRAINT HousingIdFK FOREIGN KEY(housingId) REFERENCES HOUSINGS(id)
 );
 
-CREATE TABLE IF NOT EXISTS RESERVATIONS (
+CREATE TABLE RESERVATIONS (
 	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	reservationCode BIGINT NOT NULL,
 	checkIn DATETIME NOT NULL,
@@ -162,7 +200,7 @@ CREATE TABLE IF NOT EXISTS RESERVATIONS (
 -- alojamiento concreto. No hay tabla de "conversaciones": una conversación es
 -- el conjunto de mensajes que comparten alojamiento y los dos mismos
 -- participantes, y eso se agrupa en memoria (MessageServiceImpl), no en SQL.
-CREATE TABLE IF NOT EXISTS MESSAGES (
+CREATE TABLE MESSAGES (
 	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	senderId BIGINT NOT NULL,
 	recipientId BIGINT NOT NULL,
@@ -183,7 +221,7 @@ CREATE TABLE IF NOT EXISTS MESSAGES (
 -- catálogo, la comparación y el panel de propietario, y ninguno de los tres
 -- quiere una galería. Pedirles una consulta más para obtener lo que ya tenían
 -- sería pagar en todas las pantallas el precio de una.
-CREATE TABLE IF NOT EXISTS HOUSING_PHOTOS (
+CREATE TABLE HOUSING_PHOTOS (
 	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	housingId BIGINT NOT NULL,
 	-- Nombre del archivo dentro de /images/housings/.
@@ -204,7 +242,7 @@ CREATE TABLE IF NOT EXISTS HOUSING_PHOTOS (
 -- "attempts" existe porque un código corto sin límite de intentos no protege de
 -- nada: se prueban todos en segundos. Con cinco intentos, adivinarlo deja de ser
 -- viable sin necesidad de alargar el código hasta hacerlo incómodo de teclear.
-CREATE TABLE IF NOT EXISTS PASSWORD_RESET_CODES (
+CREATE TABLE PASSWORD_RESET_CODES (
 	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	userId BIGINT NOT NULL,
 	codeHash VARCHAR(200) NOT NULL,
@@ -231,7 +269,7 @@ CREATE TABLE IF NOT EXISTS PASSWORD_RESET_CODES (
 -- No hay clave ajena a ninguna tabla a propósito: esto traduce TEXTOS, no
 -- campos de entidades. La misma descripción escrita en dos alojamientos se
 -- traduce una sola vez, y borrar un alojamiento no invalida nada.
-CREATE TABLE IF NOT EXISTS TRANSLATIONS (
+CREATE TABLE TRANSLATIONS (
 	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	sourceHash VARCHAR(64) NOT NULL,
 	targetLanguage VARCHAR(5) NOT NULL,
@@ -255,7 +293,7 @@ CREATE TABLE IF NOT EXISTS TRANSLATIONS (
 -- pendiente ese alojamiento cambió de manos, quien tiene que contestar es el
 -- dueño de ahora. Un destinatario guardado sería un dato derivado capaz de
 -- sobrevivir a su origen.
-CREATE TABLE IF NOT EXISTS TRADE_PROPOSALS (
+CREATE TABLE TRADE_PROPOSALS (
 	id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	proposerId BIGINT NOT NULL,
 	offeredHousingId BIGINT NOT NULL,

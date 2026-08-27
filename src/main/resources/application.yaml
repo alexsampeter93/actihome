@@ -35,50 +35,41 @@ spring:
     password: ""
     driverClassName: org.h2.Driver
 
-    # Los scripts se declaran explícitamente en vez de dejar que Spring los
-    # descubra por convención: así queda a la vista cuál se ejecuta y cuándo.
-    #
-    # El segundo, migracion-h2.sql, pone al día las bases de datos que ya existían
-    # antes de que se añadieran columnas nuevas. Va aparte porque usa sintaxis que
-    # MySQL no entiende; el detalle está explicado dentro del propio archivo.
   # ---------------------------------------------------------------------------
-  # Inicialización de la base a partir de los scripts SQL.
+  # Migraciones de base de datos (Fase 9).
   #
-  # Esto vivía bajo `spring.datasource` (schema / data / initialization-mode /
-  # sql-script-encoding) hasta la migración a Spring Boot 3. Spring Boot 2.5 lo
-  # movió a `spring.sql.init` y en la 3.x las propiedades viejas ya no existen.
+  # Sustituye a `spring.sql.init`, que ejecutaba schema.sql, migracion-h2.sql y
+  # data.sql en CADA arranque y dependía de que cada sentencia supiera
+  # comprobarse a sí misma. Flyway lleva la cuenta en su propia tabla
+  # `flyway_schema_history`, así que cada migración corre exactamente una vez y
+  # añadir una columna vuelve a ser lo que debería ser siempre: crear un archivo.
   #
-  # Y el modo en que fallan importa: NO dan error de arranque, sencillamente se
-  # ignoran. Sin darse cuenta, el esquema no se crearía y el fallo aparecería
-  # después, en forma de `ddl-auto: validate` quejándose de una tabla que falta.
+  # baseline-on-migrate + baseline-version es lo que hace que las instalaciones
+  # que ya existen sobrevivan al cambio. Cuando Flyway encuentra una base con
+  # tablas pero sin historial, en vez de negarse a trabajar la da por hecha en la
+  # versión que se le diga —la 1, que es justo lo que describe V1__esquema.sql— y
+  # aplica solo lo que venga después. Sin esto, el primer arranque tras esta fase
+  # intentaría crear tablas que ya están y fallaría.
   # ---------------------------------------------------------------------------
-  sql:
-    init:
-      mode: always
-      schema-locations:
-        - classpath:schema.sql
-        - classpath:migracion-h2.sql
-      data-locations:
-        - classpath:data.sql
-        # Precarga de la cache de traducciones (Fase 8.7), generada por
-        # ui/dev/SembrarTraducciones. Va DESPUES de data.sql porque no depende de
-        # ninguna fila suya: traduce textos, no campos de entidades.
-        - classpath:traducciones.sql
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 1
 
-      # Los scripts SQL se leen como UTF-8 SIEMPRE, y no con la codificación por
-      # defecto de la máquina.
-      #
-      # Sin esta línea, Spring lee schema.sql y data.sql con el juego de caracteres
-      # del sistema, que en Windows en español es Windows-1252. El resultado es que
-      # "Loft Barrio Gótico" se siembra como "Loft Barrio GÃ³tico": cada carácter
-      # acentuado, que en UTF-8 ocupa dos bytes, se interpreta como dos caracteres.
-      #
-      # Y es un fallo especialmente traicionero porque **depende de cómo arranques**:
-      # con el ejecutable de jpackage no pasaba, porque ese lanzador fija
-      # -Dfile.encoding=UTF-8. Solo apareció al ejecutar la herramienta de capturas
-      # con Maven. Un dato corrompido según quién abra la aplicación es peor que uno
-      # corrompido siempre, porque no se reproduce.
-      encoding: UTF-8
+    # Los scripts se leen como UTF-8 SIEMPRE, y no con la codificación por defecto
+    # de la máquina.
+    #
+    # Sin esta línea, en un Windows en español se leerían como Windows-1252 y
+    # "Loft Barrio Gótico" se sembraría como "Loft Barrio GÃ³tico": cada carácter
+    # acentuado, que en UTF-8 ocupa dos bytes, se interpreta como dos caracteres.
+    #
+    # Y es un fallo especialmente traicionero porque **depende de cómo arranques**:
+    # con el ejecutable de jpackage no pasaba, porque ese lanzador fija
+    # -Dfile.encoding=UTF-8. Solo apareció al ejecutar la herramienta de capturas
+    # con Maven. Un dato corrompido según quién abra la aplicación es peor que uno
+    # corrompido siempre, porque no se reproduce.
+    encoding: UTF-8
 
   jackson:
     default-property-inclusion: NON_NULL
