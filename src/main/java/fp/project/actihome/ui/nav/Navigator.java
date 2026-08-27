@@ -84,18 +84,6 @@ public class Navigator {
 	private JFrame visible;
 
 	/**
-	 * El tamaño que cada pantalla declara en su {@code setSize}, guardado la primera
-	 * vez que se muestra.
-	 *
-	 * <p>
-	 * Hay que capturarlo <b>antes</b> de tocar la ventana, porque a partir de la
-	 * primera navegación su tamaño ya es el heredado y el original se ha perdido.
-	 * Los frames son singleton, así que basta con guardarlo una vez por pantalla y
-	 * dura toda la sesión.
-	 */
-	private final java.util.Map<JFrame, Dimension> disenos = new java.util.IdentityHashMap<>();
-
-	/**
 	 * Por dónde se ha pasado, de lo más reciente a lo más antiguo.
 	 *
 	 * <p>
@@ -112,7 +100,7 @@ public class Navigator {
 	 * singleton y conservan su estado —de qué alojamiento hablan, qué reserva
 	 * tienen cargada—, así que volver es literalmente volver a mostrar el mismo
 	 * objeto: no hay que recordar con qué se preparó. Es el mismo motivo por el
-	 * que {@link #disenos} puede usar la ventana como clave.
+	 * que volver es barato.
 	 *
 	 * <p>
 	 * <b>Tope de {@value #MAXIMO_HISTORIAL}.</b> Ir y venir entre dos pantallas
@@ -329,10 +317,6 @@ public class Navigator {
 				? anterior.getGraphicsConfiguration()
 				: ventana.getGraphicsConfiguration();
 
-		// Se anota el tamaño de diseño ANTES de tocar nada: en cuanto se hereda, el
-		// setSize original ya no se puede recuperar.
-		tamanoDeDiseno(ventana);
-
 		fijarMinimoSegunElContenido(ventana, configuracion);
 		heredarGeometria(anterior, ventana);
 
@@ -428,16 +412,20 @@ public class Navigator {
 
 		if (anterior == null || !anterior.isDisplayable()) {
 
-			// Primera ventana de la sesión: su tamaño de diseño, acotado a la pantalla.
-			// Aquí sí tiene sentido preguntarle al contenido, porque no hay nada de lo que
-			// heredar todavía. Y no hay "anterior" a la que preguntar por el monitor, así
-			// que aquí sí vale la configuración gráfica de la propia ventana —de
-			// arranque, es la única que existe—.
-			Dimension necesaria = loQueNecesitaElContenido(ventana);
+			// **Primera ventana de la sesión: el tamaño de apertura de la APLICACIÓN, no
+			// el de esta pantalla.** Antes se usaba el suyo propio y eso es lo que hacía
+			// que el login —980×620— fijara el tamaño de las diecinueve, con la barra de
+			// rescate puesta en casi todas; los dos parches que se pusieron para
+			// compensarlo son justo los que producían el salto. Ver
+			// Layout.TAMANO_DE_SESION.
+			//
+			// No hay "anterior" a la que preguntar por el monitor, así que aquí sí vale
+			// la configuración gráfica de la propia ventana: de arranque es la única que
+			// existe.
 			GraphicsConfiguration configuracion = ventana.getGraphicsConfiguration();
 
-			ventana.setSize(acotarAPantalla(configuracion, Math.max(ventana.getWidth(), necesaria.width),
-					Math.max(ventana.getHeight(), necesaria.height)));
+			ventana.setSize(acotarAPantalla(configuracion, Layout.TAMANO_DE_SESION.width,
+					Layout.TAMANO_DE_SESION.height));
 
 			ventana.setLocationRelativeTo(null);
 			return;
@@ -452,50 +440,36 @@ public class Navigator {
 
 		Rectangle previa = anterior.getBounds();
 
-		// **La configuración gráfica se pide a "anterior", no a "ventana", y es la
-		// otra mitad del arreglo del salto.** "ventana" puede ser una pantalla que se
-		// construye ahora mismo, o una que estuvo visible antes y se cerró con
-		// {@code dispose()} — en los dos casos su par nativo no existe todavía, y
-		// {@code getGraphicsConfiguration()} devuelve la del monitor <b>primario</b>
-		// por defecto, sea cual sea el monitor real donde está la aplicación. Con dos
-		// monitores a escalados distintos —el caso del usuario, portátil más un
-		// monitor de 27"—, acotar y encajar con esa configuración equivocada empuja la
-		// ventana de vuelta al monitor primario en cuanto se navega a una pantalla que
-		// no estuviera ya mostrada. "anterior" sigue viva en este punto —se cierra
+		// **La configuración gráfica se pide a "anterior", no a "ventana".** "ventana"
+		// puede ser una pantalla que se construye ahora mismo, y
+		// {@code getGraphicsConfiguration()} devuelve entonces la del monitor
+		// <b>primario</b>, sea cual sea el monitor real donde está la aplicación. Con
+		// dos monitores a escalados distintos, acotar con esa configuración equivocada
+		// empuja la ventana de vuelta al primario en cuanto se navega a una pantalla
+		// que no estuviera ya mostrada. "anterior" sigue viva en este punto —se oculta
 		// después, no antes— así que su configuración es siempre la real.
 		GraphicsConfiguration configuracion = anterior.getGraphicsConfiguration();
 
-		// **Se hereda el tamaño, pero nunca por debajo del que la pantalla declara.**
+		// **Se hereda el tamaño EXACTO. Sin Math.max contra nada.**
 		//
-		// Heredar tal cual —como se hacía— tiene una consecuencia que tardó en verse:
-		// el tamaño de toda la sesión lo fija la PRIMERA ventana. El login mide
-		// 980×620, así que quien entraba y navegaba recorría las diecinueve pantallas a
-		// 980×620, con la barra de rescate puesta en casi todas. Se notaba sobre todo
-		// al restaurar una ventana maximizada, que es cuando Windows devuelve el tamaño
-		// normal.
+		// Aquí había un `Math.max(previa, tamañoDeDiseño)` que parecía inofensivo y era
+		// la causa directa del salto que reportó el usuario: como cada pantalla declara
+		// su propio setSize —de 720×680 a 1400×900—, ese máximo significa que **la
+		// ventana solo puede crecer**, y lo hace a saltos según qué pantallas visites y
+		// en qué orden. Medido: entrar por el login y pasar por Buscar y el catálogo la
+		// llevaba de 1024×620 a 1400×940 sin que nadie tocara nada.
 		//
-		// Y no vale con el mínimo de la ventana: el mínimo dice "por debajo de esto se
-		// rompe", no "con esto se ve bien". Lo que se usa aquí es el tamaño de diseño
-		// de cada pantalla —su setSize—, que es un número comprobado: MedirPantallas
-		// mide todas las pantallas a su propio tamaño de apertura precisamente para que
-		// esta línea pueda confiar en él.
-		//
-		// Esto NO reabre el salto de tamaño que se corrigió en la Fase 7. Aquel venía
-		// de un Math.max contra el tamaño **preferido del contenido**, que en el
-		// catálogo es la lista entera —2287 puntos medidos— y disparaba la ventana casi
-		// a pantalla completa. Un tamaño de diseño es un número fijo, acotado y
-		// pequeño; crecer hasta él es exactamente lo que hace falta, y una sola vez.
-		Dimension diseno = tamanoDeDiseno(ventana);
+		// Existía para compensar que el tamaño de la sesión lo fijaba el login, que es
+		// pequeño. Eso ya no pasa: la sesión abre en Layout.TAMANO_DE_SESION, que es un
+		// tamaño pensado para la aplicación entera. Con la causa resuelta, el parche
+		// sobra — y el tamaño pasa a ser lo que el usuario haya decidido, que es lo que
+		// se espera de cualquier ventana de escritorio.
+		ventana.setSize(previa.width, previa.height);
 
-		ventana.setSize(acotarAPantalla(configuracion, Math.max(previa.width, diseno.width),
-				Math.max(previa.height, diseno.height)));
-
-		// **Se conserva la esquina, no el centro.** Antes se recentraba sobre el centro
-		// de la ventana anterior, y eso producía un salto adicional: en cuanto el
-		// tamaño cambiaba aunque fuera unos píxeles, la posición cambiaba también y la
-		// ventana aparecía desplazada respecto a donde estaba la anterior. Manteniendo
-		// la esquina superior izquierda, dos pantallas del mismo tamaño se superponen
-		// exactamente y no hay movimiento.
+		// **Se conserva la esquina, no el centro.** Recentrar producía un salto
+		// adicional: en cuanto el tamaño cambiaba aunque fuera unos píxeles, la
+		// posición cambiaba también. Manteniendo la esquina superior izquierda, dos
+		// pantallas del mismo tamaño se superponen exactamente y no hay movimiento.
 		ventana.setLocation(previa.x, previa.y);
 
 		encajarEnPantalla(configuracion, ventana);
@@ -537,14 +511,33 @@ public class Navigator {
 	 */
 	private void fijarMinimoSegunElContenido(JFrame ventana, GraphicsConfiguration configuracion) {
 
-		Dimension contenido = sinQueSalgaLaBarra(ventana);
-		Insets bordes = ventana.getInsets();
-
-		int ancho = contenido.width + bordes.left + bordes.right;
-		int alto = contenido.height + bordes.top + bordes.bottom;
-
-		ventana.setMinimumSize(acotarAPantalla(configuracion, Math.max(ancho, Layout.MINIMO_DE_VENTANA.width),
-				Math.max(alto, Layout.MINIMO_DE_VENTANA.height)));
+		// **El mínimo es el suelo del sistema y nada más. Aquí estaba la mitad grande
+		// del salto de tamaño.**
+		//
+		// Antes se calculaba "el tamaño por debajo del cual a esta pantalla le sale la
+		// barra de rescate" y se usaba como mínimo de ventana. Suena razonable y tiene
+		// un fallo fatal: **en una pantalla con lista ese número no está acotado**. El
+		// catálogo con diez alojamientos lo cifraba en 1392 puntos de alto — y Swing,
+		// cuando le pones a una ventana un mínimo mayor que su tamaño actual, **la
+		// agranda**. Medido en un recorrido real: llegar al catálogo estiraba la
+		// ventana de 993 a 1392 de golpe. Eso es exactamente el "cambia sola de tamaño"
+		// que reportó el usuario, y no tenía nada que ver con el Math.max del otro
+		// método: eran dos causas distintas produciendo el mismo síntoma.
+		//
+		// Además, el criterio se contradecía a sí mismo: si {@link Rescate} existe es
+		// porque **desplazarse es una respuesta aceptable** cuando falta sitio.
+		// Impedir que la ventana llegue a un tamaño en el que aparece la barra es
+		// prohibir justo lo que esa barra vino a permitir.
+		//
+		// El suelo bueno es el del sistema (1024×600), que no es una estimación: es el
+		// tamaño para el que {@code MedirResponsive} verifica, en cada ejecución del
+		// CI, que las veinticuatro pantallas se ven sin que nada se salga.
+		//
+		// El tope de escritorio no es opcional y es lo que salva el caso del portátil:
+		// si el escritorio es más pequeño que el suelo, manda el escritorio. Un mínimo
+		// mayor que la pantalla deja una ventana que no se puede ni colocar.
+		ventana.setMinimumSize(acotarAPantalla(configuracion, Layout.MINIMO_DE_VENTANA.width,
+				Layout.MINIMO_DE_VENTANA.height));
 	}
 
 	/**
@@ -580,91 +573,10 @@ public class Navigator {
 	 * eso quepa la barra sigue estando disponible — que es para lo que se escribió.
 	 */
 	/** El {@code setSize} de la pantalla, recordado de la primera vez que se abrió. */
-	private Dimension tamanoDeDiseno(JFrame ventana) {
-		return disenos.computeIfAbsent(ventana, JFrame::getSize);
-	}
 
-	private Dimension sinQueSalgaLaBarra(JFrame ventana) {
-
-		Container contenido = ventana.getContentPane();
-		Dimension minimo = contenido.getMinimumSize();
-
-		JScrollPane rescate = buscarRescate(contenido);
-
-		if (rescate == null) {
-			return minimo;
-		}
-
-		java.awt.Component vista = rescate.getViewport().getView();
-
-		if (vista == null) {
-			return minimo;
-		}
-
-		Dimension preferido = contenido.getPreferredSize();
-		Dimension delRescate = rescate.getPreferredSize();
-		Dimension deLaVista = vista.getMinimumSize();
-
-		return new Dimension(Math.max(minimo.width, preferido.width - delRescate.width + deLaVista.width),
-				Math.max(minimo.height, preferido.height - delRescate.height + deLaVista.height));
-	}
 
 	/** El scroll de rescate de una pantalla, buscado por su marca. */
-	private JScrollPane buscarRescate(Container contenedor) {
 
-		for (java.awt.Component hijo : contenedor.getComponents()) {
-
-			if (hijo instanceof JScrollPane
-					&& Boolean.TRUE.equals(((JScrollPane) hijo).getClientProperty(Rescate.MARCA))) {
-
-				return (JScrollPane) hijo;
-			}
-
-			if (hijo instanceof Container) {
-
-				JScrollPane encontrado = buscarRescate((Container) hijo);
-
-				if (encontrado != null) {
-					return encontrado;
-				}
-			}
-		}
-
-		return null;
-	}
-
-	/**
-	 * El tamaño de ventana que hace falta para que el contenido quepa entero.
-	 *
-	 * <p>
-	 * <b>Este método es el arreglo de un fallo real y repetido.</b> Cada pantalla
-	 * declara su tamaño con un {@code setSize(...)} de números fijos, y esos
-	 * números se ajustaron mirando capturas generadas a 1400×900. Pero el tamaño
-	 * que ocupa un formulario <em>no</em> es una constante: depende de cuánto miden
-	 * las fuentes y los controles, y eso cambia con el <b>escalado del sistema</b>.
-	 * En un Windows al 125 %, todo mide un cuarto más, así que un formulario que en
-	 * la captura entraba justo deja los botones fuera de la ventana.
-	 *
-	 * <p>
-	 * Por eso el tamaño no puede salir solo de una constante escrita a mano: hay
-	 * que preguntárselo al contenido ya construido, que es quien sabe cuánto mide
-	 * de verdad en la máquina donde se está ejecutando. Preguntarlo aquí, en el
-	 * navegador, lo arregla <b>en las diecisiete pantallas a la vez</b> en lugar de
-	 * ir parcheando la que se detecte rota.
-	 *
-	 * <p>
-	 * Al preferido del contenido hay que sumarle los <i>insets</i> de la ventana:
-	 * la barra de título y los bordes que pone Windows, que no forman parte del
-	 * área de contenido pero sí del tamaño de la ventana.
-	 */
-	private Dimension loQueNecesitaElContenido(JFrame ventana) {
-
-		Dimension contenido = ventana.getContentPane().getPreferredSize();
-		Insets bordes = ventana.getInsets();
-
-		return new Dimension(contenido.width + bordes.left + bordes.right,
-				contenido.height + bordes.top + bordes.bottom);
-	}
 
 	/**
 	 * Limita un tamaño al área utilizable de la pantalla.

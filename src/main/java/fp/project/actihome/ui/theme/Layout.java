@@ -116,6 +116,29 @@ public final class Layout {
 	 */
 	public static final java.awt.Dimension MINIMO_DE_VENTANA = new java.awt.Dimension(1024, 600);
 
+	/**
+	 * El tamano con el que la aplicacion abre su primera ventana, y por tanto el
+	 * de toda la sesion mientras el usuario no lo cambie.
+	 *
+	 * <p>
+	 * <b>Existe para que el tamano de la sesion deje de decidirlo la pantalla de
+	 * login.</b> Cada pantalla declara su propio {@code setSize} —del 720x680 del
+	 * check-in al 1400x900 del catalogo— y el navegador hacia crecer la ventana
+	 * hasta el tamano de diseno de cada destino. El resultado es el que reporto
+	 * el usuario: <b>la ventana solo podia crecer</b>, a saltos, segun que
+	 * pantallas visitaras y en que orden. Medido en un recorrido real: 1024x620
+	 * al entrar, 1300x940 al pasar por Buscar, 1400x940 al ir al catalogo. Una
+	 * aplicacion de escritorio no cambia de tamano sola al cambiar de seccion.
+	 *
+	 * <p>
+	 * Con un tamano de apertura propio de la <em>aplicacion</em>, el navegador no
+	 * necesita adivinar nada: abre aqui y a partir de ahi el tamano es del
+	 * usuario. Esta elegido para que quepan las pantallas mas altas, y el
+	 * navegador lo acota al escritorio real — en un portatil con el escalado al
+	 * 150 % manda el escritorio.
+	 */
+	public static final java.awt.Dimension TAMANO_DE_SESION = new java.awt.Dimension(1320, 920);
+
 	private Layout() {
 	}
 

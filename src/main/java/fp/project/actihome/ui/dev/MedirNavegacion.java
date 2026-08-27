@@ -92,8 +92,8 @@ public final class MedirNavegacion {
 	 * sesión de quien no toca la ventana. Empezar aquí no es buscarle las cosquillas
 	 * a la aplicación: es reproducir lo que le pasa a cualquiera que entre y navegue.
 	 */
-	private static final int ANCHO_INICIAL = 980;
-	private static final int ALTO_INICIAL = 620;
+	private static final int ANCHO_INICIAL = 1024;
+	private static final int ALTO_INICIAL = 600;
 
 	private MedirNavegacion() {
 	}
@@ -147,10 +147,11 @@ public final class MedirNavegacion {
 			pasos.add(new Paso("Contrasena", () -> navigator.ir(ChangePasswordFrame.class)));
 
 			System.out.println();
-			System.out.println("=== navegando de verdad, empezando en " + ANCHO_INICIAL + "x" + ALTO_INICIAL + " ===");
+			System.out.println("=== navegando de verdad, al tamano con el que abre la aplicacion ===");
 			System.out.printf("%-22s %12s  %s%n", "pantalla", "ventana", "");
 
 			boolean primera = true;
+			java.awt.Dimension tamanoDeLaSesion = null;
 
 			for (Paso paso : pasos) {
 
@@ -160,11 +161,15 @@ public final class MedirNavegacion {
 
 				if (primera) {
 
-					// Se encoge a mano SOLO la primera. A partir de ahí manda la herencia, que
-					// es justo el mecanismo que se está comprobando.
-					ventana.setSize(ANCHO_INICIAL, ALTO_INICIAL);
-					ventana.validate();
+					// **No se fuerza ningún tamaño, y ese es el cambio.** Antes se encogía la
+					// primera ventana a 980×620 para reproducir el fallo de que el tamaño de
+					// la sesión lo fijaba el login. Ese fallo se corrigió de raíz —la sesión
+					// abre en Layout.TAMANO_DE_SESION— así que forzar ahora un tamaño por
+					// debajo del suelo del sistema no comprueba nada: mide la aplicación en
+					// un tamaño en el que la barra de rescate es la respuesta correcta, no un
+					// síntoma. Se recorre al tamaño real con el que se abre.
 					primera = false;
+					tamanoDeLaSesion = ventana.getSize();
 				}
 
 				Thread.sleep(80);
@@ -173,11 +178,29 @@ public final class MedirNavegacion {
 				JScrollPane rescate = buscarRescate(ventana.getContentPane());
 				boolean barra = rescate != null && rescate.getVerticalScrollBar().isVisible();
 
-				System.out.printf("%-22s %12s  %s%n", paso.nombre,
-						ventana.getWidth() + "x" + ventana.getHeight(),
-						barra ? (paso.esLista ? "scroll (correcto: es una lista)" : "BARRA DE RESCATE") : "ok");
+				// **Y que la ventana no haya cambiado de tamaño ella sola.** Es la
+				// comprobación que faltaba, y este proyecto ha reportado el mismo fallo
+				// cuatro veces: la ventana crecía a saltos al cambiar de pantalla, por dos
+				// causas distintas que producían el mismo síntoma —un Math.max contra el
+				// tamaño de diseño del destino, y un mínimo de ventana calculado desde el
+				// contenido, que en una pantalla con lista no está acotado—. Las dos están
+				// corregidas; esta línea es lo que impide que vuelvan sin que nadie se dé
+				// cuenta.
+				boolean cambioDeTamano = !ventana.getSize().equals(tamanoDeLaSesion);
 
-				if (barra && !paso.esLista) {
+				String estado = cambioDeTamano
+						? "CAMBIA DE TAMANO SOLA (" + tamanoDeLaSesion.width + "x" + tamanoDeLaSesion.height + " -> "
+								+ ventana.getWidth() + "x" + ventana.getHeight() + ")"
+						: barra ? (paso.esLista ? "scroll (correcto: es una lista)" : "BARRA DE RESCATE") : "ok";
+
+				System.out.printf("%-22s %12s  %s%n", paso.nombre,
+						ventana.getWidth() + "x" + ventana.getHeight(), estado);
+
+				if (cambioDeTamano) {
+					fallos++;
+					tamanoDeLaSesion = ventana.getSize();
+
+				} else if (barra && !paso.esLista) {
 					fallos++;
 				}
 			}
@@ -186,7 +209,7 @@ public final class MedirNavegacion {
 		System.out.println();
 
 		if (fallos == 0) {
-			System.out.println("NINGUNA pantalla saca la barra navegando.");
+			System.out.println("NINGUNA pantalla saca la barra ni cambia de tamano navegando.");
 		} else {
 			System.out.println(fallos + " pantallas sacan la barra de rescate navegando.");
 		}
