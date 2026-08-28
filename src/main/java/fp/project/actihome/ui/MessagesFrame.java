@@ -26,7 +26,8 @@ import fp.project.actihome.model.exceptions.InstanceNotFoundException;
 import fp.project.actihome.model.services.ConversationSummary;
 import fp.project.actihome.model.services.MessageService;
 import fp.project.actihome.ui.components.Chip;
-import fp.project.actihome.ui.components.Hairline;
+import fp.project.actihome.ui.components.Card;
+import fp.project.actihome.ui.components.Card;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
@@ -173,17 +174,22 @@ public class MessagesFrame extends JFrame implements ConNombre {
 			lista.add(estadoVacio(), "growx");
 
 		} else {
-			boolean primera = true;
-
+			// **Cada conversación es una tarjeta, no una fila separada por una raya.**
+			// Con hairlines, una bandeja con tres mensajes y otra sin ninguno se parecían
+			// demasiado: dos líneas de texto sobre el fondo de la página no se leen como
+			// "aquí hay cosas". Una tarjeta es un objeto — se ve que está y se ve cuántas
+			// hay de un vistazo. Es el mismo vocabulario que ya usan las propuestas de
+			// intercambio y las fichas del catálogo.
 			for (ConversationSummary resumen : conversaciones) {
-
-				if (!primera) {
-					lista.add(Hairline.horizontal(), "growx, h 1!");
-				}
-
-				lista.add(fila(resumen), "growx");
-				primera = false;
+				lista.add(fila(resumen), "growx, gapbottom " + Space.SM);
 			}
+
+			// **Y Olaz debajo, ocupando lo que sobre.** Una bandeja con una sola
+			// conversación dejaba setecientos puntos de nada por debajo de la tarjeta, que
+			// es la misma sensación de "pantalla a medio cargar" que el intercambio. La
+			// ranura es elástica: con la bandeja llena se encoge hasta desaparecer y no
+			// resta ni un punto a la lista, y con dos conversaciones llena el hueco.
+			lista.add(MascotSlot.queLlenaElHueco(Pose.ACCION), "alignx center, growy, gaptop " + Space.LG);
 		}
 
 		lista.revalidate();
@@ -192,8 +198,8 @@ public class MessagesFrame extends JFrame implements ConNombre {
 
 	private JPanel fila(ConversationSummary resumen) {
 
-		JPanel panel = new JPanel(new MigLayout(Space.insets(Space.MD, 0, Space.MD, 0), "[grow,fill]push[]", ""));
-		panel.setOpaque(false);
+		Card panel = new Card(new MigLayout(Space.insets(Space.MD, Space.LG, Space.MD, Space.LG), "[grow,fill]push[]",
+				"")).interactiva();
 		panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
 		JPanel identidad = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]",
@@ -257,10 +263,13 @@ public class MessagesFrame extends JFrame implements ConNombre {
 	private JPanel estadoVacio() {
 
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.HUGE, 0, Space.HUGE, 0), "[grow,fill]",
-				"[]" + Space.LG + "[]" + Space.XS + "[]"));
+				"[grow,fill]" + Space.LG + "[]" + Space.XS + "[]"));
 		panel.setOpaque(false);
 
-		panel.add(centrar(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.ACCION)));
+		// Elástica: la bandeja vacía es de las pantallas con más sitio libre de la
+		// aplicación, y con una talla fija Olaz quedaba pequeño en un monitor grande y
+		// justo en un portátil. Así ocupa lo que haya.
+		panel.add(MascotSlot.queLlenaElHueco(Pose.ACCION), "alignx center, growy");
 		panel.add(centrar(Labels.title(Textos.t("mensajes.vacio.titulo"))));
 		panel.add(centrar(Labels.muted(Textos.t("mensajes.vacio.cuerpo"))));
 

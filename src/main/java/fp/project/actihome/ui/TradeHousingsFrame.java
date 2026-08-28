@@ -213,7 +213,7 @@ public class TradeHousingsFrame extends JFrame {
 		// hueco. Sin esto, ocultar la comparación y el buscador para enseñar el estado
 		// vacío dejaba sus filas reservadas y el mensaje de Olaz aparecía al fondo de
 		// la pantalla, muy por debajo del titular.
-		JPanel exterior = new JPanel(new MigLayout(
+		JPanel cuerpo = new JPanel(new MigLayout(
 				"wrap 1, hidemode 3, " + Space.insetsLaterales(Space.GIANT, Space.GIANT), "[grow,fill]",
 				// **"shrink 0" en las filas: aquí lo que cede es el aire, no los bloques.**
 				// Los huecos ya están declarados como rango y con eso basta; sin esta marca,
@@ -222,14 +222,20 @@ public class TradeHousingsFrame extends JFrame {
 				// mínimo era 16) y el precio de las tarjetas (23 donde eran 28). Con ella, si
 				// el aire no da para más, se desborda hacia abajo y sale la barra de rescate
 				// — que es lo correcto: mejor desplazarse que leer un texto rebanado.
+				// **"push" a los dos lados: el sobrante se reparte como aire arriba y abajo.**
+				// Sin eso el bloque quedaba pegado al techo, y en un monitor de 1920x1080
+				// dejaba 440 puntos de vacío por debajo del botón de enviar — se leía como
+				// una pantalla a medio cargar. Es la regla del sistema para ventanas grandes
+				// —lo que crece es el aire, no los controles— aplicada al eje vertical, que
+				// era donde no se había aplicado.
 				Space.margen(Space.XXL) + "[shrink 0]" + Space.aire(Space.LG) + "[shrink 0]" + Space.aire(Space.LG)
 						+ "[shrink 0]" + Space.aire(Space.MD) + "[shrink 0]" + Space.aire(Space.LG) + "[shrink 0]"
 						+ Space.margen(Space.XXL)));
-		exterior.setOpaque(false);
+		cuerpo.setOpaque(false);
 
 		buscador = buscador();
 
-		exterior.add(cabecera(), Layout.anchoCentrado(Layout.CONTENIDO));
+		cuerpo.add(cabecera(), Layout.anchoCentrado(Layout.CONTENIDO));
 
 		// **Las propuestas van ARRIBA, antes de la comparación.** La primera versión
 		// las puso al final, después del botón de enviar, y la captura lo dejó claro:
@@ -239,21 +245,36 @@ public class TradeHousingsFrame extends JFrame {
 		// oculta entero cuando no hay ninguna, que es el caso normal, así que no le
 		// roba sitio a nadie.
 		propuestas = propuestas();
-		exterior.add(propuestas, Layout.anchoCentrado(Layout.CONTENIDO));
+		cuerpo.add(propuestas, Layout.anchoCentrado(Layout.CONTENIDO));
 
 		comparacion = comparacion();
-		exterior.add(comparacion, Layout.anchoCentrado(Layout.CONTENIDO));
+		cuerpo.add(comparacion, Layout.anchoCentrado(Layout.CONTENIDO));
 
 		vacio = estadoVacio();
-		exterior.add(vacio, Layout.anchoCentrado(Layout.CONTENIDO));
+		cuerpo.add(vacio, Layout.anchoCentrado(Layout.CONTENIDO));
 
 		error = Labels.error(" ");
-		exterior.add(error, Layout.anchoCentrado(Layout.TEXTO));
+		cuerpo.add(error, Layout.anchoCentrado(Layout.TEXTO));
 
 		acciones = acciones();
-		exterior.add(acciones, Layout.anchoCentrado(Layout.TEXTO));
+		cuerpo.add(acciones, Layout.anchoCentrado(Layout.TEXTO));
 
 		raiz.add(headerPanel, "growx");
+		// **El cuerpo va centrado verticalmente dentro de su envoltorio.** Sin esto el
+		// bloque quedaba pegado al techo y en un monitor de 1920x1080 dejaba 440 puntos
+		// de vacío por debajo del botón de enviar: se leía como una pantalla a medio
+		// cargar. Es la regla del sistema para ventanas grandes —lo que crece es el
+		// aire, no los controles— aplicada al eje vertical, y es el mismo patrón que ya
+		// usaban Buscar y el check-in.
+		//
+		// Hace falta un panel de más porque un "push" en los huecos del propio cuerpo
+		// no basta: sus filas van todas con "shrink 0" y el sobrante se queda al final.
+		// Con envoltorio, quien reparte es el layout de fuera, que sí tiene una única
+		// fila que crece.
+		JPanel exterior = new JPanel(new MigLayout("fill, " + Space.insets(0), "[grow,fill]", "[grow]"));
+		exterior.setOpaque(false);
+		exterior.add(cuerpo, "aligny center");
+
 		raiz.add(Rescate.envolver(exterior), "grow");
 
 		setContentPane(raiz);

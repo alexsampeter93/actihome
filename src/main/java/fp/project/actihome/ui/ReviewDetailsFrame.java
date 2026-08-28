@@ -195,7 +195,12 @@ public class ReviewDetailsFrame extends JFrame {
 			filas.append(Space.XXL).append("[]").append(Space.LG).append("[]");
 		}
 
-		filas.append("push[]");
+		// **El hueco que queda hasta las acciones lo llena Olaz, no el vacío.** Esta
+		// pantalla es corta —una nota, un párrafo y cinco barras— y las acciones van
+		// abajo del todo, así que en un monitor de 1920 quedaban trescientos y pico
+		// puntos de nada en medio. Una ranura elástica se encoge hasta desaparecer en
+		// un portátil, donde ese hueco no existe, y ocupa el sitio donde sí.
+		filas.append(Space.LG).append("[grow,fill]").append(Space.LG).append("[]");
 
 		// Una sola columna centrada, y dentro todo alineado a la izquierda. Es la
 		// diferencia entre un margen izquierdo recto y uno dentado: si cada bloque se
@@ -221,6 +226,7 @@ public class ReviewDetailsFrame extends JFrame {
 			columna.add(respuestaDelPropietario(), "growx, " + Layout.ancho(Layout.TEXTO));
 		}
 
+		columna.add(MascotSlot.queLlenaElHueco(Pose.ACCION), "alignx center, aligny center");
 		columna.add(acciones(), "growx");
 
 		contenido.add(columna, "grow, " + Layout.anchoCentrado(Layout.CONTENIDO));

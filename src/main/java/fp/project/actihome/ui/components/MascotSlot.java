@@ -108,6 +108,35 @@ public class MascotSlot extends JComponent {
 		repaint();
 	}
 
+	/**
+	 * Una ranura que <b>crece con el hueco que le den</b>, en vez de tener un
+	 * tamaño fijo.
+	 *
+	 * <p>
+	 * Es la respuesta a un problema que las tres tallas fijas no sabían resolver:
+	 * hay pantallas —el detalle de una reseña, la comparación, la bandeja de
+	 * mensajes— que en un portátil van justas y en un monitor de 1920 dejan
+	 * cuatrocientos puntos de vacío. Una talla fija obliga a elegir entre romper la
+	 * primera o desaprovechar la segunda; con esta el mismo componente se encoge
+	 * hasta desaparecer donde no cabe y llena el hueco donde sobra.
+	 *
+	 * <p>
+	 * Técnicamente son dos declaraciones honestas: el <b>preferido</b> es el de la
+	 * ranura grande —lo que le gustaría ocupar— y el <b>mínimo es cero</b>, que en
+	 * una mascota decorativa es la verdad y no una mentira como lo era en un
+	 * párrafo: aquí no hay contenido indivisible que defender, y no verla no rompe
+	 * nada. Colocada en una fila con {@code grow}, el layout hace el resto, y como
+	 * {@code pintarAjustada} ya escala conservando la proporción, la ilustración
+	 * sale bien a cualquier tamaño intermedio.
+	 */
+	public static MascotSlot queLlenaElHueco(Pose pose) {
+
+		MascotSlot ranura = new MascotSlot(Tamano.GRANDE, pose);
+		ranura.setMinimumSize(new Dimension(0, 0));
+
+		return ranura;
+	}
+
 	@Override
 	protected void paintComponent(Graphics g) {
 

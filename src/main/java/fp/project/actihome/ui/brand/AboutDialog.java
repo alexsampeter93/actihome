@@ -67,8 +67,9 @@ public final class AboutDialog {
 		raiz.add(new WrappingText("Aplicación de escritorio para gestionar y reservar alojamientos turísticos."),
 				"growx");
 		raiz.add(datos(), "growx");
-		raiz.add(new WrappingText("Olaz, la mascota, cambia con la estación que elijas. Ahora mismo es "
-				+ Theme.estacion().nombre().toLowerCase() + "."), "growx");
+		raiz.add(new WrappingText("Aplicación realizada por CocoBrain. Olaz te da la bienvenida: la mascota "
+				+ "cambia con la estación que elijas, y ahora mismo es " + Theme.estacion().nombre().toLowerCase()
+				+ "."), "growx");
 		raiz.add(Buttons.primary("Cerrar", e -> dialogo.dispose()), "height " + Typography.altoDeBoton() + "!, alignx left");
 
 		dialogo.setContentPane(raiz);
@@ -97,7 +98,10 @@ public final class AboutDialog {
 		titulos.add(Labels.muted(VERSION), "gaptop " + Space.XXS);
 
 		panel.add(titulos);
-		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "top");
+		// MEDIANO y no pequeño: este diálogo es la firma de la marca, y es el único
+		// sitio de la aplicación donde Olaz no acompaña a otra cosa sino que ES el
+		// contenido. Cabe de sobra porque el diálogo se dimensiona con pack().
+		panel.add(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.BIENVENIDA), "top");
 
 		return panel;
 	}
