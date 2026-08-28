@@ -331,7 +331,7 @@ public class SettingsFrame extends JFrame {
 		tarjeta.add(campoIdioma(), "gapbottom " + Space.aire(Space.MD));
 		tarjeta.add(campoVistaPorDefecto());
 		tarjeta.add(campoParticulas());
-		tarjeta.add(campoBienvenida(), "gaptop " + Space.aire(Space.MD));
+		tarjeta.add(campoBienvenida(), "span 2, gaptop " + Space.aire(Space.MD));
 
 		return tarjeta;
 	}
@@ -472,17 +472,30 @@ public class SettingsFrame extends JFrame {
 	 */
 	private JPanel campoBienvenida() {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		// **El botón va al lado del texto, no debajo, y ocupa la fila entera.** Los
+		// otros cuatro campos de esta tarjeta son controles cortos que caben a dos
+		// columnas; éste es el único con una explicación de dos líneas, y apilado
+		// —etiqueta, texto, botón— gastaba noventa puntos de alto dejando además la
+		// media fila de al lado vacía. Con la explicación a la izquierda y el botón a
+		// la derecha son cuarenta y pocos, que es exactamente lo que le faltaba a
+		// Ajustes para caber en un portátil de 1280×680 sin barra de rescate.
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[grow,fill]" + Space.LG + "[]", ""));
 		panel.setOpaque(false);
 
+		JPanel texto = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		texto.setOpaque(false);
+
 		etiquetaBienvenida = Labels.caps(" ");
-		panel.add(etiquetaBienvenida);
+		texto.add(etiquetaBienvenida);
 
 		descripcionBienvenida = WrappingText.muted(" ");
-		panel.add(descripcionBienvenida, "growx, wmin 0, gaptop " + Space.XXS);
+		texto.add(descripcionBienvenida, "growx, wmin 0, gaptop " + Space.XXS);
 
-		botonBienvenida = Buttons.secondary(" ", e -> navigator.ir(OnboardingFrame.class));
-		panel.add(botonBienvenida, "gaptop " + Space.XS + ", left, height " + Typography.altoDeControl() + "!");
+		panel.add(texto, "aligny center");
+
+		botonBienvenida = Buttons.secondary(" ",
+				e -> navigator.ir(OnboardingFrame.class, pantalla -> pantalla.setVolverAlSalir(true)));
+		panel.add(botonBienvenida, "aligny center, height " + Typography.altoDeControl() + "!");
 
 		return panel;
 	}
