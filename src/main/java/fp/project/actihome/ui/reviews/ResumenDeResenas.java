@@ -121,7 +121,7 @@ public class ResumenDeResenas extends JPanel {
 		panel.setOpaque(false);
 
 		JLabel nota = Labels.price(Formato.nota(media));
-		nota.setFont(Typography.serifMedium(40f));
+		nota.setFont(Typography.sansSemiBold(40f));
 
 		panel.add(nota);
 		panel.add(Labels.muted(resenas.isEmpty() ? Textos.t("catalogo.sinResenas")

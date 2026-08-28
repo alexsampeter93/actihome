@@ -808,7 +808,7 @@ public class HousingDetailsFrame extends JFrame implements ConNombre {
 		fila.setOpaque(false);
 
 		JLabel precioLabel = Labels.price(Formato.precioCorto(housing.getPricePerNight()));
-		precioLabel.setFont(Typography.serif(Typography.PRICE_LG));
+		precioLabel.setFont(Typography.sansSemiBold(Typography.PRICE_LG));
 		fila.add(precioLabel, "aligny bottom");
 
 		fila.add(Labels.muted(Textos.t("catalogo.card.porNoche")), "aligny bottom, gapbottom 5");

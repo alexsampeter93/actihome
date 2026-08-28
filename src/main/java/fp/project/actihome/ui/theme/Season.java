@@ -89,8 +89,8 @@ public enum Season {
 
 	/**
 	 * Clave i18n de esta estación, en minúsculas ("primavera", "verano"...). Es la
-	 * raíz de las claves {@code season.<clave>.nombre} y
-	 * {@code season.<clave>.etiqueta} de {@code Textos} (Fase 7.6).
+	 * raíz de la clave
+	 * {@code season.<clave>.nombre} de {@code Textos} (Fase 7.6).
 	 */
 	private String clave() {
 		return name().toLowerCase(java.util.Locale.ROOT);
@@ -106,28 +106,6 @@ public enum Season {
 	 */
 	public String nombre() {
 		return Textos.t("season." + clave() + ".nombre");
-	}
-
-	/** Frase editorial completa: "Estancias de verano — Sol alto, luz dorada y sombra fresca". */
-	public String etiqueta() {
-		return Textos.t("season." + clave() + ".etiqueta");
-	}
-
-	/**
-	 * Solo la parte poética de la frase: "Sol alto, luz dorada y sombra fresca".
-	 *
-	 * <p>
-	 * En sitios estrechos —el panel de marca del login, por ejemplo— la frase
-	 * entera no cabe y se corta con puntos suspensivos, que es la peor forma de
-	 * mostrar una frase escrita con cuidado. La primera mitad ("Estancias de
-	 * verano") además suele ser redundante, porque la estación ya se sabe por el
-	 * contexto.
-	 */
-	public String frase() {
-
-		String etiqueta = etiqueta();
-		int guion = etiqueta.indexOf('—');
-		return guion < 0 ? etiqueta : etiqueta.substring(guion + 1).trim();
 	}
 
 	/** Acento de <b>relleno</b>: fondo de botones, discos, chips activos. */

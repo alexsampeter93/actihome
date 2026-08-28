@@ -49,7 +49,7 @@ public class Stat extends JPanel {
 		// efecto. Se elige la fábrica que ya trae el color correcto y se le cambia
 		// únicamente el tamaño.
 		valor = destacado ? Labels.price(valorInicial) : Labels.body(valorInicial);
-		valor.setFont(Typography.serif(26f));
+		valor.setFont(Typography.sansSemiBold(26f));
 		valor.setHorizontalAlignment(SwingConstants.RIGHT);
 
 		etiqueta = Labels.caps(rotulo);

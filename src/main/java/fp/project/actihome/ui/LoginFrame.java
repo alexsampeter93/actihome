@@ -90,12 +90,6 @@ public class LoginFrame extends JFrame {
 	private JLabel enlaceRegistro;
 	private JButton enlaceOlvidada;
 
-	/**
-	 * La frase editorial de la estación. Es texto, no color, así que no se resuelve
-	 * sola al repintar: hay que reescribirla al volver a mostrar la pantalla, porque
-	 * el usuario ha podido cambiar de estación antes de cerrar sesión.
-	 */
-	private JLabel fraseEstacional;
 
 	/** Piezas de display que crecen con la ventana. Ver {@link Layout}. */
 	private JLabel claimPrimera;
@@ -129,7 +123,7 @@ public class LoginFrame extends JFrame {
 			usuario.setText("");
 			contrasena.setText("");
 			error.setText(" ");
-			fraseEstacional.setText(Theme.estacion().frase());
+			
 			actualizarTextosFijos();
 			SwingUtilities.invokeLater(usuario::requestFocus);
 
@@ -246,8 +240,10 @@ public class LoginFrame extends JFrame {
 
 		panel.add(new MascotSlot(MascotSlot.Tamano.GRANDE, Pose.BIENVENIDA), "align left");
 
-		fraseEstacional = Labels.editorialOnHeader(Theme.estacion().frase());
-		panel.add(fraseEstacional, Layout.ancho(Layout.TEXTO));
+		// La frase editorial de la estacion se retiro en la Fase 9 (decision del
+		// usuario): la estacion ya se ve en la paleta, en las particulas y en Olaz, y
+		// una frase mas era una cuarta senal de lo mismo. Aqui queda solo la firma.
+		
 		panel.add(Labels.capsOnHeader("By CocoBrain"), Layout.ancho(Layout.TEXTO));
 
 		return panel;

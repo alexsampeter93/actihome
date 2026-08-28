@@ -404,7 +404,7 @@ public class HousingRow extends JPanel {
 		fila.setOpaque(false);
 
 		JLabel precio = Labels.price(Formato.precioCorto(housing.getPricePerNight()));
-		precio.setFont(Typography.serif(28f));
+		precio.setFont(Typography.sansSemiBold(28f));
 		fila.add(precio, "aligny bottom");
 
 		fila.add(Labels.muted(Textos.t("catalogo.card.porNoche")), "aligny bottom, gapbottom 4");

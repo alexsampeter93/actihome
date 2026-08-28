@@ -63,7 +63,7 @@ public class StyleGuidePanel extends JPanel {
 		if (interactivo) {
 			add(selectorDeEstacion(), "growx, gaptop " + Space.XXL + ", gapx " + Space.XXXL);
 		} else {
-			add(Labels.editorial(Theme.estacion().etiqueta()), "gaptop " + Space.XXL + ", gapx " + Space.XXXL);
+			add(Labels.editorial(Theme.estacion().nombre()), "gaptop " + Space.XXL + ", gapx " + Space.XXXL);
 		}
 
 		add(seccion("Paleta"), "gapx " + Space.XXXL + ", gaptop " + Space.XXL);
@@ -114,7 +114,7 @@ public class StyleGuidePanel extends JPanel {
 			panel.add(chip);
 		}
 
-		panel.add(Labels.editorial(Theme.estacion().etiqueta()));
+		panel.add(Labels.editorial(Theme.estacion().nombre()));
 
 		return panel;
 	}

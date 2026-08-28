@@ -43,7 +43,7 @@ public class InlineScore extends JPanel {
 		setOpaque(false);
 
 		JLabel nota = Labels.body(Formato.nota(puntuacion));
-		nota.setFont(Typography.serifMedium(tamanoNota));
+		nota.setFont(Typography.sansSemiBold(tamanoNota));
 
 		add(nota);
 		add(new Barra(puntuacion, anchoBarra), "w " + anchoBarra + "!, h 3!, aligny center");

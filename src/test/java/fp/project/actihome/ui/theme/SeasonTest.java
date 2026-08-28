@@ -61,23 +61,10 @@ class SeasonTest {
 			org.junit.jupiter.api.Assertions.assertTrue(estacion.imgTint().getAlpha() < 255,
 					estacion + ": el velo de foto debe ser translúcido");
 
-			org.junit.jupiter.api.Assertions.assertFalse(estacion.etiqueta().isEmpty());
+			org.junit.jupiter.api.Assertions.assertFalse(estacion.nombre().isEmpty());
 		}
 	}
 
-	@Test
-	void laFraseSeQuedaSoloConLaParteDespuesDelGuion() {
-
-		assertEquals("Sol alto, luz dorada y sombra fresca", Season.VERANO.frase());
-		assertEquals("Hojas, viñedos y tardes doradas", Season.OTONO.frase());
-
-		// Todas deben tener parte poética: si alguna etiqueta se escribiera sin guion,
-		// frase() devolvería la etiqueta entera y el panel del login se cortaría.
-		for (Season estacion : Season.values()) {
-			org.junit.jupiter.api.Assertions.assertNotEquals(estacion.etiqueta(), estacion.frase(),
-					estacion + ": la etiqueta debe llevar guion largo separando la frase");
-		}
-	}
 
 	@Test
 	void otonoYVeranoSonColoresDistinguibles() {

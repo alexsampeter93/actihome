@@ -354,19 +354,24 @@ public class HeaderPanel extends JPanel {
 			menu.addSeparator();
 		}
 
-		// "Editar perfil" y "Ajustes" llevan a la misma pantalla desde la Fase 8.4,
-		// que las unificó. Se conservan las dos entradas a propósito: son dos formas
-		// distintas de pensar lo mismo ("quiero cambiar mi correo" / "quiero cambiar
-		// la estación"), y quitar una obligaría a la mitad de la gente a buscar su
-		// tarea bajo un nombre que no es el que tiene en la cabeza.
-		JMenuItem perfil = new JMenuItem(Textos.t("header.menu.perfil"));
-		perfil.addActionListener(e -> navigator.ir(SettingsFrame.class));
+		// **Una sola entrada, y antes eran dos.** "Editar perfil" y "Ajustes"
+		// apuntaban las dos a esta misma pantalla desde que la Fase 8.4 las unificó,
+		// con el argumento de que son dos formas de pensar lo mismo ("quiero cambiar
+		// mi correo" / "quiero cambiar la estación") y que quitar una obligaría a
+		// media gente a buscar su tarea bajo un nombre que no es el que tiene en la
+		// cabeza.
+		//
+		// El argumento era bueno y la solución mala: dos entradas de menú que llevan
+		// al mismo sitio se leen como un fallo, no como una comodidad — quien pulsa
+		// la segunda cree que se ha equivocado. La forma correcta de atender los dos
+		// modelos mentales es **que la entrada lleve las dos palabras**, que además
+		// es como se llama la pantalla de verdad.
+		JMenuItem perfilYAjustes = new JMenuItem(Textos.t("header.menu.perfilYAjustes"));
+		perfilYAjustes.addActionListener(e -> navigator.ir(SettingsFrame.class));
 
 		JMenuItem contrasena = new JMenuItem(Textos.t("header.menu.contrasena"));
 		contrasena.addActionListener(e -> navigator.ir(ChangePasswordFrame.class));
 
-		JMenuItem ajustes = new JMenuItem(Textos.t("header.menu.ajustes"));
-		ajustes.addActionListener(e -> navigator.ir(SettingsFrame.class));
 
 		// Solo para ADMIN (Fase 7.9): es quien puede tener alojamientos propios que
 		// mostrar aquí. Mismo criterio de visibilidad que ya usa "Cambiar rol", justo
@@ -405,9 +410,8 @@ public class HeaderPanel extends JPanel {
 			navigator.ir(LoginFrame.class);
 		});
 
-		menu.add(perfil);
+		menu.add(perfilYAjustes);
 		menu.add(contrasena);
-		menu.add(ajustes);
 
 		if (panelPropietario != null) {
 			menu.add(panelPropietario);

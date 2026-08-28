@@ -19,7 +19,7 @@ import fp.project.actihome.ui.theme.Typography;
  *
  * <p>
  * Tres partes en una fila: etiqueta en versalita, barra rellena en proporción a
- * la nota sobre cinco, y el valor en serif a la derecha.
+ * la nota sobre cinco, y el valor a la derecha.
  *
  * <p>
  * Sustituye a lo que hay hoy, que es un par etiqueta-valor con el número en
@@ -44,7 +44,7 @@ public class ScoreBar extends JPanel {
 		add(new Barra(nota), "height 6!");
 
 		javax.swing.JLabel valor = Labels.body(String.format("%.1f", nota).replace('.', ','));
-		valor.setFont(Typography.serifMedium(15f));
+		valor.setFont(Typography.sansSemiBold(15f));
 		add(valor);
 	}
 

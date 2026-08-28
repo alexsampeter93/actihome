@@ -100,6 +100,9 @@ public class SettingsFrame extends JFrame {
 
 	// Cabecera de identidad
 	private JPanel avatar;
+	private JLabel etiquetaBienvenida;
+	private WrappingText descripcionBienvenida;
+	private JButton botonBienvenida;
 	private JLabel nombreCompleto;
 	private JLabel identidad;
 	private JButton cambiarRol;
@@ -328,6 +331,7 @@ public class SettingsFrame extends JFrame {
 		tarjeta.add(campoIdioma(), "gapbottom " + Space.aire(Space.MD));
 		tarjeta.add(campoVistaPorDefecto());
 		tarjeta.add(campoParticulas());
+		tarjeta.add(campoBienvenida(), "gaptop " + Space.aire(Space.MD));
 
 		return tarjeta;
 	}
@@ -447,6 +451,42 @@ public class SettingsFrame extends JFrame {
 	}
 
 
+
+	/**
+	 * "Ver la bienvenida otra vez": vuelve a abrir la pantalla de presentación.
+	 *
+	 * <p>
+	 * <b>La bienvenida se enseña una sola vez y hasta ahora no había forma de
+	 * volver a verla.</b> Es lo razonable por defecto —nadie quiere el tutorial
+	 * cada vez que entra— pero convertirlo en irreversible es otra cosa: quien la
+	 * pasa deprisa el primer día, o quien enseña la aplicación a otra persona, se
+	 * queda sin ella para siempre. Un contenido que explica cómo funciona algo
+	 * tiene que poder volver a leerse.
+	 *
+	 * <p>
+	 * No hace falta desmarcar la bandera {@code onboardingSeen}: esa decide si la
+	 * bienvenida se enseña <em>sola</em> al entrar, y aquí no se está entrando, se
+	 * está pidiendo. Tocarla haría que la próxima sesión la volviera a enseñar sin
+	 * que nadie lo hubiera pedido — que es justo lo contrario de lo que quiere
+	 * quien pulsa este botón.
+	 */
+	private JPanel campoBienvenida() {
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		panel.setOpaque(false);
+
+		etiquetaBienvenida = Labels.caps(" ");
+		panel.add(etiquetaBienvenida);
+
+		descripcionBienvenida = WrappingText.muted(" ");
+		panel.add(descripcionBienvenida, "growx, wmin 0, gaptop " + Space.XXS);
+
+		botonBienvenida = Buttons.secondary(" ", e -> navigator.ir(OnboardingFrame.class));
+		panel.add(botonBienvenida, "gaptop " + Space.XS + ", left, height " + Typography.altoDeControl() + "!");
+
+		return panel;
+	}
+
 	private JPanel acciones() {
 
 		JPanel fila = new JPanel(
@@ -528,6 +568,9 @@ public class SettingsFrame extends JFrame {
 		etiquetaParticulas.setText(Textos.t("ajustes.particulas.label"));
 		etiquetaIdioma.setText(Textos.t("ajustes.idioma.label"));
 		etiquetaVista.setText(Textos.t("ajustes.vista.label"));
+		etiquetaBienvenida.setText(Textos.t("ajustes.bienvenida.label"));
+		descripcionBienvenida.setText(Textos.t("ajustes.bienvenida.descripcion"));
+		botonBienvenida.setText(Textos.t("ajustes.bienvenida.boton"));
 		vistaPorDefecto.actualizarTextos(Textos.t("catalogo.vista.lista"), Textos.t("catalogo.vista.cuadricula"));
 		guardar.setText(Textos.t("ajustes.guardar"));
 		cancelar.setText(Textos.t("ajustes.cancelar"));

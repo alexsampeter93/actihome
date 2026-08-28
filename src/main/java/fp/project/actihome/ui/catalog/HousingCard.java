@@ -262,7 +262,7 @@ public class HousingCard extends JPanel {
 		fila.setOpaque(false);
 
 		JLabel precio = Labels.price(Formato.precioCorto(housing.getPricePerNight()));
-		precio.setFont(Typography.serif(Typography.PRICE));
+		precio.setFont(Typography.sansSemiBold(Typography.PRICE));
 		fila.add(precio, "aligny bottom");
 
 		fila.add(Labels.muted(Textos.t("catalogo.card.porNoche")), "aligny bottom, gapbottom 3");

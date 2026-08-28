@@ -104,7 +104,25 @@ public class HeroCatalogo extends JPanel {
 
 	private JLabel tituloPrimera;
 	private JLabel tituloSegunda;
-	private JLabel fraseEstacional;
+	/**
+	 * La firma de la marca, en el sitio donde antes iba la frase de la estación.
+	 *
+	 * <p>
+	 * <b>Se escribe aquí y no se traduce.</b> "By CocoBrain" es un nombre
+	 * comercial, no una frase: se firma igual en español y en inglés, igual que no
+	 * se traduce "ActiHome". Por eso es una constante y no una clave de
+	 * {@code Textos}.
+	 *
+	 * <p>
+	 * Hasta la Fase 9 este hueco lo ocupaba la frase editorial de la estación
+	 * ("Estancias de verano — Sol alto, luz dorada y sombra fresca"). Se retiró por
+	 * decisión del usuario: la estación ya se ve en la paleta, en las partículas y
+	 * en la mascota, y una frase distinta en cada una era una cuarta señal de lo
+	 * mismo compitiendo con el titular.
+	 */
+	private static final String FIRMA = "By CocoBrain";
+
+	private JLabel firmaDeMarca;
 	private JPanel controles;
 
 	private JLabel resumenCompacto;
@@ -172,8 +190,8 @@ public class HeroCatalogo extends JPanel {
 		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", "[]" + Space.SM + "[]"));
 		panel.setOpaque(false);
 
-		fraseEstacional = Labels.capsAccent(Theme.estacion().etiqueta());
-		panel.add(fraseEstacional);
+		firmaDeMarca = Labels.capsAccent(FIRMA);
+		panel.add(firmaDeMarca);
 
 		// En UNA línea, no en dos como el mockup.
 		//
@@ -405,7 +423,7 @@ public class HeroCatalogo extends JPanel {
 	 */
 	public void actualizarTextosEstacionales() {
 
-		fraseEstacional.setText(Theme.estacion().etiqueta());
+		// La firma no cambia con la estacion: no hay nada que reescribir aqui.
 
 		if (contraido) {
 			actualizarBandaCompacta();

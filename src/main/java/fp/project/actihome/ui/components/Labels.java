@@ -61,12 +61,12 @@ public final class Labels {
 
 	/** Precio destacado, en serif y con el color de acento. */
 	public static JLabel price(String texto) {
-		return crear(texto, Typography.serif(Typography.PRICE_LG), Theme::accText);
+		return crear(texto, Typography.sansSemiBold(Typography.PRICE_LG), Theme::accText);
 	}
 
 	/** Precio en tamaño de ficha. */
 	public static JLabel priceSmall(String texto) {
-		return crear(texto, Typography.serif(Typography.PRICE), Theme::accText);
+		return crear(texto, Typography.sansSemiBold(Typography.PRICE), Theme::accText);
 	}
 
 	/**

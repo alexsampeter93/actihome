@@ -33,7 +33,6 @@ import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
-import fp.project.actihome.ui.theme.Theme;
 import fp.project.actihome.ui.theme.Typography;
 
 /**
@@ -89,7 +88,7 @@ public class SearchHousingsFrame extends JFrame implements ConNombre {
 	private final transient Navigator navigator;
 	private final HeaderPanel headerPanel;
 
-	private JLabel fraseEstacional;
+	private JLabel firmaDeMarca;
 	private JLabel titulo;
 
 	private JLabel etiquetaLugar;
@@ -115,7 +114,6 @@ public class SearchHousingsFrame extends JFrame implements ConNombre {
 	private JButton enlaceRestablecer;
 	private JButton botonBuscar;
 
-	private transient Object suscripcion;
 
 	public SearchHousingsFrame(HousingService housingService, Navigator navigator, HeaderPanel headerPanel) {
 
@@ -132,7 +130,6 @@ public class SearchHousingsFrame extends JFrame implements ConNombre {
 		if (visible) {
 			headerPanel.refresh();
 			actualizarTextosFijos();
-			actualizarFraseEstacional();
 			cargarSugerencias();
 			limpiar();
 		}
@@ -140,11 +137,6 @@ public class SearchHousingsFrame extends JFrame implements ConNombre {
 		super.setVisible(visible);
 	}
 
-	@Override
-	public void dispose() {
-		Theme.olvidar(suscripcion);
-		super.dispose();
-	}
 
 	private void limpiar() {
 
@@ -180,9 +172,6 @@ public class SearchHousingsFrame extends JFrame implements ConNombre {
 		botonBuscar.setText(Textos.t("buscar.buscar"));
 	}
 
-	private void actualizarFraseEstacional() {
-		fraseEstacional.setText(Theme.estacion().etiqueta());
-	}
 
 	/**
 	 * Rellena las sugerencias de destino con ubicaciones reales del catálogo, no
@@ -252,7 +241,6 @@ public class SearchHousingsFrame extends JFrame implements ConNombre {
 
 		// Igual que el hero del catálogo: cambiar de estación no repinta solo, la
 		// frase editorial hay que reescribirla.
-		suscripcion = Theme.alCambiar(estacion -> actualizarFraseEstacional());
 	}
 
 	private JPanel cuerpo() {
@@ -276,8 +264,8 @@ public class SearchHousingsFrame extends JFrame implements ConNombre {
 		JPanel titulos = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
 		titulos.setOpaque(false);
 
-		fraseEstacional = Labels.capsAccent(" ");
-		titulos.add(fraseEstacional);
+		firmaDeMarca = Labels.capsAccent("By CocoBrain");
+		titulos.add(firmaDeMarca);
 
 		titulo = Labels.hero(" ");
 		titulos.add(titulo, "gaptop " + Space.XXS);

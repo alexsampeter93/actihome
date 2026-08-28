@@ -134,7 +134,7 @@ public class ReservationRow extends JPanel {
 		panel.setOpaque(false);
 
 		JLabel total = Labels.price(Formato.precio(reservation.getTotalPrice()));
-		total.setFont(Typography.serifMedium(20f));
+		total.setFont(Typography.sansSemiBold(20f));
 		panel.add(total);
 
 		panel.add(estado(reservation));

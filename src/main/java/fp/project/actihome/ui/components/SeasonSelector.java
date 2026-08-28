@@ -216,7 +216,7 @@ public class SeasonSelector extends JPanel {
 			// vuelven a pedir aquí en vez de fijarse una vez en el constructor — mismo
 			// principio que ya sigue el color: no se guarda, se resuelve al pintar.
 			etiqueta.setText(estacion.nombre().toUpperCase());
-			setToolTipText(estacion.etiqueta());
+			setToolTipText(estacion.nombre());
 
 			boolean activa = esActiva();
 

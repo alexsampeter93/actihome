@@ -116,7 +116,7 @@ public class ReviewRow extends JPanel {
 		panel.add(titulo);
 
 		JLabel nota = Labels.price(Formato.nota(review.getTotalScore()));
-		nota.setFont(Typography.serifMedium(20f));
+		nota.setFont(Typography.sansSemiBold(20f));
 		panel.add(nota);
 
 		panel.add(indicadores(review));
