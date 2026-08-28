@@ -305,9 +305,23 @@ public class HousingDetailsFrame extends JFrame implements ConNombre {
 		//
 		// El "300::" del rango dice que puede encogerse hasta 300 antes de rendirse, y
 		// el mínimo de la derecha es 340 para que en 1024 puntos las dos quepan.
+		//
+		// **Y "shrinkprio 200" en la derecha, que es lo que impedía que cupieran de
+		// verdad.** Declarar un rango 340:560:560 dice que la columna PUEDE bajar a
+		// 340; no dice quién baja primero cuando falta sitio. Con las dos a la misma
+		// prioridad, MigLayout no encogía ninguna: mantenía los 560 de la derecha,
+		// dejaba 355 a una izquierda que necesitaba 401 y **superponía las dos
+		// columnas**, con el borde de la foto dibujado encima del código del
+		// alojamiento y del avatar del anfitrión. No se salía de la ventana, así que
+		// hizo falta enseñar a MedirResponsive a buscar componentes que se pisan para
+		// verlo siquiera.
+		//
+		// Prioridad más alta significa "esta es la que cede antes", y es la correcta:
+		// la izquierda tiene una foto y un mapa con un ancho mínimo real, mientras que
+		// una columna de texto de 538 puntos se lee igual de bien que una de 560.
 		JPanel panel = new JPanel(new MigLayout(Space.insets(0),
 				"[300::,grow,fill]" + Space.MD + ":" + Space.XXXL + ":" + Space.XXXL + "[340:"
-						+ Layout.COLUMNA_DE_TEXTO + ":" + Layout.COLUMNA_DE_TEXTO + ",fill]",
+						+ Layout.COLUMNA_DE_TEXTO + ":" + Layout.COLUMNA_DE_TEXTO + ",shrinkprio 200,fill]",
 				"[grow,fill]"));
 		panel.setOpaque(false);
 
@@ -325,22 +339,32 @@ public class HousingDetailsFrame extends JFrame implements ConNombre {
 
 		izquierda.add(galeria(), "grow");
 
-		// **El tiempo y el mapa van uno al lado del otro, no apilados.** Apilados
-		// sumaban unos 150 puntos de alto que son justo lo que sacaba la ficha de la
-		// pantalla en cualquier portátil: la ficha pedía 926 puntos y un portátil de
-		// 1920x1080 al 150 % da 660 útiles. Y no compiten por el ancho, porque
-		// contestan la misma pregunta desde dos lados —dónde está y cómo está— así que
-		// verlos juntos es incluso mejor lectura que en columna.
+		// **El tiempo y el mapa van uno al lado del otro, pero en una fila FLUIDA.**
+		// Apilarlos siempre sumaba unos 150 puntos de alto que son justo los que
+		// sacaban la ficha de la pantalla en un portátil: la ficha pedía 926 puntos y
+		// un 1920x1080 al 150 % da 660 útiles. Y no compiten por el ancho, porque
+		// contestan la misma pregunta desde dos lados —dónde está y cómo está—, así que
+		// verlos juntos se lee incluso mejor.
 		//
-		// "hidemode 3" sigue siendo imprescindible: los dos desaparecen sin dejar hueco
-		// cuando el alojamiento no tiene coordenadas o la consulta falla, y entonces el
-		// que quede se lleva el ancho entero.
-		JPanel entorno = new JPanel(
-				new MigLayout("hidemode 3, " + Space.insets(0), "[grow,fill]" + Space.LG + "[grow,fill]", "[]"));
-		entorno.setOpaque(false);
+		// **Pero la fila era rígida, y eso los rompía a 1024 puntos.** Una fila normal
+		// exige la SUMA de sus hijos, y cuando no la hay MigLayout no encoge: desborda.
+		// El lienzo del mapa acababa dibujado 49 puntos por fuera de su columna, encima
+		// del precio y del botón de reservar, y el bloque del tiempo encima del mapa.
+		// No se salía de la VENTANA, así que ninguna de las dos comprobaciones que
+		// tenía MedirResponsive podía verlo: hizo falta enseñarle a buscar componentes
+		// que se pisan entre sí.
+		//
+		// FilaFluida exige solo el más ancho de los dos y dobla en dos líneas cuando no
+		// caben al lado. Es la regla 1 de adaptabilidad del proyecto, aplicada donde no
+		// se había aplicado: en las ventanas donde caben se ven igual que antes, y en
+		// las que no, el alto se paga solo ahí en vez de romperse.
+		//
+		// El "hidemode 3" ya no hace falta: FilaFluida no reserva sitio para lo que no
+		// está visible.
+		FilaFluida entorno = new FilaFluida(Space.LG, Space.MD);
 
-		entorno.add(new PrevisionPanel(housing, weatherService), "growx, aligny top");
-		entorno.add(new MapaDeUbicacion(housing, tileClient), "growx, aligny top");
+		entorno.add(new PrevisionPanel(housing, weatherService));
+		entorno.add(new MapaDeUbicacion(housing, tileClient));
 
 		izquierda.add(entorno, "growx");
 

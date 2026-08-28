@@ -25,6 +25,7 @@ import fp.project.actihome.model.exceptions.TilesUnavailableException;
 import fp.project.actihome.model.services.TileClient;
 import fp.project.actihome.model.services.Teselas;
 import fp.project.actihome.ui.components.Labels;
+import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Theme;
@@ -101,12 +102,23 @@ public class MapaDeUbicacion extends JPanel {
 		lienzo = new Lienzo();
 		add(lienzo, "h " + ALTO + "!");
 
-		JLabel atribucion = Labels.muted(Textos.t("detalle.mapa.atribucion"));
-		add(atribucion);
-
-		// Mínimo cero por lo mismo que en la previsión: un bloque informativo no puede
-		// ser lo que decide el ancho mínimo de una pantalla.
-		setMinimumSize(new Dimension(0, 0));
+		// WrappingText y no Labels.muted: un JLabel no parte el texto y declara la
+		// frase entera como ancho mínimo, así que la atribución —obligatoria por la
+		// política de OpenStreetMap— era la que decidía lo estrecho que podía ponerse
+		// este bloque. Es la regla 5 de adaptabilidad, aplicada donde faltaba.
+		add(WrappingText.muted(Textos.t("detalle.mapa.atribucion")), "growx, wmin 0");
+		// **Mínimo cero en el ANCHO y honesto en el ALTO.**
+		//
+		// El cero de ancho sigue siendo correcto y por el motivo de siempre: un bloque
+		// informativo no puede ser lo que decide lo estrecha que puede ponerse una
+		// pantalla, y ahora además vive en una FilaFluida que lo baja de línea cuando
+		// no cabe al lado del otro.
+		//
+		// Pero declarar cero también de ALTO era una mentira de las que se cobran. Es
+		// la misma lección que el párrafo que se dibujaba rebanado: quien dice que
+		// puede ceder alto, lo cede — y aquí no se puede, porque debajo del bloque no
+		// hay nada que reflúya. Se deja que el alto lo conteste el contenido.
+		setMinimumSize(new Dimension(0, getPreferredSize().height));
 
 		// **Arranca VISIBLE si el alojamiento está localizado, aunque todavía no haya
 		// nada que dibujar, y esto costó una corrección.**

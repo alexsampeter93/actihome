@@ -112,10 +112,18 @@ public class PrevisionPanel extends JPanel {
 
 		// **El mínimo cero es lo que permite que la columna izquierda se encoja.** Sin
 		// él, cinco columnas de texto fijan un suelo que en una ventana de 1024 empuja
-		// el precio y el botón de reservar fuera de la pantalla, que es exactamente el
-		// fallo que se corrigió en la galería. Un adorno informativo nunca puede ser lo
-		// que decide el ancho mínimo de una pantalla.
-		setMinimumSize(new Dimension(0, 0));
+		// **Mínimo cero en el ANCHO y honesto en el ALTO.**
+		//
+		// El cero de ancho sigue siendo correcto y por el motivo de siempre: un bloque
+		// informativo no puede ser lo que decide lo estrecha que puede ponerse una
+		// pantalla, y ahora además vive en una FilaFluida que lo baja de línea cuando
+		// no cabe al lado del otro.
+		//
+		// Pero declarar cero también de ALTO era una mentira de las que se cobran. Es
+		// la misma lección que el párrafo que se dibujaba rebanado: quien dice que
+		// puede ceder alto, lo cede — y aquí no se puede, porque debajo del bloque no
+		// hay nada que reflúya. Se deja que el alto lo conteste el contenido.
+		setMinimumSize(new Dimension(0, getPreferredSize().height));
 
 		if (!housing.estaLocalizado()) {
 			setVisible(false);

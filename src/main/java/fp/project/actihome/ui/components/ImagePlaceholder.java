@@ -69,6 +69,19 @@ public class ImagePlaceholder extends JComponent {
 		// pista lo dibujaría como una línea. Este valor es solo el punto de partida:
 		// lo normal es que el layout de la pantalla lo estire.
 		setPreferredSize(new Dimension(240, 150));
+
+		// **Y el mínimo, que faltaba.** Es la trampa que el manual describe: un
+		// componente que define el preferido y se calla el mínimo acaba declarando el
+		// preferido también como mínimo, y entonces no cede nada. Una foto de 240
+		// puntos que se niega a bajar de ahí obliga a ceder a todo lo demás: en el
+		// detalle a 1024 puntos empujaba la galería seis puntos dentro de la columna
+		// del precio, con el borde de la imagen dibujado encima del código del
+		// alojamiento.
+		//
+		// Y es de las pocas piezas donde un mínimo pequeño es honesto de verdad: una
+		// imagen no tiene contenido indivisible que defender —no hay una palabra que
+		// no quepa ni una línea que se parta— sencillamente se ve más pequeña.
+		setMinimumSize(new Dimension(80, 56));
 	}
 
 	public ImagePlaceholder(String tipo, String estado, boolean disponible) {
