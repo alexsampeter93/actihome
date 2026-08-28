@@ -25,11 +25,13 @@ import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.InlineScore;
 import fp.project.actihome.ui.components.Labels;
+import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.FilaFluida;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.theme.Formato;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
@@ -183,11 +185,31 @@ public class ComparisonFrame extends JFrame {
 				"[grow,fill]", "[]" + Space.LG + "[]" + Space.XL + "[]push"));
 
 		contenido.add(migaDePan(), "growx");
-		contenido.add(Labels.title(Textos.t("comparar.titulo")), "growx");
+		contenido.add(titular(), "growx");
 		contenido.add(tabla(), "grow, " + Layout.anchoCentrado(Layout.CONTENIDO));
 
 		contenido.revalidate();
 		contenido.repaint();
+	}
+
+	/**
+	 * El titular de la comparación, con Olaz al otro extremo.
+	 *
+	 * <p>
+	 * Una de las cuatro pantallas en las que la mascota no estaba, pese a que el
+	 * sistema la da por presente en todas. Aquí no cuesta nada: la fila del título
+	 * es una sola línea a lo ancho de la ventana, y el extremo derecho estaba
+	 * vacío.
+	 */
+	private JPanel titular() {
+
+		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[grow,fill]push[]", ""));
+		panel.setOpaque(false);
+
+		panel.add(Labels.title(Textos.t("comparar.titulo")), "aligny center");
+		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.ACCION), "aligny center");
+
+		return panel;
 	}
 
 	private JPanel migaDePan() {

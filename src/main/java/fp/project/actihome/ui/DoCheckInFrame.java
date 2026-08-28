@@ -204,7 +204,13 @@ public class DoCheckInFrame extends JFrame {
 		titulos.add(subtituloFechas, "gaptop " + Space.XXS);
 
 		panel.add(titulos);
-		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "top, w 56!, h 56!");
+		// **MEDIANO y no PEQUEÑO: aquí sobra sitio.** El check-in es un formulario de
+		// un solo campo en una pantalla sin cabecera de navegación — 455 puntos de los
+		// 670 que da un portátil al 150 %—, así que es de las pocas donde Olaz puede
+		// crecer sin quitarle nada a nadie. Es la regla de «tamaño según el vacío» del
+		// sistema aplicada en la dirección en la que casi nunca se aplica: normalmente
+		// se usa para encogerlo.
+		panel.add(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.BIENVENIDA), "top");
 
 		return panel;
 	}

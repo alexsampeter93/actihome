@@ -30,10 +30,12 @@ import fp.project.actihome.ui.components.Buttons;
 import fp.project.actihome.ui.components.Field;
 import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Labels;
+import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Textos;
 import fp.project.actihome.ui.theme.Typography;
@@ -138,9 +140,24 @@ public class ConversationFrame extends JFrame {
 		Foco.alPulsarEscape(this, this::volver);
 	}
 
+	/**
+	 * Miga de pan, título de la conversación y Olaz.
+	 *
+	 * <p>
+	 * <b>Olaz faltaba aquí, y el javadoc de {@code MascotSlot} llevaba tiempo
+	 * afirmando que «aparece en todas las pantallas».</b> No era verdad en cuatro:
+	 * ésta, el detalle de un alojamiento, el de una reseña y la comparación. Todas
+	 * comparten la misma explicación —se escribieron después de que la regla se
+	 * diera por hecha— y ninguna se detectó, porque una regla que se cumple «en
+	 * todas» sólo se comprueba contando.
+	 */
 	private JPanel titular() {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(Space.LG, Space.HUGE, Space.MD, Space.HUGE),
+		JPanel exterior = new JPanel(new MigLayout(
+				Space.insets(Space.LG, Space.HUGE, Space.MD, Space.HUGE), "[grow,fill]push[]", ""));
+		exterior.setOpaque(false);
+
+		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0),
 				"[grow,fill]", "[]" + Space.XXS + "[]" + Space.XS + "[]"));
 		panel.setOpaque(false);
 
@@ -162,7 +179,14 @@ public class ConversationFrame extends JFrame {
 		subtitulo = Labels.muted(" ");
 		panel.add(subtitulo);
 
-		return panel;
+		exterior.add(panel);
+
+		// MEDIANO: entre el último mensaje y el redactor queda un vacío de más de
+		// cien puntos en cualquier conversación corta, así que aquí Olaz no compite
+		// con nada.
+		exterior.add(new MascotSlot(MascotSlot.Tamano.MEDIANO, Pose.ACCION), "top");
+
+		return exterior;
 	}
 
 	private JScrollPane zonaDeHilo() {

@@ -32,6 +32,7 @@ import fp.project.actihome.ui.components.Foco;
 import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.components.Labels;
+import fp.project.actihome.ui.components.MascotSlot;
 import fp.project.actihome.ui.components.Page;
 import fp.project.actihome.ui.components.Rescate;
 import fp.project.actihome.ui.components.ScoreBar;
@@ -40,6 +41,7 @@ import fp.project.actihome.ui.components.WrappingText;
 import fp.project.actihome.ui.nav.Navigator;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.BrandAssets;
+import fp.project.actihome.ui.theme.BrandAssets.Pose;
 import fp.project.actihome.ui.theme.Contenido;
 import fp.project.actihome.ui.theme.Layout;
 import fp.project.actihome.ui.theme.Space;
@@ -251,7 +253,8 @@ public class ReviewDetailsFrame extends JFrame {
 	/** Disco de nota grande a la izquierda, título y autoría a la derecha. */
 	private JPanel cabecera() {
 
-		JPanel panel = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.XL + "[grow,fill]", "[]"));
+		JPanel panel = new JPanel(
+				new MigLayout(Space.insets(0), "[]" + Space.XL + "[grow,fill]" + Space.XL + "[]", "[]"));
 		panel.setOpaque(false);
 
 		panel.add(new ScoreDisc(review.getTotalScore(), ScoreDisc.Tamano.GRANDE), "w 64!, h 64!, aligny center");
@@ -267,6 +270,11 @@ public class ReviewDetailsFrame extends JFrame {
 				+ formatoFecha().format(review.getPublicationDate())));
 
 		panel.add(texto, "aligny center");
+
+		// PEQUEÑO y no mediano: a la derecha hay hueco de sobra, pero esta pantalla
+		// llega justa de alto con sus cinco barras de subnota y la respuesta del
+		// propietario. Setenta y dos puntos son los que caben sin quitarle nada.
+		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.ACCION), "aligny center");
 
 		return panel;
 	}

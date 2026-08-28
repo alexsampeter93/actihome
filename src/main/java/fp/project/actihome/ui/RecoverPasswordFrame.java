@@ -132,7 +132,7 @@ public class RecoverPasswordFrame extends JFrame {
 		// sitio y se reparte el recorte cuando no lo hay, en vez de dejar el botón
 		// "Cambiar contraseña" por debajo del borde de la ventana.
 		formulario.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA),
-				"w 56!, h 56!, gapbottom " + Space.aire(Space.MD));
+				"gapbottom " + Space.aire(Space.MD));
 		formulario.add(superTitulo);
 		formulario.add(titulo, "gaptop " + Space.XXS + ", gapbottom " + Space.aire(Space.XS));
 		formulario.add(ayuda, "gapbottom " + Space.aire(Space.XS));

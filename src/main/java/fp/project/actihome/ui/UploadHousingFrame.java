@@ -160,7 +160,7 @@ public class UploadHousingFrame extends JFrame {
 		titulos.add(titulo, "gaptop " + Space.XXS);
 
 		panel.add(titulos);
-		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "top, w 56!, h 56!");
+		panel.add(new MascotSlot(MascotSlot.Tamano.PEQUENO, Pose.BIENVENIDA), "top");
 
 		return panel;
 	}

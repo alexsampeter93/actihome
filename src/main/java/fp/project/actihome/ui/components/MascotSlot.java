@@ -20,7 +20,10 @@ import fp.project.actihome.ui.theme.Typography;
  * activa.
  *
  * <p>
- * Olaz aparece en todas las pantallas por decisión de producto. Para que sume
+ * Olaz aparece en todas las pantallas menos una por decisión de producto. La
+ * excepción es el detalle de un alojamiento: entre galería, tiempo, mapa, precio
+ * y reseñas no queda un hueco que no le quite sitio a algo, y la propia regla de
+ * abajo dice que la mascota nunca compite con la información. Para que sume
  * en lugar de cansar, tres reglas de oficio que este componente hace fáciles de
  * respetar:
  *
@@ -50,6 +53,23 @@ public class MascotSlot extends JComponent {
 
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * Los tres tamaños de ranura, en puntos de lado.
+	 *
+	 * <p>
+	 * <b>{@code PEQUENO} decía 72 y durante meses se dibujó a 56.</b> Las once
+	 * pantallas que lo usan lo añadían con {@code "top, w 56!, h 56!"} —copiado de
+	 * una a otra, como se copian estas cosas— y un {@code !} en MigLayout no negocia
+	 * con nadie: el tamaño declarado aquí no llegaba a aplicarse nunca. La constante
+	 * era, literalmente, documentación falsa.
+	 *
+	 * <p>
+	 * Retirados esos forzados, Olaz recupera sus 72 puntos <b>sin costar un solo
+	 * punto de alto</b>: en todas esas pantallas la ranura convive en una fila con
+	 * un bloque de títulos —versalita, titular y a veces un subtítulo— que ya mide
+	 * entre 70 y 80. La altura de esa fila la ponía el texto, no la mascota, así que
+	 * los 16 puntos que se le habían quitado no se los estaba dando a nadie.
+	 */
 	public enum Tamano {
 
 		PEQUENO(72), MEDIANO(140), GRANDE(220);
@@ -62,7 +82,7 @@ public class MascotSlot extends JComponent {
 	}
 
 	private final Tamano tamano;
-	private final Pose pose;
+	private Pose pose;
 
 	public MascotSlot(Tamano tamano, Pose pose) {
 
@@ -70,6 +90,22 @@ public class MascotSlot extends JComponent {
 		this.pose = pose;
 		setPreferredSize(new Dimension(tamano.lado, tamano.lado));
 		setMinimumSize(new Dimension(tamano.lado / 2, tamano.lado / 2));
+	}
+
+	/**
+	 * Cambia la pose sin cambiar de ranura.
+	 *
+	 * <p>
+	 * Existe por la bienvenida, que es una sola pantalla con tres pasos: el primero
+	 * saluda y los dos siguientes cuentan qué se puede hacer, así que la
+	 * ilustración acompaña. <b>No contradice la regla de que la pose la decide la
+	 * pantalla y nunca el azar</b>: sigue decidiéndola la pantalla, sólo que ahora
+	 * en función de en qué paso está, y el mismo paso da siempre la misma imagen.
+	 */
+	public void setPose(Pose pose) {
+
+		this.pose = pose;
+		repaint();
 	}
 
 	@Override
@@ -115,10 +151,18 @@ public class MascotSlot extends JComponent {
 	 */
 	private Pose poseEfectiva(Season estacion) {
 
-		if (estacion == Season.VERANO && tamano != Tamano.PEQUENO) {
-			return Pose.ACCION;
-		}
+		if (estacion == Season.VERANO) {
 
+			// La regla es la misma en las dos direcciones, y hasta ahora sólo se
+			// aplicaba en una. La escena de la toalla es apaisada —personaje, toalla y
+			// sombrilla— y en una ranura pequeña se reduce hasta que no se distingue
+			// qué es; por eso se prefiere en mediano y grande, **y por eso mismo hay que
+			// evitarla en pequeño aunque sea la pantalla quien la pida**. Faltaba este
+			// segundo caso: al añadir Olaz al detalle de una reseña y a la comparación,
+			// que son pantallas de explorar y piden ACCION, en verano salía la escena
+			// apaisada a 72 puntos y se leía como una mancha.
+			return tamano == Tamano.PEQUENO ? Pose.BIENVENIDA : Pose.ACCION;
+		}
 		return pose;
 	}
 
