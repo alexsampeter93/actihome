@@ -81,6 +81,60 @@ public class WrappingText extends JTextArea {
 	}
 
 	/**
+	 * El ancho con el que se midió por última vez, para no pedir un segundo pase
+	 * de layout más de una vez por cada ancho distinto.
+	 */
+	private int anchoYaMedido = -1;
+
+	/**
+	 * Vuelve a pedir sitio cuando por fin se sabe de qué ancho se dispone.
+	 *
+	 * <p>
+	 * <b>Sin esto un párrafo se dibuja cortado a media línea, y el sitio donde
+	 * ocurre no se parece en nada a la causa.</b> Un {@code JTextArea} con ajuste
+	 * de línea calcula su alto preferido a partir del ancho que su vista interna
+	 * ya recibió. La primera vez que el gestor de layout pregunta, <b>ese ancho es
+	 * cero</b>: el párrafo contesta el alto de una sola línea, el layout le reserva
+	 * una línea, y acto seguido le entrega el ancho real — donde el texto se
+	 * reparte en dos o en tres. La caja ya está decidida, así que lo que sobra se
+	 * dibuja fuera y se lee <em>rebanado por la mitad</em>.
+	 *
+	 * <p>
+	 * Se veía en el detalle de una reseña, cuyo cuerpo se reconstruye en cada
+	 * visita, y <b>ninguna herramienta lo cazaba</b>: {@code MedirResponsive}
+	 * compara cada componente contra el área visible de la ventana, y este texto no
+	 * se sale de la ventana — se sale de <em>su propio panel</em>, que es el punto
+	 * ciego que el manual ya tenía anotado.
+	 *
+	 * <p>
+	 * El proyecto ya conocía el remedio: el segundo pase con
+	 * {@code SwingUtilities.invokeLater(panel::revalidate)} que la Fase 9 tuvo que
+	 * poner a mano en la pantalla de intercambio. Pero lo tenía escrito como una
+	 * <b>costumbre que hay que acordarse de aplicar</b>, y de las cinco pantallas
+	 * que construyen párrafos dinámicamente sólo tres se acordaron. Ponerlo aquí
+	 * convierte la costumbre en una propiedad del componente: quien use
+	 * {@code WrappingText} ya no tiene que saber que esto existe.
+	 *
+	 * <p>
+	 * <b>No entra en bucle</b> porque sólo reacciona a un ancho <em>distinto</em>
+	 * del último medido: el segundo pase vuelve a asignar el mismo ancho, la
+	 * condición ya no se cumple y la cadena se para. Es la guarda obligatoria
+	 * siempre que un componente pide layout desde dentro del layout.
+	 */
+	@Override
+	public void setBounds(int x, int y, int ancho, int alto) {
+
+		boolean cambioElAncho = ancho != anchoYaMedido;
+
+		super.setBounds(x, y, ancho, alto);
+
+		if (cambioElAncho && ancho > 0) {
+			anchoYaMedido = ancho;
+			revalidate();
+		}
+	}
+
+	/**
 	 * El mínimo de un párrafo es <b>la palabra más larga</b>, no el párrafo entero.
 	 *
 	 * <p>
@@ -127,6 +181,25 @@ public class WrappingText extends JTextArea {
 	 * sitio.
 	 *
 	 * <p>
+	 * <b>Y hubo una tercera corrección, porque «una línea siempre» tampoco era
+	 * verdad.</b> Ese suelo es honesto <em>antes</em> de que a nadie le hayan dado un
+	 * ancho; después, no. Un párrafo que ya sabe que ocupa dos líneas y sigue
+	 * declarando que le basta una está mintiendo, y la mentira se cobra donde no se
+	 * mira: {@link Rescate} apreta la pantalla antes de sacar la barra y le quita
+	 * alto a quien dijo que podía cederlo, así que el párrafo recibía 28 puntos donde
+	 * necesitaba 36 y su segunda línea salía <b>cortada por la mitad</b>. Ni
+	 * {@code MedirResponsive} lo veía —el texto no se sale de la ventana, se sale de
+	 * su propio panel— ni parecía un problema de tamaño al mirarlo.
+	 *
+	 * <p>
+	 * Un párrafo puede ceder <b>ancho</b>, que para eso reflúye, y no puede ceder
+	 * <b>alto</b>: no hay manera de enseñar dos líneas en el hueco de una. Así que el
+	 * mínimo pasa a ser el alto real en cuanto hay un ancho asignado — y sigue
+	 * cumpliendo la regla general de abajo, porque no se contesta con el ancho que el
+	 * componente tiene <em>en este instante</em> sino con el último que alguien le
+	 * <b>asignó</b>, que es un valor que no se mueve mientras MigLayout tantea.
+	 *
+	 * <p>
 	 * <b>La regla general, que vale para cualquier componente propio:</b>
 	 * {@code getMinimumSize()} tiene que poder contestarse sin saber en qué momento
 	 * del pase de layout te lo preguntan. Si su respuesta depende del tamaño que el
@@ -143,10 +216,30 @@ public class WrappingText extends JTextArea {
 			masLarga = Math.max(masLarga, metrica.stringWidth(palabra));
 		}
 
-		return new Dimension(masLarga + margenes.left + margenes.right,
-				metrica.getHeight() + margenes.top + margenes.bottom);
-	}
+		// **El alto mínimo es una línea mientras nadie nos haya dado un ancho, y el
+		// alto real en cuanto lo tenemos.** La versión anterior contestaba siempre una
+		// línea, y eso convertía al párrafo en la pieza que se deja machacar: cuando la
+		// pantalla no cabe, Rescate aprieta antes de sacar la barra, MigLayout le quita
+		// alto a quien declaró que podía cederlo, y un párrafo que decía "con 18 puntos
+		// me apaño" recibía 28 donde necesitaba 36 — dibujando la segunda línea
+		// **rebanada por la mitad**. Medido así en el detalle de una reseña.
+		//
+		// Es exactamente el fallo que el javadoc de Rescate anticipaba: "depende por
+		// completo de que cada componente diga la verdad sobre su mínimo". Un párrafo
+		// puede ceder **ancho** —para eso reflúye— pero no puede ceder **alto**: no hay
+		// forma de enseñar dos líneas en el hueco de una.
+		//
+		// Y sigue siendo estable, que es lo que costó la Fase 8.13. No se contesta con
+		// el ancho que el componente tiene *en este instante* —eso cambiaba mientras
+		// MigLayout tantea, y volvió intermitente al CI— sino con el último ancho que
+		// alguien nos **asignó** de verdad, que es un valor que no se mueve durante un
+		// pase de layout. Antes del primer reparto no hay ancho que valga, y ahí una
+		// línea sigue siendo el único suelo honesto.
+		int altoMinimo = anchoYaMedido > 0 ? getPreferredSize().height
+				: metrica.getHeight() + margenes.top + margenes.bottom;
 
+		return new Dimension(masLarga + margenes.left + margenes.right, altoMinimo);
+	}
 	@Override
 	public Color getForeground() {
 

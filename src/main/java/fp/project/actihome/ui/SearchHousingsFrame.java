@@ -301,7 +301,7 @@ public class SearchHousingsFrame extends JFrame implements ConNombre {
 	private JPanel tarjeta() {
 
 		fp.project.actihome.ui.components.Card tarjeta = new fp.project.actihome.ui.components.Card(
-				new MigLayout("wrap 1, " + Space.insets(Space.LG, Space.LG, Space.LG, Space.LG), "[grow,fill]",
+				new MigLayout("wrap 1, " + Space.insets(Space.MD, Space.LG, Space.MD, Space.LG), "[grow,fill]",
 						"[]" + Space.aire(Space.MD) + "[]" + Space.aire(Space.MD) + "[]"));
 
 		tarjeta.add(bloqueLugar());
@@ -311,16 +311,35 @@ public class SearchHousingsFrame extends JFrame implements ConNombre {
 		return tarjeta;
 	}
 
+	/**
+	 * El destino: etiqueta, campo de búsqueda y las sugerencias <b>a su lado</b>.
+	 *
+	 * <p>
+	 * <b>Las sugerencias comparten fila con el campo, y eso es una corrección de
+	 * tamaño antes que de estética.</b> El campo mide como mucho lo que mide un
+	 * formulario (440) dentro de una tarjeta que llega a 940: había medio ancho de
+	 * tarjeta vacío a su derecha y, justo debajo, una fila entera gastada en cinco
+	 * chips que caben de sobra en ese hueco. Recuperar esos ~46 puntos de alto es
+	 * parte de lo que hace que la pantalla quepa en un portátil de 1366×768, donde
+	 * antes se recorría con la rueda.
+	 *
+	 * <p>
+	 * Sigue siendo seguro en ventanas estrechas porque ninguna de las dos piezas
+	 * exige su ancho: el campo declara mínimo cero ({@link Layout#ancho}) y
+	 * {@link FilaFluida} exige sólo el chip más ancho y dobla en más líneas. Cuando
+	 * no quepan al lado, el resultado es el de antes.
+	 */
 	private JPanel bloqueLugar() {
 
-		JPanel panel = new JPanel(new MigLayout("wrap 1, " + Space.insets(0), "[grow,fill]", ""));
+		JPanel panel = new JPanel(new MigLayout("wrap 2, " + Space.insets(0),
+				"[]" + Space.aire(Space.XL) + "[grow,fill]", ""));
 		panel.setOpaque(false);
 
 		etiquetaLugar = Labels.caps(" ");
-		panel.add(etiquetaLugar);
+		panel.add(etiquetaLugar, "span 2");
 
-		// Redondo, como los chips de sugerencia que van justo debajo y los contadores
-		// de huéspedes de al lado: dentro de esta tarjeta todo son cápsulas, y una
+		// Redondo, como los chips de sugerencia que van justo al lado y los contadores
+		// de huéspedes de debajo: dentro de esta tarjeta todo son cápsulas, y una
 		// caja de esquina viva era la única silueta que se salía del conjunto.
 		destino = new SearchField(" ", () -> {
 			// La búsqueda no filtra en vivo aquí: solo se aplica al pulsar "Buscar
@@ -332,7 +351,7 @@ public class SearchHousingsFrame extends JFrame implements ConNombre {
 				+ Typography.altoDeControl() + "!");
 
 		sugerenciasFila = new FilaFluida(Space.XS, Space.XS);
-		panel.add(sugerenciasFila, "gaptop " + Space.SM);
+		panel.add(sugerenciasFila, "gaptop " + Space.XS + ", aligny center");
 
 		return panel;
 	}

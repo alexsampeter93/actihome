@@ -3,7 +3,6 @@ package fp.project.actihome.ui.components;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.awt.Dimension;
 import java.awt.FontMetrics;
 
 import org.junit.jupiter.api.Test;
@@ -11,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Comprueba lo único que de verdad hay que garantizar de {@link WrappingText}:
- * que su mínimo es <b>una función pura del componente</b>.
+ * que su mínimo <b>no se mueve bajo los pies del gestor de layout</b>.
  *
  * <p>
  * <b>Estos tests son un fallo real, no un ejercicio.</b> Durante las fases 8.11
@@ -24,10 +23,21 @@ import org.junit.jupiter.api.Test;
  * el instante en que se le preguntara.
  *
  * <p>
- * De ahí la forma del segundo test, que es la parte que importa: preguntar el
- * mínimo, cambiarle el tamaño al componente y volver a preguntar. Si la
- * respuesta cambia, no es un mínimo — es una medición, y el CI vuelve a ser una
- * moneda.
+ * <b>Esta clase afirmaba antes algo más fuerte —«el mínimo no cambia nunca»— y
+ * era demasiado fuerte.</b> Un párrafo que ya sabe que ocupa dos líneas no puede
+ * seguir diciendo que le basta con una: {@link Rescate} aprieta la pantalla
+ * antes de sacar la barra y se lo cobra dibujando la segunda línea cortada por
+ * la mitad. Así que el alto mínimo sí sube en cuanto hay un ancho asignado, y lo
+ * que hay que proteger es más fino y más exacto:
+ *
+ * <ol>
+ * <li>el mínimo de <b>ancho</b> no cambia jamás — es la palabra más larga, y de
+ * ahí no baja nada;</li>
+ * <li>el mínimo de <b>alto</b> es una línea mientras nadie haya dado un ancho, y
+ * a partir de ahí <b>es estable para un ancho dado</b>. Eso es lo que impedía
+ * que el CI fuera una moneda: MigLayout pregunta muchas veces sin cambiar los
+ * límites, y todas las respuestas tienen que coincidir.</li>
+ * </ol>
  */
 class WrappingTextTest {
 
@@ -60,28 +70,59 @@ class WrappingTextTest {
 	}
 
 	@Test
-	void elMinimoNoCambiaAunqueElComponenteCambieDeTamano() {
+	void elMinimoDeAnchoNoCambiaAunqueElComponenteCambieDeTamano() {
 
 		WrappingText parrafo = new WrappingText(PARRAFO);
 
-		Dimension reciennacido = parrafo.getMinimumSize();
+		int reciennacido = parrafo.getMinimumSize().width;
 
 		parrafo.setSize(60, 400);
-		Dimension estrecho = parrafo.getMinimumSize();
+		int estrecho = parrafo.getMinimumSize().width;
 
 		parrafo.setSize(2000, 20);
-		Dimension ancho = parrafo.getMinimumSize();
+		int ancho = parrafo.getMinimumSize().width;
 
-		assertEquals(reciennacido, estrecho, "el minimo cambio al estrechar el componente");
-		assertEquals(reciennacido, ancho, "el minimo cambio al ensanchar el componente");
+		assertEquals(reciennacido, estrecho, "el minimo de ancho cambio al estrechar el componente");
+		assertEquals(reciennacido, ancho, "el minimo de ancho cambio al ensanchar el componente");
 	}
 
 	@Test
-	void elAltoMinimoEsUnaSolaLinea() {
+	void elAltoMinimoEsUnaSolaLineaMientrasNadieLeHayaDadoAncho() {
 
 		WrappingText parrafo = new WrappingText(PARRAFO);
 		FontMetrics metrica = parrafo.getFontMetrics(parrafo.getFont());
 
 		assertEquals(metrica.getHeight(), parrafo.getMinimumSize().height);
+	}
+
+	@Test
+	void elAltoMinimoNoSeMuevePreguntandoVariasVecesConElMismoAncho() {
+
+		WrappingText parrafo = new WrappingText(PARRAFO);
+		parrafo.setSize(240, 500);
+
+		int primera = parrafo.getMinimumSize().height;
+
+		// Diez preguntas seguidas, que es lo que hace un gestor de layout mientras
+		// tantea. Si alguna contesta distinta sin que nadie haya cambiado los limites,
+		// el detector de recortes del CI vuelve a fallar la mitad de las veces.
+		for (int i = 0; i < 10; i++) {
+			assertEquals(primera, parrafo.getMinimumSize().height, "el alto minimo cambio en la pregunta " + i);
+		}
+	}
+
+	@Test
+	void elAltoMinimoCreceCuandoElParrafoYaSabeQueOcupaVariasLineas() {
+
+		WrappingText parrafo = new WrappingText(PARRAFO);
+		FontMetrics metrica = parrafo.getFontMetrics(parrafo.getFont());
+
+		// Un ancho estrecho de verdad: este parrafo no cabe ahi en una sola linea.
+		parrafo.setSize(200, 500);
+
+		// La regla que costo un texto cortado por la mitad en el detalle de una resena:
+		// un parrafo puede ceder ancho, porque refluye, y no puede ceder alto.
+		assertTrue(parrafo.getMinimumSize().height > metrica.getHeight(),
+				"un parrafo que ocupa varias lineas no puede declarar que le basta con una");
 	}
 }

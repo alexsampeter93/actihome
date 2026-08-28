@@ -89,6 +89,27 @@ public class CalendarioRango extends JPanel {
 	private static final int DIAS_SEMANA = 7;
 
 	private static final int LADO_CELDA = 36;
+
+	/**
+	 * Lo más bajo que puede quedar una casilla cuando falta alto en la pantalla.
+	 *
+	 * <p>
+	 * <b>El mínimo era igual que el preferido, y eso es exactamente lo que el
+	 * manual desaconseja</b>: un componente que declara los dos iguales no cede
+	 * nada, así que el calendario —seis filas de casillas por dos meses— era un
+	 * bloque de 333 puntos rígido en mitad de una pantalla que tenía que caber en
+	 * un portátil. Quien cedía en su lugar era todo lo demás.
+	 *
+	 * <p>
+	 * Seis puntos por fila son 42 en total, que es justo lo que le faltaba a
+	 * Buscar. Se cede <b>solo el alto</b>: el ancho sigue siendo {@link
+	 * #LADO_CELDA} porque de él depende que quepan siete columnas de días, y 30
+	 * puntos siguen siendo un objetivo de pulsación cómodo. Como el día se pinta
+	 * midiendo su propia caja —rectángulo redondeado sobre {@code getHeight()} y
+	 * número centrado con {@code FontMetrics}— la casilla solo queda algo más
+	 * achatada, sin nada descolocado.
+	 */
+	private static final int ALTO_MINIMO_CELDA = 30;
 	private static final int FILAS_REJILLA = 6;
 	private static final int ANCHO_MES = DIAS_SEMANA * LADO_CELDA;
 	private static final int ANCHO_FLECHA = 28;
@@ -289,7 +310,7 @@ public class CalendarioRango extends JPanel {
 
 		Dimension tamano = new Dimension(LADO_CELDA, LADO_CELDA);
 		hueco.setPreferredSize(tamano);
-		hueco.setMinimumSize(tamano);
+		hueco.setMinimumSize(new Dimension(LADO_CELDA, ALTO_MINIMO_CELDA));
 
 		return hueco;
 	}
@@ -392,7 +413,7 @@ public class CalendarioRango extends JPanel {
 
 			Dimension tamano = new Dimension(LADO_CELDA, LADO_CELDA);
 			setPreferredSize(tamano);
-			setMinimumSize(tamano);
+			setMinimumSize(new Dimension(LADO_CELDA, ALTO_MINIMO_CELDA));
 
 			addActionListener(e -> alPulsarDia(fecha));
 		}

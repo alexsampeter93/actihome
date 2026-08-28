@@ -272,7 +272,7 @@ public class MedirResponsive {
 			// decide si la aplicación cabe en el portátil del cliente, y el que antes se
 			// escribía a mano en cada pantalla.
 			frame.setSize(1400, 900);
-			frame.validate();
+			asentar(frame);
 			Dimension exige = frame.getContentPane().getMinimumSize();
 
 			int total = 0;
@@ -283,7 +283,7 @@ public class MedirResponsive {
 			for (int[] tamano : TAMANOS) {
 
 				frame.setSize(tamano[0], tamano[1]);
-				frame.validate();
+				asentar(frame);
 				Thread.sleep(60);
 
 				List<String> aplastados = new ArrayList<>();
@@ -318,7 +318,7 @@ public class MedirResponsive {
 			frame.setLocation(-30000, -30000);
 			frame.setVisible(true);
 			frame.setSize(ancho, alto);
-			frame.validate();
+			asentar(frame);
 			Thread.sleep(60);
 
 			List<String> encontrados = new ArrayList<>();
@@ -471,5 +471,56 @@ public class MedirResponsive {
 		Container padre = c.getParent();
 
 		return padre == null ? clase : clase + " (dentro de " + padre.getClass().getSimpleName() + ")";
+	}
+
+	/**
+	 * Deja el árbol asentado antes de medir: valida varias veces en vez de una.
+	 *
+	 * <p>
+	 * <b>Un solo {@code validate()} no basta, y creerlo volvió intermitente a este
+	 * detector.</b> Hay componentes cuyo tamaño preferido sólo se puede calcular
+	 * cuando ya se les ha dado un ancho —{@link
+	 * fp.project.actihome.ui.components.WrappingText}, cuyo alto sale de en cuántas
+	 * líneas se reparte el texto—, así que durante el pase se marcan inválidos otra
+	 * vez y piden otro. En la aplicación de verdad ese pase lo sirve el hilo de
+	 * eventos y nadie se entera; aquí, que corremos en el hilo principal, la
+	 * medición caía a veces sobre el estado intermedio y contaba como roto un
+	 * componente que un instante después estaba bien. Dos de cada tres ejecuciones.
+	 *
+	 * <p>
+	 * <b>Es el sexto fallo de instrumentación del proyecto y el que más caro sale:
+	 * uno que se equivoca en contra.</b> Un detector que calla lo que pasa enseña a
+	 * confiar de más; uno que grita lo que no pasa enseña a ignorarlo, y entonces
+	 * tampoco se lee el aviso verdadero. Corre en el CI, así que además convierte
+	 * cualquier "pasó" en una moneda.
+	 */
+	private static void asentar(JFrame frame) {
+
+		// Tres vueltas, y entre ellas se vacía la cola de eventos. Lo segundo es lo
+		// que de verdad hace falta y costó una tanda de seis ejecuciones descubrirlo:
+		// **`JComponent.revalidate()` llamado desde fuera del hilo de eventos no hace
+		// nada de forma síncrona** — mira si está en el EDT y, si no lo está, se limita
+		// a encolar un `invokeLater`. Esta herramienta corre en el hilo principal, así
+		// que los segundos pases que piden los párrafos quedaban ahí colgados y se
+		// ejecutaban o no antes de medir según cómo cayera. De ahí el "1 ROTO" que
+		// aparecía dos de cada tres veces sin tocar una línea de código.
+		for (int vuelta = 0; vuelta < 3; vuelta++) {
+
+			frame.validate();
+
+			try {
+				// Un invokeAndWait vacío basta: la cola se despacha en orden, así que
+				// cuando le toca el turno a este bloque ya ha corrido todo lo anterior.
+				javax.swing.SwingUtilities.invokeAndWait(() -> {
+					// Solo sirve para esperar turno.
+				});
+
+			} catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+
+			} catch (java.lang.reflect.InvocationTargetException ex) {
+				throw new IllegalStateException(ex);
+			}
+		}
 	}
 }

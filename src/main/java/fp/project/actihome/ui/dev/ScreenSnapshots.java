@@ -188,6 +188,10 @@ public final class ScreenSnapshots {
 					guardar(buscador, "buscar-" + estacion.name().toLowerCase());
 				}
 
+			} else if ("bienvenida".equals(prefijo)) {
+				capturarBienvenida(context);
+
+
 			} else if ("ajustes".equals(prefijo)) {
 				capturarAjustes(context);
 
@@ -361,9 +365,38 @@ public final class ScreenSnapshots {
 	 * comprueba que nada caiga fuera del área visible, no que un dato se lea bien.
 	 * Es justo la distinción que dejó veintinueve altos escritos a mano sin
 	 * detectar hasta la Fase 8.1.
+	/**
+	 * Los tres pasos de la bienvenida.
+	 *
+	 * <p>
+	 * <b>Es un estado que no se puede esperar a que ocurra</b>, como el código de
+	 * recuperación o una propuesta de intercambio: sólo se ve en el primer inicio
+	 * de sesión de una cuenta. Se avanza pulsando el botón de verdad y no
+	 * cambiando un campo a mano, por lo mismo de siempre — si mañana avanzar
+	 * exigiera algo más, la captura fallaría al generarse en vez de retratar un
+	 * estado imposible.
+	 */
+	private static void capturarBienvenida(ConfigurableApplicationContext context) throws IOException {
+
+		Theme.cambiarA(Season.OTONO);
+
+		iniciarSesionComo(context, "Admin");
+
+		fp.project.actihome.ui.OnboardingFrame bienvenida = context
+				.getBean(fp.project.actihome.ui.OnboardingFrame.class);
+
+		guardar(bienvenida, "bienvenida-paso1");
+		guardar(bienvenida, "bienvenida-paso2", bienvenida::avanzar);
+		guardar(bienvenida, "bienvenida-paso3", () -> {
+			bienvenida.avanzar();
+			bienvenida.avanzar();
+		});
+	}
+
+	/**
+	 * Perfil y ajustes, y aparte el panel de administración de la instalación.
 	 */
 	private static void capturarAjustes(ConfigurableApplicationContext context) throws IOException {
-
 		Theme.cambiarA(Season.OTONO);
 
 		iniciarSesionComo(context, "Admin");
@@ -677,7 +710,21 @@ public final class ScreenSnapshots {
 		// cómo se ve la aplicación.
 		vaciarLaColaDeEventos();
 
-		disponer(ventana.getContentPane());
+		// **Y se coloca más de una vez, alternando con la cola.** Un solo pase no
+		// basta cuando el tamaño preferido de un componente depende del ancho que
+		// acaba de recibir —el caso de {@code WrappingText}, cuyo alto sale de en
+		// cuántas líneas se reparte el texto—. Al colocar de arriba abajo, el padre
+		// ya decidió su altura con la respuesta que el hijo daba <em>antes</em> de
+		// tener ancho, y el hijo sólo puede corregirla pidiendo otro pase. En la
+		// aplicación de verdad ese pase lo sirve el hilo de eventos y no se nota;
+		// aquí, si no se pide expresamente, la captura sale con el párrafo cortado y
+		// la pantalla real bien. **Quinto fallo de instrumentación del proyecto, y de
+		// la misma familia que los cuatro anteriores: la herramienta no mide la
+		// aplicación, mide un momento anterior de la aplicación.**
+		for (int vuelta = 0; vuelta < 3; vuelta++) {
+			disponer(ventana.getContentPane());
+			vaciarLaColaDeEventos();
+		}
 
 		// La imagen se hace del tamaño del panel de contenido, no del de la ventana. La
 		// diferencia es la barra de título y los bordes que pone Windows: si se usara el
@@ -729,11 +776,22 @@ public final class ScreenSnapshots {
 		}
 	}
 
-	/** Recorre el árbol colocando cada componente. Ver {@code ThemeSnapshots}. */
+	/**
+	 * Recorre el árbol colocando cada componente. Ver {@code ThemeSnapshots}.
+	 *
+	 * <p>
+	 * <b>Invalida antes de colocar, y sin eso las vueltas de más no sirven de
+	 * nada.</b> MigLayout guarda en caché los tamaños que le dijeron sus hijos, y
+	 * sólo la tira cuando el contenedor se marca inválido. Un {@code doLayout()} a
+	 * secas vuelve a repartir usando las <em>mismas</em> medidas de antes, así que
+	 * repetirlo da exactamente el mismo resultado — y un componente que corrigió su
+	 * tamaño preferido al recibir por fin un ancho no se entera nadie.
+	 */
 	private static void disponer(Component componente) {
 
 		synchronized (componente.getTreeLock()) {
 
+			componente.invalidate();
 			componente.doLayout();
 
 			if (componente instanceof Container) {
