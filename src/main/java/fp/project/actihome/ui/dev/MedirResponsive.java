@@ -48,6 +48,7 @@ import fp.project.actihome.ui.UpdateReviewFrame;
 import fp.project.actihome.ui.UploadHousingFrame;
 import fp.project.actihome.ui.sessionManagement.SessionManager;
 import fp.project.actihome.ui.theme.ActiHomeTheme;
+import fp.project.actihome.ui.components.Superpuesto;
 import fp.project.actihome.ui.theme.Animacion;
 
 /**
@@ -99,6 +100,10 @@ public class MedirResponsive {
 			{ 1920, 1040 },  // 1920x1080 sin escalar
 			{ 2560, 1350 },  // monitor 2K sin escalar
 	};
+
+
+	/** Puntos de solape que se toleran por redondeo del reparto. */
+	private static final int TOLERANCIA_DE_SOLAPE = 2;
 
 	public static void main(String[] args) throws Exception {
 
@@ -290,6 +295,7 @@ public class MedirResponsive {
 				Rectangle ventana = new Rectangle(0, 0, frame.getContentPane().getWidth(),
 						frame.getContentPane().getHeight());
 				buscarAplastados(frame.getContentPane(), 0, 0, ventana, aplastados);
+				buscarSolapes(frame.getContentPane(), aplastados);
 
 				total += aplastados.size();
 				linea.append(String.format(" %11s", aplastados.isEmpty() ? "ok" : aplastados.size() + " ROTO"));
@@ -325,6 +331,7 @@ public class MedirResponsive {
 			Rectangle ventana = new Rectangle(0, 0, frame.getContentPane().getWidth(),
 					frame.getContentPane().getHeight());
 			buscarAplastados(frame.getContentPane(), 0, 0, ventana, encontrados);
+			buscarSolapes(frame.getContentPane(), encontrados);
 
 			frame.setVisible(false);
 
@@ -522,5 +529,140 @@ public class MedirResponsive {
 				throw new IllegalStateException(ex);
 			}
 		}
+	}
+	/**
+	 * Busca <b>componentes que se pisan unos a otros</b>.
+	 *
+	 * <p>
+	 * <b>Es la tercera clase de fallo, y hasta ahora esta herramienta no podía
+	 * verla ni en principio.</b> Las otras dos preguntan por la relación de un
+	 * componente con la <em>ventana</em>: si ha quedado por debajo de su mínimo, o
+	 * si ha quedado fuera del área visible. Un componente puede estar dentro de la
+	 * ventana, a su tamaño correcto, y aun así ser ilegible porque tiene otro
+	 * encima. En la cabecera a 1024 puntos de ancho se leía literalmente
+	 * «ACTIHOMEBuscar», con los glifos de las dos palabras superpuestos, y las dos
+	 * comprobaciones anteriores decían "ok" con toda la razón: no era su pregunta.
+	 *
+	 * <p>
+	 * <b>Por qué ocurre.</b> Cuando falta ancho, MigLayout no encoge por debajo del
+	 * mínimo: coloca cada celda donde le toca y deja que el contenido se salga de la
+	 * suya. Lo que hay en la celda siguiente no se aparta. El síntoma no es un texto
+	 * apretado ni un botón inalcanzable —los dos que sabíamos buscar— sino
+	 * <b>texto encima de texto</b>.
+	 *
+	 * <p>
+	 * <b>Se comparan hojas y no hermanos, y esa fue la primera versión equivocada.</b>
+	 * Comparar los hijos de cada contenedor entre sí parece lo natural y deja fuera
+	 * justo el caso que motivó la herramienta: el wordmark vive en el panel de marca
+	 * y "BUSCAR" en el de navegación, así que no son hermanos sino <b>primos</b>, y
+	 * nadie los comparaba nunca. Recogiendo todas las hojas del árbol en coordenadas
+	 * de ventana el problema desaparece — y no aparece el de la contención, porque
+	 * una hoja nunca es antepasada de otra.
+	 *
+	 * <p>
+	 * <b>Los solapes intencionados se declaran.</b> Hay superposiciones legítimas —el
+	 * velo estacional sobre una foto, la etiqueta "CASA" en su esquina, el botón
+	 * flotante del catálogo— y no hay forma de distinguirlas de un fallo mirando las
+	 * coordenadas. Se marcan implementando
+	 * {@link fp.project.actihome.ui.components.Superpuesto}, y todo lo que cuelga de
+	 * un contenedor así queda fuera de la comparación. Es una interfaz y no una lista
+	 * de clases dentro de esta herramienta a propósito: una lista aquí obligaría al
+	 * detector a conocer todas las pantallas y se quedaría vieja en cuanto alguien
+	 * escribiese una nueva. Es la misma decisión que {@code ConNombre} en el
+	 * navegador — quien apila, lo dice donde apila.
+	 */
+	private static void buscarSolapes(Container raiz, List<String> encontrados) {
+
+		List<Component> hojas = new ArrayList<>();
+		List<Rectangle> cajas = new ArrayList<>();
+
+		recogerHojas(raiz, 0, 0, hojas, cajas);
+
+		for (int i = 0; i < hojas.size(); i++) {
+			for (int j = i + 1; j < hojas.size(); j++) {
+
+				if (!cajas.get(i).intersects(cajas.get(j))) {
+					continue;
+				}
+
+				Rectangle comun = cajas.get(i).intersection(cajas.get(j));
+
+				encontrados.add("SOLAPE     " + describir(hojas.get(i)) + " pisa " + describir(hojas.get(j)) + "  "
+						+ comun.width + "x" + comun.height + " puntos en " + comun.x + "," + comun.y);
+			}
+		}
+	}
+
+	/**
+	 * Recoge las hojas del árbol con su caja en coordenadas de ventana.
+	 *
+	 * <p>
+	 * Se poda entero cualquier subárbol bajo un {@link Superpuesto}: si un
+	 * contenedor apila a propósito, ni sus hijos se pisan «mal» entre sí ni tiene
+	 * sentido compararlos con nadie de fuera.
+	 *
+	 * <p>
+	 * La caja se encoge {@link #TOLERANCIA_DE_SOLAPE} puntos por cada lado antes de
+	 * guardarla, porque MigLayout reparte en enteros y dos componentes que comparten
+	 * un punto de borde no tapan ningún glifo.
+	 */
+	private static void recogerHojas(Container contenedor, int x, int y, List<Component> hojas, List<Rectangle> cajas) {
+
+		if (contenedor instanceof Superpuesto) {
+			return;
+		}
+
+		for (Component hijo : contenedor.getComponents()) {
+
+			if (!hijo.isVisible()) {
+				continue;
+			}
+
+			int hx = x + hijo.getX();
+			int hy = y + hijo.getY();
+
+			if (hijo instanceof Container && ((Container) hijo).getComponentCount() > 0) {
+				recogerHojas((Container) hijo, hx, hy, hojas, cajas);
+				continue;
+			}
+
+			int ancho = hijo.getWidth() - 2 * TOLERANCIA_DE_SOLAPE;
+			int alto = hijo.getHeight() - 2 * TOLERANCIA_DE_SOLAPE;
+
+			if (ancho > 0 && alto > 0 && pintaAlgo(hijo)) {
+				hojas.add(hijo);
+				cajas.add(new Rectangle(hx + TOLERANCIA_DE_SOLAPE, hy + TOLERANCIA_DE_SOLAPE, ancho, alto));
+			}
+		}
+	}
+
+
+	/**
+	 * Si el componente dibuja algo que se pueda tapar.
+	 *
+	 * <p>
+	 * Existe por las <b>etiquetas de error vacías</b>. Media docena de formularios
+	 * reservan su hueco con {@code Labels.error(" ")} para que la pantalla no dé un
+	 * salto cuando aparece el mensaje — decisión correcta— y ese hueco es un
+	 * componente de ancho completo y doce puntos de alto que no pinta ni un píxel.
+	 * El detector de solapes los señalaba pisando al botón de al lado, y eran
+	 * avisos de algo que nadie puede ver.
+	 *
+	 * <p>
+	 * <b>Y esto no es tolerancia, es precisión.</b> Un detector con falsos positivos
+	 * se deja de leer, y entonces tampoco avisa de los verdaderos — la lección que
+	 * este proyecto ya tuvo que aprender con {@code ScoreBar}.
+	 */
+	private static boolean pintaAlgo(Component c) {
+
+		if (c instanceof JLabel etiqueta) {
+			return etiqueta.getIcon() != null || (etiqueta.getText() != null && !etiqueta.getText().isBlank());
+		}
+
+		if (c instanceof javax.swing.AbstractButton boton) {
+			return boton.getIcon() != null || (boton.getText() != null && !boton.getText().isBlank());
+		}
+
+		return true;
 	}
 }

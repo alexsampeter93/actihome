@@ -16,6 +16,7 @@ import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
 
+import fp.project.actihome.ui.components.Capa;
 import fp.project.actihome.ui.components.ImagePlaceholder;
 import fp.project.actihome.ui.theme.Space;
 import fp.project.actihome.ui.theme.Typography;
@@ -207,8 +208,7 @@ public class Galeria extends JPanel {
 		// En Swing los hijos se pintan del último índice al primero, así que lo que se
 		// añade PRIMERO queda ENCIMA. Es al revés que en HTML, y por eso el velo va
 		// antes que la foto.
-		JPanel capa = new JPanel(new MigLayout(Space.insets(0), "[grow,fill]", "[grow,fill]"));
-		capa.setOpaque(false);
+		Capa capa = new Capa(new MigLayout(Space.insets(0), "[grow,fill]", "[grow,fill]"));
 
 		capa.add(new Velo(ocultas), "pos 0 0 container.x2 container.y2");
 		capa.add(miniatura, "pos 0 0 container.x2 container.y2");

@@ -38,6 +38,7 @@ import fp.project.actihome.ui.catalog.HeroCatalogo;
 import fp.project.actihome.ui.catalog.HousingCard;
 import fp.project.actihome.ui.catalog.HousingRow;
 import fp.project.actihome.ui.components.Buttons;
+import fp.project.actihome.ui.components.Capa;
 import fp.project.actihome.ui.components.Hairline;
 import fp.project.actihome.ui.components.Labels;
 import fp.project.actihome.ui.components.MascotSlot;
@@ -717,8 +718,7 @@ public class ShowHousingsFrame extends JFrame implements ConNombre {
 	 */
 	private JPanel listaConBotonFlotante() {
 
-		JPanel capa = new JPanel(new MigLayout("fill, " + Space.insets(0), "[grow,fill]", "[grow,fill]"));
-		capa.setOpaque(false);
+		Capa capa = new Capa(new MigLayout("fill, " + Space.insets(0), "[grow,fill]", "[grow,fill]"));
 
 		accionAdmin = new JPanel(new MigLayout(Space.insets(0), "[]" + Space.SM + "[]", "[]"));
 		accionAdmin.setOpaque(false);
