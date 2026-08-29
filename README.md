@@ -23,7 +23,11 @@ Ninguna pantalla escribe un color. Pide un *papel* —"el acento", "el texto sec
 
 ## De dónde viene
 
-Esto no empezó así. La aplicación existía, con toda su lógica de negocio, y su interfaz era la que Swing trae de serie: tablas, pares de etiqueta y valor, y ventanas de 500×500 escritas a mano.
+**ActiHome empezó siendo mi proyecto de fin de ciclo.** Lo escribí entero —modelo, servicios, base de datos y una interfaz Swing de formularios— y ahí funcionaba: la lógica de negocio estaba resuelta y probada. Lo que no estaba resuelto era todo lo demás.
+
+Esto es esa aplicación después de migrarla de Spring Boot 2.2.2 y Java 11 a **Spring Boot 3.5.3 y Java 17**, reconstruir sus veinticinco pantallas sobre un sistema de diseño escrito para el proyecto, y añadirle las funciones que le faltaban para parecerse a un producto: búsqueda por destino y fechas, mensajería con el propietario, intercambio con consentimiento de las dos partes, meteorología y mapa en cada ficha, traducción de reseñas, recuperación de contraseña y presentación de bienvenida.
+
+La interfaz de la izquierda era la que Swing trae de serie: tablas, pares de etiqueta y valor, y ventanas de 500×500 escritas a mano.
 
 | Antes | Después |
 |---|---|
@@ -41,7 +45,7 @@ Las de la izquierda no son una reconstrucción: salen de ejecutar el commit inic
 
 ```powershell
 .\mvnw.cmd spring-boot:run     # arrancar
-.\mvnw.cmd test                # 156 tests
+.\mvnw.cmd test                # 181 tests
 .\empaquetar.ps1               # generar dist\ActiHome\ActiHome.exe
 ```
 
@@ -53,7 +57,7 @@ Usuarios de ejemplo (contraseña `1234`): `Admin`, `Customer`, `Lucia`, `Marcos`
 
 ## Qué hace
 
-Dos roles (ADMIN / CUSTOMER) sobre 23 pantallas:
+Dos roles (ADMIN / CUSTOMER) sobre 25 pantallas:
 
 | | |
 |---|---|
@@ -91,7 +95,7 @@ Tres capas estrictamente unidireccionales, **sin una sola excepción en 172 fich
 ui  →  services  →  DAOs  →  H2 / MySQL
 ```
 
-Ningún servicio importa nada de `ui`. Eso es lo que permitió **rediseñar las 23 pantallas enteras sin tocar una línea de lógica de negocio**, y lo que abarataría partir la aplicación en cliente y servidor el día que hiciera falta.
+Ningún servicio importa nada de `ui`. Eso es lo que permitió **rediseñar las 25 pantallas enteras sin tocar una línea de lógica de negocio**, y lo que abarataría partir la aplicación en cliente y servidor el día que hiciera falta.
 
 - Las reglas de negocio viven solo en los servicios, con **29 excepciones propias** —una por regla— que la interfaz captura de una en una. No hay ningún `catch (Exception)` genérico en acciones de usuario.
 - Las actualizaciones se apoyan en el *dirty checking* de JPA: `updateHousing` muta la entidad dentro de la transacción y **nunca llama a `save`**.
@@ -112,7 +116,7 @@ Seis programas que recorren la aplicacion. **Tres pueden poner el build en rojo 
 |---|---|---|
 | `MedirResponsive` | Coloca las 25 pantallas en 6 tamaños (1024×600 → 2560×1350) y recorre el árbol de componentes buscando lo que queda **fuera del área visible** | **Sí** |
 | `MedirContraste` | Comprueba WCAG en las 4 estaciones: cada par de colores contra su mínimo real (4,5:1 para texto, 3:1 para componentes) | **Sí** |
-| `MedirNavegacion` | Recorre las 17 pantallas con el navegador de verdad y comprueba dos cosas: que ninguna necesita la barra de rescate al tamaño real de apertura, y que **la ventana no cambia de tamaño ella sola** al cambiar de pantalla | **Sí** |
+| `MedirNavegacion` | Recorre las pantallas con el navegador de verdad y comprueba dos cosas: que ninguna necesita la barra de rescate al tamaño real de apertura, y que **la ventana no cambia de tamaño ella sola** al cambiar de pantalla | **Sí** |
 | `MedirPantallas` | Si cada pantalla cabe sin scroll en portátiles reales, y **dónde se va el alto** cuando no cabe | No: informativa |
 | `MedirGlifos` | Qué símbolos sabe dibujar de verdad cada fuente empaquetada | No: informativa. Un símbolo ausente no es un fallo, es un aviso de que hay que dibujarlo a mano |
 | `ScreenSnapshots` | Captura pantallas reales, con sesión iniciada por código y datos de verdad, fuera de pantalla y a cualquier tamaño | No: nada automático puede decir si una pantalla «se ve bien» |
@@ -123,7 +127,7 @@ Solo las que pueden fallar entran en el CI, y es deliberado: **un paso que nunca
 
 ### Integración continua
 
-Cada `push` a `main` y cada *pull request* ejecuta los **180 tests**, los recortes de layout en los seis tamaños y el contraste WCAG en las cuatro estaciones ([`comprobaciones.yml`](.github/workflows/comprobaciones.yml)).
+Cada `push` a `main` y cada *pull request* ejecuta los **181 tests**, los recortes de layout en los seis tamaños y el contraste WCAG en las cuatro estaciones ([`comprobaciones.yml`](.github/workflows/comprobaciones.yml)).
 
 Las dos herramientas de medición construyen ventanas de Swing de verdad, así que corren bajo `xvfb` — una pantalla virtual, porque un servidor no tiene escritorio donde dibujarlas.
 
@@ -156,7 +160,7 @@ Sustituyeron a Spectral y Manrope por una razón concreta: Manrope pertenece a l
 | Swing + FlatLaf | 3.7.2 | Interfaz y Look & Feel base |
 | MigLayout | 11.4.2 | Gestor de layout de todas las pantallas |
 | H2 / MySQL 8 | | H2 embebida por defecto; MySQL disponible por perfil, con credenciales desde variables de entorno |
-| JUnit 5 | | 180 tests: la capa de servicio al completo, mas los componentes de interfaz que ya han roto algo alguna vez, en H2 en memoria |
+| JUnit 5 | | 181 tests: la capa de servicio al completo, mas los componentes de interfaz que ya han roto algo alguna vez, en H2 en memoria |
 
 ---
 
