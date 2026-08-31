@@ -85,11 +85,44 @@ public final class SplashScreen {
 	 * así que sin este mínimo el splash se iría antes de que diera tiempo a leerlo.
 	 * Es el único sitio del proyecto donde se hace esperar al usuario adrede, y se
 	 * justifica porque lo que se está mostrando es la marca.
+	 *
+	 * <p>
+	 * <b>Se puede alargar desde fuera para grabar</b>, con
+	 * {@code -Dactihome.splash.minimo=15000}. No es un ajuste de la aplicación —no
+	 * hay pantalla que lo toque ni se guarda en ninguna preferencia— sino una
+	 * comodidad para filmar: tres segundos no dan tiempo a arrancar una grabación,
+	 * encuadrar y comprobar que el programa está capturando lo que se cree. Con el
+	 * valor por defecto se comporta exactamente igual que siempre.
 	 */
-	private static final long MINIMO_VISIBLE = 2900;
+	private static final long MINIMO_VISIBLE = leerMilisegundos("actihome.splash.minimo", 2900);
 
-	/** Red de seguridad: si nadie lo cierra, se cierra solo. */
-	private static final int MAXIMO_VISIBLE = 8000;
+	/**
+	 * Red de seguridad: si nadie lo cierra, se cierra solo.
+	 *
+	 * <p>
+	 * Nunca por debajo del mínimo, o al alargarlo para grabar sería esta red la que
+	 * cortase el plano: se le dan dos segundos de margen por encima.
+	 */
+	private static final int MAXIMO_VISIBLE = (int) Math.max(8000, MINIMO_VISIBLE + 2000);
+
+	/**
+	 * Lee una duración de las propiedades del sistema, ignorando lo que no sea un
+	 * número positivo.
+	 *
+	 * <p>
+	 * Un valor mal escrito no debe impedir que la aplicación arranque: esto es un
+	 * apaño de grabación, y fallar por él sería desproporcionado.
+	 */
+	private static long leerMilisegundos(String propiedad, long porDefecto) {
+
+		try {
+			long valor = Long.parseLong(System.getProperty(propiedad, ""));
+			return valor > 0 ? valor : porDefecto;
+
+		} catch (NumberFormatException ex) {
+			return porDefecto;
+		}
+	}
 
 	private static JWindow ventana;
 	private static Lienzo lienzo;
@@ -286,7 +319,12 @@ public final class SplashScreen {
 		fp.project.actihome.ui.theme.ActiHomeTheme.install();
 
 		mostrar();
-		Thread.sleep(2000);
+
+		// Simula el arranque real, o lo que se pida por argumento: "-Dexec.args=15000"
+		// deja el splash quince segundos para poder grabarlo con calma.
+		long arranque = args.length > 0 ? Long.parseLong(args[0]) : 2000;
+		Thread.sleep(arranque);
+
 		cerrar();
 
 		// Se espera a que termine el desvanecido antes de salir del proceso.
